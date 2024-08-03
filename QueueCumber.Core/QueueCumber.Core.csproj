@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QueueCumber.Data\QueueCumber.Data.csproj" />
+    <ProjectReference Include="..\QueueCumber.Drivers.RabbitMQ\QueueCumber.Drivers.RabbitMQ.csproj" />
+    <ProjectReference Include="..\QueueCumber.Drivers\QueueCumber.Drivers.csproj" />
+    <ProjectReference Include="..\QueueCumber.Models\QueueCumber.Models.csproj" />
+  </ItemGroup>
+
+</Project>

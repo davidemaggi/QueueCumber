@@ -1,0 +1,130 @@
+﻿@using QueueCumber.Data.Repositories
+@using QueueCumber.Models.Entities
+@using QueueCumber.WebApp.Components.Modals
+@using QueueCumber.WebApp.Components.Views
+
+
+@inject IDialogService DialogService
+
+<h1>Connection</h1>
+
+
+
+There are currently @Connections.Count Connections
+
+<MudButton Variant="Variant.Text" Color="Color.Error" OnClick="@((e) => ShowAddConnection(null))">Add</MudButton>
+
+<MudTable @ref="ConnectionTable" ServerData="@ConnectionsReload" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loadingTable" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>Id</MudTh>
+        <MudTh>Name</MudTh>
+        <MudTh>HostName</MudTh>
+        <MudTh>Port</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id">@context.Id</MudTd>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Hstname">@context.Hostname</MudTd>
+        <MudTd DataLabel="Port">@context.Port</MudTd>
+        <MudTd DataLabel="Actions">
+            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Info" OnClick="async (e)=>{await ShowAddConnection(context);}">Edit</MudButton>
+
+            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="async (e)=>{await ShowDeleteConnection(context);}">Delete</MudButton>
+
+        </MudTd>
+
+
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+</MudTable>
+
+@code {
+
+    MudTable<QueueCumberConnection> ConnectionTable;
+    public List<QueueCumberConnection> Connections = new List<QueueCumberConnection>();
+
+    [Inject]
+    private IConnectionRepository _connectionRepository { get; set; }
+
+    private bool _loadingTable;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private async Task ShowDeleteConnection(QueueCumberConnection toBeDeleted)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+
+            { x => x.ContentText, $"Are you sure you want to remove {toBeDeleted.Name}?" },
+            { x => x.ButtonText, "Yes" },
+            { x => x.Color, Color.Error }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Connection", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+
+            _connectionRepository.Delete(toBeDeleted.Id);
+            await ConnectionTable.ReloadServerData();
+
+        }
+    }
+
+    private async Task ShowAddConnection(QueueCumberConnection? toBeEdited)
+    {
+        IDialogReference dialog;
+
+        if (toBeEdited is null)
+
+        {
+            dialog = await DialogService.ShowAsync<ConnectionEditorView>("Add Connection", new DialogOptions { Position = DialogPosition.TopCenter });
+
+        }
+        else
+        {
+            var dialogParameters = new DialogParameters<ConnectionEditorView>
+        {
+
+            { x => x._connection, toBeEdited }
+        };
+
+            dialog = await DialogService.ShowAsync<ConnectionEditorView>("Edit Connection", dialogParameters, new DialogOptions { Position = DialogPosition.TopCenter });
+
+        }
+
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await ConnectionTable.ReloadServerData();
+        }
+    }
+
+    private async Task<TableData<QueueCumberConnection>> ConnectionsReload(TableState state, CancellationToken token)
+
+    {
+        _loadingTable = true;
+        await Task.Delay(1000, token);
+        Connections = _connectionRepository.All().ToList();
+
+        _loadingTable = false;
+
+        return new TableData<QueueCumberConnection>() { TotalItems = Connections.Count, Items = Connections };
+
+    }
+
+
+}

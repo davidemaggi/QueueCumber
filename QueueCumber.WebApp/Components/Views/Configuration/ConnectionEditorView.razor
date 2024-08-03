@@ -1,0 +1,143 @@
+﻿@using FluentValidation
+@using QueueCumber.Data.Repositories
+@using QueueCumber.Models.Entities
+@using QueueCumber.WebApp.Validators
+@using static QueueCumber.Models.Enums
+
+@inject ISnackbar Snackbar
+@inject IConnectionRepository ConnectionRepository
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.AddLocation" Class="mr-3 mb-n1" />
+            Connection Editor
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@isValid" @bind-Errors="@errors">
+            <MudTextField @bind-Value="_connection.Name" Label="Name" />
+            <MudTextField @bind-Value="_connection.Hostname" Label="HostName" Placeholder="localhost" Required="true" RequiredError="Hostname is required!" />
+            <MudNumericField @bind-Value="_connection.Port" Label="Port" Required="true" RequiredError="Port is required!" Validation="@portValidator.Validation" Immediate="true" />
+
+            <MudRadioGroup @bind-Value="_connection.AuthType">
+                <MudRadio Value="AuthType.NoAuth" Color="Color.Error" Size="Size.Small">No Auth</MudRadio>
+                <MudRadio Value="AuthType.Basic" Color="Color.Primary" Size="Size.Small">Basic</MudRadio>
+                <MudRadio Value="AuthType.Certificate" Color="Color.Primary" Size="Size.Small">Certificate</MudRadio>
+
+            </MudRadioGroup>
+
+            <MudTextField @bind-Value="_connection.Username" Label="Username" Placeholder="guest" />
+            <MudTextField @bind-Value="_connection.Password" InputType="@PasswordInput" Placeholder="guest" Label="Password" Adornment="Adornment.End" OnAdornmentClick="ButtonShowPasswordClick" AdornmentIcon="@PasswordInputIcon" AdornmentAriaLabel="Show Password" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="SaveConnectionAction">Save Connection</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public QueueCumberConnection _connection { get; set; }
+
+    MudForm form;
+    bool createMode;
+    bool isValid;
+    string[] errors = { };
+
+
+
+    bool isShow;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    InputType PasswordInput = InputType.Password;
+
+    FluentValueValidator<int> portValidator = new FluentValueValidator<int>(x => x.GreaterThanOrEqualTo(1).LessThanOrEqualTo(65535).WithName("Port Number"));
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_connection is null)
+
+        {
+            createMode = true;
+            _connection = new QueueCumberConnection();
+            _connection.Port = 5672;
+            _connection.AuthType = AuthType.Basic;
+            _connection.Driver = Drivers.RabbitMQ;
+        }
+    }
+
+    void ButtonShowPasswordClick()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void SaveConnectionAction()
+    {
+        //In a real world scenario this bool would probably be a service to delete the item from api/database
+        //Snackbar.Add("Server Deleted", Severity.Success);
+        //MudDialog.Close(DialogResult.Ok(Server.Id));
+        form.Validate();
+        if (form.IsValid)
+        {
+
+            if (_connection.Name is null) { _connection.Name = _connection.Hostname; }
+
+            try
+            {
+                if (createMode)
+                {
+                    ConnectionRepository.Create(_connection);
+                    MudDialog.Close();
+                }
+                else
+                {
+
+                    ConnectionRepository.Update(_connection);
+                    MudDialog.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+
+                throw new Exception($"Cannot Save Connection '{_connection.Name}'", ex);
+            }
+
+        }
+        else
+
+        {
+
+            foreach (var error in form.Errors)
+            {
+
+                Snackbar.Add(error, MudBlazor.Severity.Error);
+
+            }
+
+        }
+    }
+
+
+
+
+}
