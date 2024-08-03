@@ -7,7 +7,7 @@
 
 
 
-<MudAutocomplete T="string" CoerceText="true" CoerceValue="true" Label="Queues" @bind-Value="_queueName" SearchFunc="@SearchQueue" Variant="Variant.Outlined" ProgressIndicatorColor="Color.Default" >
+<MudAutocomplete T="string" CoerceText="true" CoerceValue="true" Label="Queues" Value="_queueName" ValueChanged="@queueChanged" SearchFunc="@SearchQueue" Variant="Variant.Outlined" ProgressIndicatorColor="Color.Default" AdornmentColor="_canCreateQueue ? Color.Primary : Color.Transparent" OnAdornmentClick="()=>{if(_canCreateQueue) CreateQueue();}" AdornmentIcon="@Icons.Material.Filled.Queue">
     <ProgressIndicatorInPopoverTemplate>
         <MudList T="string" ReadOnly>
             <MudListItem>
@@ -15,8 +15,8 @@
             </MudListItem>
         </MudList>
     </ProgressIndicatorInPopoverTemplate>
+
 </MudAutocomplete>
-<MudButton Disabled="_queueExists" Color="Color.Primary" OnClick="CreateQueue">Create</MudButton>
 
 
 @code {
@@ -26,13 +26,13 @@
     public ConnectionIntance _instance { get; set; }
 
 
-
+    ICollection<QueueCumberQueue> _queues { get; set; }
 
 
 
     private string _queueName { get; set; }
 
-    private bool _queueExists { get; set; }
+    private bool _canCreateQueue { get; set; }
 
     public async Task CreateQueue()
     {
@@ -45,17 +45,30 @@
 
     private async Task<IEnumerable<string>> SearchQueue(string value, CancellationToken token)
     {
-        ICollection<QueueCumberQueue> queues = await _instance.Driver.getAllQueues();
+        _queues = await _instance.Driver.getAllQueues();
 
         // if text is null or empty, show complete list
         if (string.IsNullOrEmpty(value))
-            return queues.Select(x=>x.Name);
-        var  ret= queues.Where(x => x.Name.Contains(value, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.Name);
+            return _queues.Select(x => x.Name);
+        var ret = _queues.Where(x => x.Name.Contains(value, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.Name);
 
-        _queueExists = ret.Count() > 0;
+
+        return ret;
+    }
+
+
+    private async Task queueChanged(string q)
+    {
+        _queueName = q;
+
+        if (_queueName is not null)
+        {
+            _canCreateQueue = !_queues.Any(x => x.Name.Contains(_queueName, StringComparison.InvariantCultureIgnoreCase));
+
+            
+        }
 
         StateHasChanged();
-        return ret;
     }
 
 }
