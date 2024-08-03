@@ -69,6 +69,8 @@ namespace QueueCumber.Core
             ConnectionInstances = ConnectionInstances.Where(x=>x.Connection.Id!=toDisconnect.Connection.Id).ToList();
 
         }
+
+        public List<ConnectionIntance> Instances() => ConnectionInstances;
     }
 
 

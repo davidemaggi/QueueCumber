@@ -1,5 +1,61 @@
-﻿<h3>ConnectionView</h3>
+﻿@using EasyNetQ.Management.Client.Model
+@using QueueCumber.Core
+@using QueueCumber.Models.Queues
+<h3>@_instance.Connection.Name</h3>
+
+
+
+
+
+<MudAutocomplete T="string" CoerceText="true" CoerceValue="true" Label="Queues" @bind-Value="_queueName" SearchFunc="@SearchQueue" Variant="Variant.Outlined" ProgressIndicatorColor="Color.Default" >
+    <ProgressIndicatorInPopoverTemplate>
+        <MudList T="string" ReadOnly>
+            <MudListItem>
+                Loading...
+            </MudListItem>
+        </MudList>
+    </ProgressIndicatorInPopoverTemplate>
+</MudAutocomplete>
+<MudButton Disabled="_queueExists" Color="Color.Primary" OnClick="CreateQueue">Create</MudButton>
+
 
 @code {
+
+
+    [Parameter]
+    public ConnectionIntance _instance { get; set; }
+
+
+
+
+
+
+    private string _queueName { get; set; }
+
+    private bool _queueExists { get; set; }
+
+    public async Task CreateQueue()
+    {
+
+
+        _instance.Driver.createQueue(_queueName);
+
+    }
+
+
+    private async Task<IEnumerable<string>> SearchQueue(string value, CancellationToken token)
+    {
+        ICollection<QueueCumberQueue> queues = await _instance.Driver.getAllQueues();
+
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return queues.Select(x=>x.Name);
+        var  ret= queues.Where(x => x.Name.Contains(value, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.Name);
+
+        _queueExists = ret.Count() > 0;
+
+        StateHasChanged();
+        return ret;
+    }
 
 }

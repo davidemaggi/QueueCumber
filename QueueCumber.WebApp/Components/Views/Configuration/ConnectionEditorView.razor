@@ -20,6 +20,13 @@
             <MudTextField @bind-Value="_connection.Hostname" Label="HostName" Placeholder="localhost" Required="true" RequiredError="Hostname is required!" />
             <MudNumericField @bind-Value="_connection.Port" Label="Port" Required="true" RequiredError="Port is required!" Validation="@portValidator.Validation" Immediate="true" />
 
+            <MudRadioGroup @bind-Value="_connection.Driver">
+                <MudRadio Value="Drivers.RabbitMQ" Color="Color.Error" Size="Size.Small">RabbitMQ</MudRadio>
+                <MudRadio Value="Drivers.ApacheKafka" Color="Color.Primary" Size="Size.Small">Apache kafka</MudRadio>
+
+            </MudRadioGroup>
+            @if (_connection.Driver == Drivers.RabbitMQ)
+            {
             <MudRadioGroup @bind-Value="_connection.AuthType">
                 <MudRadio Value="AuthType.NoAuth" Color="Color.Error" Size="Size.Small">No Auth</MudRadio>
                 <MudRadio Value="AuthType.Basic" Color="Color.Primary" Size="Size.Small">Basic</MudRadio>
@@ -29,6 +36,10 @@
 
             <MudTextField @bind-Value="_connection.Username" Label="Username" Placeholder="guest" />
             <MudTextField @bind-Value="_connection.Password" InputType="@PasswordInput" Placeholder="guest" Label="Password" Adornment="Adornment.End" OnAdornmentClick="ButtonShowPasswordClick" AdornmentIcon="@PasswordInputIcon" AdornmentAriaLabel="Show Password" />
+        
+            <MudTextField @bind-Value="_connection.ApiUrl" Label="ApiUrl" />
+            }
+        
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -68,6 +79,7 @@
             createMode = true;
             _connection = new QueueCumberConnection();
             _connection.Port = 5672;
+            _connection.ApiUrl = "http://localhost:15672";
             _connection.AuthType = AuthType.Basic;
             _connection.Driver = Drivers.RabbitMQ;
         }

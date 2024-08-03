@@ -73,4 +73,8 @@
       <ProjectReference Include="..\QueueCumber.Tools\QueueCumber.Tools.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Components\Views\Connection\Queue\" />
+    </ItemGroup>
+
 </Project>

@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EasyNetQ.Management.Client" Version="3.0.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\QueueCumber.Drivers\QueueCumber.Drivers.csproj" />
   </ItemGroup>
 

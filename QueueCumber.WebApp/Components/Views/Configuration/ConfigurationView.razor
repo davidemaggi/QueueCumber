@@ -1,13 +1,11 @@
-﻿@using QueueCumber.Data.Repositories
+﻿@using QueueCumber.Core
+@using QueueCumber.Data.Repositories
 @using QueueCumber.Models.Entities
 @using QueueCumber.WebApp.Components.Modals
 @using QueueCumber.WebApp.Components.Views
 
 
 @inject IDialogService DialogService
-
-<h1>Connection</h1>
-
 
 
 There are currently @Connections.Count Connections
@@ -27,6 +25,8 @@ There are currently @Connections.Count Connections
         <MudTd DataLabel="Hstname">@context.Hostname</MudTd>
         <MudTd DataLabel="Port">@context.Port</MudTd>
         <MudTd DataLabel="Actions">
+            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Link" Size="Size.Small" Color="Color.Info" OnClick="async (e)=>{await ConnectTo(context);}">Connect</MudButton>
+
             <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Info" OnClick="async (e)=>{await ShowAddConnection(context);}">Edit</MudButton>
 
             <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="async (e)=>{await ShowDeleteConnection(context);}">Delete</MudButton>
@@ -50,6 +50,12 @@ There are currently @Connections.Count Connections
 
     [Inject]
     private IConnectionRepository _connectionRepository { get; set; }
+
+    [Inject]
+    private IQueueCumberService _queueCumberService { get; set; }
+
+    [Parameter]
+    public EventCallback onConnected { get; set; }
 
     private bool _loadingTable;
 
@@ -126,5 +132,23 @@ There are currently @Connections.Count Connections
 
     }
 
+
+
+    private async Task ConnectTo(QueueCumberConnection connection)
+
+    {
+        _loadingTable = true;
+        _queueCumberService.Connect(connection);
+
+        _loadingTable = false;
+        await OnConnected();
+
+
+    }
+
+    protected async Task OnConnected()
+    {
+        await onConnected.InvokeAsync();
+    }
 
 }

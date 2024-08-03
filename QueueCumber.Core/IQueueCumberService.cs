@@ -11,6 +11,7 @@ namespace QueueCumber.Core
 {
     public interface IQueueCumberService
     {
+        public List<ConnectionIntance> Instances();
 
         public void Connect(QueueCumberConnection connection);
         public ConnectionIntance? GetConnection(QueueCumberConnection connection);
