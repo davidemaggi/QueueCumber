@@ -4,20 +4,18 @@
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ first. Kafka next. Bring your own broker.
 
-> **Early development.** The architecture and MVP plan are approved. A local desktop scaffold is being implemented; no downloadable release exists yet.
+> **Early development.** The architecture and MVP plan are approved. The RabbitMQ inspection workflow runs locally; no downloadable release exists yet.
 
-## What's on the menu?
+## Working in the alpha
 
-- Save and test connections to self-hosted and cloud-hosted brokers.
-- Find queues, streams and routing bindings without hunting through server consoles.
-- Watch new messages, inspect headers and pretty-print JSON while keeping the original payload available.
-- Keep recent captures handy in memory and older data on disk, with configurable limits for both.
-- Export captures as JSON Lines, a folder or a ZIP.
-- Keep subscriptions running in the tray while the main window is closed.
-- Move configuration between computers with password-protected exports.
-- Pick a light or dark theme and a localized interface. English is the default.
+- Save encrypted RabbitMQ connection profiles, or use session-only storage when OS protection is unavailable.
+- Test AMQP and management independently; browse and search queues, streams and exchanges.
+- Mirror supported queue bindings into a private observation queue and inspect incoming messages.
+- Read structured headers, raw text and formatted JSON without executing payload content.
+- Configure global and session capture budgets, disk retention and optional admission-rate limits.
+- Switch between English/Italian and light/dark/system themes.
 
-These are planned capabilities, not shipped features. See the [roadmap](ROADMAP.md) for the proposed sequence.
+The [roadmap](ROADMAP.md) tracks the rest: stream consumption, tray mode, dumps, password-protected configuration transfer, Kafka and packaged releases are future milestones.
 
 ## Inspect the traffic. Leave application queues alone.
 
@@ -27,9 +25,9 @@ This needs permission to create temporary queues and bindings. Version 1.0 will 
 
 ## Local by design
 
-The proposed app connects from your computer; it needs no QueueCumber server. Private connection records will be encrypted with OS-backed key protection. Captured sensitive data will have bounded encrypted local storage. Secret-bearing configuration exports will require a password.
+The proposed app connects from your computer; it needs no QueueCumber server. Private connection records use authenticated encryption with an OS-protected key. Captured sensitive content is encrypted in a local SQLite database. If secure OS storage is unavailable, profiles remain in memory and captures use a temporary encrypted session directory. Password-protected configuration exports are planned for 0.2.
 
-Security behavior still needs implementation and testing. Exported message dumps can contain private data; their contents and protection must be clear before saving.
+This is early software, not a security certification. The desktop tests deliberately use session-only storage; real key-store behavior still needs checks on every target OS. Message dumps are not implemented yet.
 
 ## Follow along
 
@@ -53,3 +51,35 @@ For now, the most useful contributions are proposal feedback, broker edge cases 
 ## Local development
 
 Use Node.js 22.18+ and the pinned pnpm version. Run `pnpm install`, then `pnpm dev`. Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
+
+## RabbitMQ permissions and test broker
+
+Supply an AMQP URL and a separate management base URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication currently uses the username/password from the AMQP URL. Cloud-specific IAM and client-certificate authentication are outside this alpha's tested matrix.
+
+The account needs management API visibility for the vhost and relevant queues/exchanges, configure/read permission for `queuecumber.*` observation queues, and binding permissions for the source exchanges. RabbitMQ binding operations require write permission on the destination queue and read permission on the source exchange. Validate these regex permissions with your administrator; monitoring-only accounts cannot create observation resources.
+
+For disposable integration tests:
+
+```sh
+docker compose -p queuecumber-test -f compose.test.yml up -d --wait
+pnpm test:integration
+pnpm build
+pnpm test:e2e
+docker compose -p queuecumber-test -f compose.test.yml down
+```
+
+This fixture uses synthetic credentials and binds only loopback ports 25672/25673. The TLS fixtures under `tests/fixtures/tls/` are public test-only keys/certificates; never deploy or trust them outside tests.
+
+## Current limits
+
+Capture cache defaults to 64 MiB, disk quota to 2 GiB, retention to seven days and retained payloads to 16 MiB. The UI preview accepts 256 KiB by default, with a separate 64 KiB per-detail IPC ceiling. Optional message-rate admission drops are counted. Budgets stay finite; a session can narrow the global settings. Four concurrent captures and 100 session entries per application run are the current safety limits.
+
+The RAM setting is a cache budget, not a cap on Electron's total RSS. Broker clients may allocate oversized deliveries before the app can omit them. Disk storage reserves headroom for SQLite pages/journaling and may evict before reaching the displayed quota. Saving limits stops active captures and asks for confirmation when effects require it.
+
+Capture sessions are currently browsable during the current app run. In secure mode, encrypted capture records survive restart, but the UI does not yet restore their session catalog. Closing the window stops the alpha; tray mode is a later milestone. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
+
+## Verification status
+
+Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 in Docker. Unit/integration tests exercise encryption, tampering, raw-byte recovery, mixed-size saturation, scoped budgets, routing types, TLS validation, permission denial and reconnects. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Installer signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
+
+Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt). Other dependencies keep their own licenses.

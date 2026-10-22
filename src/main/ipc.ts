@@ -1,7 +1,73 @@
 import { ipcMain, type BrowserWindow } from 'electron'
-export function registerStatus(window: BrowserWindow, ready: () => Promise<void>) {
- ipcMain.handle('status', async event => {
-  if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) throw new Error('Untrusted sender')
-  try { await ready(); return {service: 'ready'} } catch { return {service: 'failed'} }
- })
+import { z } from 'zod'
+import { connectionSchema } from '../shared/connection'
+import { settingsSchema } from '../shared/limits'
+const id = z.string().min(1).max(100),
+  page = z.number().int().min(1).max(100000)
+const resource = z
+  .object({
+    name: z.string().max(255),
+    vhost: z.string().max(255),
+    kind: z.enum(['queue', 'exchange', 'stream']),
+    type: z.string().max(64).optional(),
+    messages: z.number().optional(),
+  })
+  .strict()
+const limits = z
+  .object({
+    cacheBytes: z.number().optional(),
+    diskBytes: z.number().optional(),
+    retentionMs: z.number().optional(),
+    maxPayloadBytes: z.number().optional(),
+    previewBytes: z.number().optional(),
+    admittedMessagesPerSecond: z.number().nullable().optional(),
+  })
+  .strict()
+export const operationSchemas = {
+  getStatus: z.tuple([]),
+  getState: z.tuple([]),
+  saveConnection: z.tuple([connectionSchema]),
+  testConnection: z.tuple([id]),
+  listResources: z.tuple([id, z.string().max(255), page]),
+  getBindings: z.tuple([id, resource]),
+  startCapture: z.tuple([
+    id,
+    resource,
+    z.object({ allowPartial: z.boolean(), limits: limits.optional() }).strict(),
+  ]),
+  stopCapture: z.tuple([id]),
+  readMessages: z.tuple([id, z.number().int().positive().nullable()]),
+  readMessage: z.tuple([z.number().int().positive()]),
+  previewSettings: z.tuple([settingsSchema]),
+  saveSettings: z.tuple([settingsSchema, z.boolean()]),
+}
+export function registerOperations(
+  window: BrowserWindow,
+  handlers: Record<string, (...args: any[]) => unknown>,
+) {
+  let inFlight = 0
+  for (const [name, schema] of Object.entries(operationSchemas)) {
+    ipcMain.removeHandler('qc:' + name)
+    ipcMain.handle('qc:' + name, async (event, ...args) => {
+      if (
+        event.sender !== window.webContents ||
+        event.senderFrame !== window.webContents.mainFrame
+      )
+        throw Error('Untrusted sender')
+      if (inFlight >= 16) throw Error('Too many pending operations')
+      inFlight++
+      try {
+        return await handlers[name](...schema.parse(args))
+      } catch (error) {
+        if ((error as Error).message === 'CONFIRM_SETTINGS_EFFECTS')
+          throw Error('CONFIRM_SETTINGS_EFFECTS', { cause: error })
+        throw Error(
+          'Operation failed. Check connection, permissions, storage and input.',
+          { cause: error },
+        )
+      } finally {
+        inFlight--
+      }
+    })
+  }
 }

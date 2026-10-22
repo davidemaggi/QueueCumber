@@ -1,2 +1,22 @@
-import {contextBridge, ipcRenderer} from 'electron'
-contextBridge.exposeInMainWorld('queuecumber', { getStatus: () => ipcRenderer.invoke('status') })
+import { contextBridge, ipcRenderer } from 'electron'
+import type { DesktopApi } from '../shared/contracts'
+const api: DesktopApi = {
+  getStatus: () => ipcRenderer.invoke('qc:getStatus'),
+  getState: () => ipcRenderer.invoke('qc:getState'),
+  saveConnection: (input) => ipcRenderer.invoke('qc:saveConnection', input),
+  testConnection: (id) => ipcRenderer.invoke('qc:testConnection', id),
+  listResources: (id, query, page) =>
+    ipcRenderer.invoke('qc:listResources', id, query, page),
+  getBindings: (id, resource) =>
+    ipcRenderer.invoke('qc:getBindings', id, resource),
+  startCapture: (id, resource, options) =>
+    ipcRenderer.invoke('qc:startCapture', id, resource, options),
+  stopCapture: (id) => ipcRenderer.invoke('qc:stopCapture', id),
+  readMessages: (id, cursor) =>
+    ipcRenderer.invoke('qc:readMessages', id, cursor),
+  readMessage: (id) => ipcRenderer.invoke('qc:readMessage', id),
+  previewSettings: (input) => ipcRenderer.invoke('qc:previewSettings', input),
+  saveSettings: (input, confirmed) =>
+    ipcRenderer.invoke('qc:saveSettings', input, confirmed),
+}
+contextBridge.exposeInMainWorld('queuecumber', api)

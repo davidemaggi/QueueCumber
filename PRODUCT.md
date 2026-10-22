@@ -55,7 +55,7 @@ The name is **QueueCumber**. The voice is practical, friendly and lightly playfu
 
 ## Evidence on Hand
 
-The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements and confirmed temporary-queue capture. No running app, release, screenshot, benchmark, customer proof or finished logo exists yet. Use synthetic messages in demonstrations and label them accordingly.
+The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements and confirmed temporary-queue capture. A runnable RabbitMQ alpha and synthetic test screenshots now exist. No release, published benchmark, customer proof or finished logo exists yet. Use synthetic messages in demonstrations and label them accordingly.
 
 ## Product Principles
 

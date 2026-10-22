@@ -1,26 +1,28 @@
 # Roadmap
 
-A proposed sequence, not a delivery calendar. No application milestone is complete yet.
+A proposed sequence, not a delivery calendar. The RabbitMQ alpha works locally; cross-platform release validation is still pending.
 
-## Foundation — in progress
+## Foundation — complete
 
 - [x] Create and select `development`.
 - [x] Replace generic ignore rules with project-focused rules.
 - [x] Capture product requirements and AI conventions.
 - [x] Draft README and architecture proposal.
 - [x] Obtain architecture approval and confirm configurable resource budgets.
-- [ ] Review the detailed MVP implementation plan before development.
+- [x] Review the detailed MVP implementation plan before development.
 
 ## 0.1.0 — RabbitMQ MVP
 
-- [ ] Electron/React shell, English plus an agreed second locale, light/dark/system theme.
-- [ ] Secure saved connections, protocol/management endpoint tests and TLS validation.
-- [ ] Discover/search queues, exchanges, streams and bindings through supported management APIs.
-- [ ] Capture supported routes with owned temporary queues and visible coverage limitations.
-- [ ] Inspect headers, raw payloads and size-limited formatted JSON.
-- [ ] Bounded RAM and encrypted disk capture from the first working subscription, with validated configurable resource settings.
-- [ ] Session cancellation, transient-failure retries and visible capture gaps.
-- [ ] Integration tests proving original queues are never consumed or modified.
+- [x] Electron/React shell, English plus an agreed second locale, light/dark/system theme.
+- [x] Secure saved connections, protocol/management endpoint tests and TLS validation.
+- [x] Discover/search queues, exchanges, streams and bindings through supported management APIs.
+- [x] Capture supported routes with owned temporary queues and visible coverage limitations.
+- [x] Inspect headers, raw payloads and size-limited formatted JSON.
+- [x] Bounded RAM and encrypted disk capture from the first working subscription, with validated configurable resource settings.
+- [x] Session cancellation, transient-failure retries and visible capture gaps.
+- [x] Integration tests proving original queues are never consumed or modified.
+
+Pending: real OS-keystore verification, cloud authentication coverage and Windows/Linux execution. Capture session catalog restoration after restart is also still open.
 
 Exit gate: a usable RabbitMQ vertical slice, measured resource bounds and security checks on all three target operating systems. Publish a tested broker/authentication matrix.
 
