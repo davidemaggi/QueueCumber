@@ -13,7 +13,7 @@ export class Vault {
   const keyPath=join(this.dir,'vault.key')
   try {this.key=Buffer.from(await this.protector.unprotect(await readFile(keyPath)),'base64')}
   catch(error){
-   if((error as NodeJS.ErrnoException).code!=='ENOENT') throw Error('Secure storage unavailable')
+   if((error as NodeJS.ErrnoException).code!=='ENOENT') throw Error('Secure storage unavailable',{cause:error})
    this.key=randomBytes(32);await writeFile(keyPath,await this.protector.protect(this.key.toString('base64')),{mode:0o600,flag:'wx'})
   }
   if(this.key.length!==32) throw Error('Invalid vault key')
@@ -22,7 +22,7 @@ export class Vault {
    const records=JSON.parse(open(this.key,await readFile(join(this.dir,'profiles.bin'))).toString())
    if(!Array.isArray(records)||records.length>100) throw Error('Invalid vault')
    this.profiles=records.map(p=>validateConnection(p) as ConnectionProfile)
-  } catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT') throw Error('Cannot unlock connection records')}
+  } catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT') throw Error('Cannot unlock connection records',{cause:error})}
  }
  getKey():Buffer{if(!this.key)throw Error('Vault locked');return Buffer.from(this.key)}
  list():ConnectionSummary[]{return this.profiles.map(({id,name})=>({id,name,provider:'rabbitmq'}))}
