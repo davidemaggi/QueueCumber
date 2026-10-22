@@ -62,7 +62,19 @@ For now, the most useful contributions are broker edge cases and reproducible us
 
 ## Local development
 
-Use Node.js 22.18+ and the pinned pnpm version. Run `pnpm install`, then `pnpm dev`. Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
+Use Node.js 22.18+ and the pinned **pnpm 12.15.0**. If using Corepack with Node 22.18, Corepack 0.34.6 supports this pnpm entry point (newer Corepack releases can require newer Node versions):
+
+```sh
+npm install --global corepack@0.34.6
+corepack enable pnpm
+corepack install
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+If Corepack reports a missing `bin/pnpm.cjs`, update Corepack and refresh its downloaded package-manager cache with `corepack cache clean`, then `corepack install`; the old cache can retain the obsolete entry point. Cache cleanup requires package managers to be downloaded again. Keep `ELECTRON_RUN_AS_NODE` unset when launching the desktop app. On macOS/Linux, use `unset ELECTRON_RUN_AS_NODE` if your IDE exports it; on PowerShell, use `Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue`.
+
+Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
 Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Actual hosted builds and clean-machine checks remain pending. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
 
