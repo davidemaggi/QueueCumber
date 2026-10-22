@@ -1,0 +1,14 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.2-management-alpine
+    ports:
+      - "127.0.0.1:25672:5672"
+      - "127.0.0.1:25673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: cucumber
+      RABBITMQ_DEFAULT_PASS: local-test-only
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
