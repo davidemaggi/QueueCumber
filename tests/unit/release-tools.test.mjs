@@ -11,7 +11,7 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import process from 'node:process'
 
-it('validates a real tag commit/version and refuses tags outside development', () => {
+it('accepts only a merged main PR and its immutable versioned commit', () => {
   const dir = mkdtempSync(join(tmpdir(), 'qc-release-'))
   const git = (...args) =>
     execFileSync('git', args, {
@@ -19,16 +19,26 @@ it('validates a real tag commit/version and refuses tags outside development', (
       stdio: 'pipe',
       encoding: 'utf8',
     }).trim()
-  const run = (tag) =>
-    spawnSync(process.execPath, [resolve('scripts/validate-release.mjs')], {
-      cwd: dir,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        RELEASE_TAG: tag,
-        GITHUB_OUTPUT: join(dir, 'output'),
+  const eventPath = join(dir, 'event.json')
+  const run = (event, sha) => {
+    writeFileSync(eventPath, JSON.stringify(event))
+    return spawnSync(
+      process.execPath,
+      [resolve('scripts/validate-release.mjs')],
+      {
+        cwd: dir,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GITHUB_EVENT_NAME: 'pull_request_target',
+          GITHUB_EVENT_PATH: eventPath,
+          GITHUB_REPOSITORY: 'synthetic/queuecumber',
+          RELEASE_COMMIT: sha,
+          GITHUB_OUTPUT: join(dir, 'output'),
+        },
       },
-    })
+    )
+  }
   try {
     git('init')
     git('config', 'commit.gpgsign', 'false')
@@ -40,23 +50,79 @@ it('validates a real tag commit/version and refuses tags outside development', (
       JSON.stringify({ version: '1.2.3+build-alpha' }),
     )
     git('add', 'package.json')
-    git('commit', '-m', 'synthetic')
-    git('tag', 'v1.2.3+build-alpha')
-    git('update-ref', 'refs/remotes/origin/development', 'HEAD')
-    expect(run('v1.2.3+build-alpha').status).toBe(0)
+    git('commit', '-m', 'synthetic main merge')
+    const sha = git('rev-parse', 'HEAD')
+    git('update-ref', 'refs/remotes/origin/main', sha)
+    const event = {
+      action: 'closed',
+      pull_request: {
+        merged: true,
+        merge_commit_sha: sha,
+        base: { ref: 'main', repo: { full_name: 'synthetic/queuecumber' } },
+      },
+    }
+    expect(run(event, sha).status).toBe(0)
+    expect(readFileSync(join(dir, 'output'), 'utf8')).toContain(
+      'tag=v1.2.3+build-alpha',
+    )
     expect(readFileSync(join(dir, 'output'), 'utf8')).toContain(
       'prerelease=false',
     )
-    git('tag', 'v1.2.4')
-    expect(run('v1.2.4').status).not.toBe(0)
+    expect(
+      run(
+        { ...event, pull_request: { ...event.pull_request, merged: false } },
+        sha,
+      ).status,
+    ).not.toBe(0)
+    expect(
+      run(
+        {
+          ...event,
+          pull_request: {
+            ...event.pull_request,
+            base: { ...event.pull_request.base, ref: 'development' },
+          },
+        },
+        sha,
+      ).status,
+    ).not.toBe(0)
+    expect(run({ ...event, action: 'opened' }, sha).status).not.toBe(0)
     writeFileSync(
       join(dir, 'package.json'),
       JSON.stringify({ version: '1.2.4-alpha.1' }),
     )
     git('add', 'package.json')
-    git('commit', '-m', 'outside development')
-    git('tag', 'v1.2.4-alpha.1')
-    expect(run('v1.2.4-alpha.1').status).not.toBe(0)
+    git('commit', '-m', 'outside main')
+    const outside = git('rev-parse', 'HEAD')
+    expect(
+      run(
+        {
+          ...event,
+          pull_request: { ...event.pull_request, merge_commit_sha: outside },
+        },
+        outside,
+      ).status,
+    ).not.toBe(0)
+    git('update-ref', 'refs/remotes/origin/main', outside)
+    expect(
+      run(
+        {
+          ...event,
+          pull_request: { ...event.pull_request, merge_commit_sha: outside },
+        },
+        sha,
+      ).status,
+    ).not.toBe(0)
+    git('tag', 'v1.2.4-alpha.1', sha)
+    expect(
+      run(
+        {
+          ...event,
+          pull_request: { ...event.pull_request, merge_commit_sha: outside },
+        },
+        outside,
+      ).status,
+    ).not.toBe(0)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

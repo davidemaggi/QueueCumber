@@ -20,6 +20,8 @@ const api: DesktopApi = {
   testConnection: (id) => ipcRenderer.invoke('qc:testConnection', id),
   listResources: (id, query, page) =>
     ipcRenderer.invoke('qc:listResources', id, query, page),
+  getPartitions: (id, resource) =>
+    ipcRenderer.invoke('qc:getPartitions', id, resource),
   getBindings: (id, resource) =>
     ipcRenderer.invoke('qc:getBindings', id, resource),
   startCapture: (id, resource, options) =>

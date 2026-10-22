@@ -1,6 +1,6 @@
 {
   "name": "queuecumber",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A local desktop inspector for messaging systems.",
   "private": true,
   "license": "MIT",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.3.0",
+    "@platformatic/kafka": "2.14.0",
     "amqplib": "^2.2.0",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",

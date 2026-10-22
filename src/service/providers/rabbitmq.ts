@@ -1,7 +1,8 @@
+import { PROVIDER_CAPABILITIES } from '../../shared/providers'
 import amqp from 'amqplib'
 import http from 'node:http'
 import https from 'node:https'
-import type { ConnectionProfile } from '../../shared/connection'
+import type { RabbitConnectionProfile } from '../../shared/connection'
 import type {
   Provider,
   ResourcePage,
@@ -15,8 +16,9 @@ export function failureCode(error: unknown): string {
     : 'CONNECTION_FAILED'
 }
 export class RabbitMQ implements Provider {
+  readonly capabilities = PROVIDER_CAPABILITIES.rabbitmq
   readonly vhost: string
-  constructor(readonly profile: ConnectionProfile) {
+  constructor(readonly profile: RabbitConnectionProfile) {
     const u = new URL(profile.protocolUrl)
     this.vhost = u.pathname
       ? decodeURIComponent(u.pathname.slice(1)) || '/'

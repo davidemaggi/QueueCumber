@@ -1,3 +1,4 @@
+import { kafkaSelectionSchema } from '../shared/kafka'
 import { exportFormatSchema } from '../shared/export'
 import { passwordSchema, importModeSchema } from '../shared/transfer'
 import { desktopPreferencesSchema } from '../shared/desktop'
@@ -11,9 +12,10 @@ const resource = z
   .object({
     name: z.string().max(255),
     vhost: z.string().max(255),
-    kind: z.enum(['queue', 'exchange', 'stream']),
+    kind: z.enum(['queue', 'exchange', 'stream', 'topic']),
     type: z.string().max(64).optional(),
     messages: z.number().optional(),
+    partitions: z.number().int().min(0).max(10000).optional(),
   })
   .strict()
 const limits = z
@@ -41,12 +43,14 @@ export const operationSchemas = {
   testConnection: z.tuple([id]),
   listResources: z.tuple([id, z.string().max(255), page]),
   getBindings: z.tuple([id, resource]),
+  getPartitions: z.tuple([id, resource]),
   startCapture: z.tuple([
     id,
     resource,
     z
       .object({
         allowPartial: z.boolean(),
+        kafkaPartitions: kafkaSelectionSchema.optional(),
         limits: limits.optional(),
         streamStart: z
           .union([

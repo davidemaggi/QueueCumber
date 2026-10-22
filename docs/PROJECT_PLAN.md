@@ -1,6 +1,6 @@
 # QueueCumber project proposal
 
-Status: **architecture and MVP implementation plan approved on 2026-10-22; local MVP implemented and independent review corrections verified; release gates pending**.
+Status: **architecture and MVP implementation plan approved on 2026-10-22; local RabbitMQ/Kafka implementation through 0.3.0; prior independent review corrections verified; release gates pending**.
 
 Date: 2026-10-22. Requirements live in [PRODUCT.md](../PRODUCT.md). The maintainer confirmed RabbitMQ temporary-queue capture. The architecture and staged scope below were approved. Resource settings are configurable: no representative user traffic estimate is required.
 
@@ -126,7 +126,7 @@ Make close-to-tray explicit and configurable. Tray menus show session state and 
 
 Test real disposable brokers with a baseline application consumer. Cover overlapping routing patterns, header arguments, partial setup failure, binding changes, restart and supported/unsupported exchanges. Use synthetic data only. Add Kafka fixtures and Windows/macOS/Linux CI as their scope arrives. Test behavior at boundaries rather than implementation details.
 
-Packaging decision (confirmed 2026-10-22): build every distribution artifact through GitHub Actions and distribute through GitHub Releases first. Use Windows installer/ZIP, macOS DMG/ZIP and Linux AppImage/DEB/TAR after target validation. Windows executables and installers use Azure Artifact Signing. Homebrew, WinGet and Chocolatey follow when their configurations are ready. See [release workflow](RELEASING.md). Determine supported CPU architectures from actual builds/tests. Package publication, signing and notarization require maintainer-owned accounts and registry compliance; prepare reviewable artifacts before requesting final publication authorization.
+Packaging decision (confirmed 2026-10-22): build every distribution artifact through GitHub Actions only after a pull request merges into `main`, and distribute through GitHub Releases first. Use Windows installer/ZIP, macOS DMG/ZIP and Linux AppImage/DEB/TAR after target validation. Windows executables and installers use Azure Artifact Signing. Homebrew, WinGet and Chocolatey follow when their configurations are ready. See [release workflow](RELEASING.md). Determine supported CPU architectures from actual builds/tests. Package publication, signing and notarization require maintainer-owned accounts and registry compliance; prepare reviewable artifacts before requesting final publication authorization.
 
 ## Decision record and remaining work
 
@@ -136,7 +136,7 @@ Packaging decision (confirmed 2026-10-22): build every distribution artifact thr
 4. Confirmed: user-configurable resource settings with conservative defaults. No traffic estimate is available or required. Validate defaults with synthetic workloads.
 5. Hosted-service/authentication and OS/CPU compatibility remain test-driven. Begin with ordinary endpoints and TLS credentials; cloud-specific IAM requires explicit support work.
 
-The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp.md) was approved with native execution and its review corrections are implemented. The maintainer subsequently authorized continuous execution of the complete [0.2.0 implementation plan](superpowers/plans/2026-10-22-portable-captures.md). See [validation](VALIDATION.md) for evidence and outstanding platform/release gates, and [data formats](DATA_FORMATS.md) for the implemented transfer/dump contracts.
+The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp.md) was approved with native execution and its review corrections are implemented. The maintainer subsequently authorized continuous execution of the complete [0.2.0 implementation plan](superpowers/plans/2026-10-22-portable-captures.md). The complete [0.3.0 Kafka plan](superpowers/plans/2026-10-22-kafka.md) was also authorized for continuous inline execution, with release packaging restricted to merged main pull requests. See [validation](VALIDATION.md) for evidence and outstanding platform/release gates, and [data formats](DATA_FORMATS.md) for the implemented transfer/dump contracts.
 
 ## Primary references
 

@@ -4,7 +4,11 @@ Every artifact intended for distribution is built in GitHub Actions. Local build
 
 ## Current workflow
 
-`.github/workflows/release.yml` runs manually from `development` or `main`. Supply an existing `v`-prefixed SemVer tag. The tagged commit must be reachable from `development`, and its `package.json` version must match the tag. All jobs build the resolved commit; the draft job checks that the remote tag still points to that commit. Protect release tags against modification.
+`.github/workflows/release.yml` builds distribution artifacts **only after a pull request is merged into `main`**. The `pull_request_target` closed event has explicit merged/base guards; a merely closed PR, an open PR, development push, direct push or tag push cannot start release packaging. This post-merge target context also supports accepted contributions from forks without running an unmerged PR head with signing credentials. The validator checks the event repository, immutable merge SHA, actual checkout and `origin/main` ancestry before installing dependencies or requesting signing access.
+
+All target jobs check out that validated merge SHA. The `v`-prefixed SemVer tag is derived from the merged `package.json`; bump its version before every release merge. An existing tag belonging to another commit fails validation. After all target builds/signing/checks succeed, the draft job creates the corresponding tag/release at the explicit merge SHA; existing releases are never overwritten. Protect `main` and release tags, and require ordinary Checks before merging. Rerunning a failed workflow keeps its original merged commit; no manual dispatch route is provided.
+
+The normal Checks workflow still compiles/tests development and PR code; those are validation builds, not distributable release artifacts. The release workflow never packages an unmerged development commit. Its event definition must be available on the base repository's main/default branch for GitHub to deliver the event. Validate the first actual merge/run before claiming remote release automation works.
 
 | Target | Artifacts | Signing |
 | --- | --- | --- |
@@ -24,9 +28,15 @@ After packaging, Windows verifies valid timestamped signatures on the applicatio
 
 The jobs upload only distributable files as Actions artifacts, retained for seven days. After every build succeeds, the final job downloads artifacts from that run, writes a streamed `SHA256SUMS.txt` manifest and creates a **draft** GitHub Release with generated notes. Prerelease status follows the SemVer prerelease suffix. The workflow neither overwrites an existing release nor publishes a draft, and it performs no package-manager submissions. An existing release makes creation fail; review it instead of replacing its assets automatically.
 
+## Release names
+
+Starting at 1.0, a release with patch zero requires a `releaseName` in `package.json`: a Star Wars character beginning with the major's letter (1 → A, 2 → B, through 26 → Z). **1.0.0 is Ackbar**, including 1.0.0 prerelease candidates. Choose real character names during review; the validator checks the letter and the fixed 1.0 name, not a fictional-universe encyclopedia. Agree the continuation after Z before using a later major.
+
+Patch releases omit `releaseName` entirely. Current 0.x development versions stay unnamed. Examples of title format: `v1.0.0 — Ackbar`, `v1.0.1`. Tags, package versions and artifact filenames continue to use numeric SemVer only. The draft title and application version display include the name where present; signing and update-version comparisons retain the ordinary version.
+
 ## Before publishing
 
-1. Confirm the normal Checks workflow and all release-build jobs pass for the tagged commit.
+1. Confirm the normal Checks workflow and all release-build jobs pass for the merged commit.
 2. Verify downloaded checksums and clean-machine install, startup, upgrade and uninstall behavior. Check app and installed-uninstaller signatures on Windows.
 3. Complete applicable platform signing/notarization and the roadmap release gates. Explicitly describe unsigned early-testing builds.
 4. Review generated release notes and assets, then publish the draft deliberately in GitHub.

@@ -22,7 +22,7 @@ Make messaging systems easier to inspect with saved connections, searchable reso
 
 ## Positioning
 
-A local desktop inspector with a common workflow across brokers and explicit handling of their different semantics. RabbitMQ is the MVP provider; Kafka follows. Additional providers must be possible without rebuilding the UI for each one. These are goals, not claims of implemented or unique functionality.
+A local desktop inspector with a common workflow across brokers and explicit handling of their different semantics. RabbitMQ was the MVP provider; Kafka joins the inspection workflow in the 0.3.0 development milestone. Additional providers must be possible without rebuilding the UI for each one. These are goals, not claims of implemented or unique functionality.
 
 ## Operating Context
 

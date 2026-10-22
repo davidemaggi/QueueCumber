@@ -1,6 +1,6 @@
 # Roadmap
 
-A proposed sequence, not a delivery calendar. The 0.2.0 functionality works locally; cross-platform release validation is still pending. The package version does not mean a release has been published.
+A proposed sequence, not a delivery calendar. The 0.3.0 functionality works locally; cross-platform release validation is still pending. The package version does not mean a release has been published.
 
 ## Foundation — complete
 
@@ -36,21 +36,21 @@ Exit gate: a usable RabbitMQ vertical slice, measured resource bounds and securi
 - [x] Password-encrypted configuration transfer and safe import conflict handling.
 - [x] Retention controls, disk-full behavior, cancelable exports and recovery tests.
 
-Implementation complete locally; the actual Windows/Linux desktop gate remains open. Next implementation milestone: Kafka. Release validation continues through GitHub Actions and clean-machine checks.
+Implementation complete locally; the actual Windows/Linux desktop gate remains open. Kafka is implemented below; next comes 1.0 release hardening. Release validation continues through GitHub Actions and clean-machine checks.
 
 Exit gate: long-session/reconnect tests, wrong-password and tampered-import rejection, tray validation across supported desktop environments.
 
 ## 0.3.0 — Kafka, without pretending it's RabbitMQ
 
-- [ ] Second provider behind the shared capability interface.
-- [ ] Topic/partition discovery and chosen per-partition start positions.
-- [ ] Local inspection offsets; no commits to application consumer groups.
-- [ ] Tested TLS/SASL and hosted-provider support matrix.
-- [ ] Offset-retention gaps, partition changes and reconnect tests.
+- [x] Second provider behind the shared capability interface.
+- [x] Topic/partition discovery and chosen per-partition start positions.
+- [x] Local inspection offsets; no group joins or commits.
+- [x] Tested local TLS/SASL and published [hosted-provider support matrix](docs/KAFKA.md#tested-brokerauthentication-matrix), explicitly separating unverified real accounts.
+- [x] Offset-retention gaps, partition changes, cancellation and reconnect tests.
 
-Exit gate: shared inspection workflows with explicit broker-specific semantics. No blanket promise of every cloud IAM mechanism.
+Implemented locally with explicit broker-specific semantics. Real hosted accounts, multi-broker clusters and Windows/Linux execution remain validation gates; no blanket promise of cloud IAM mechanisms. See [Kafka behavior](docs/KAFKA.md).
 
-## 1.0.0 — A release you can rely on
+## 1.0.0 — Ackbar
 
 - [ ] Complete approved RabbitMQ and Kafka inspection scope.
 - [ ] Keyboard/screen-reader checks, translation and theme review.
@@ -72,10 +72,10 @@ Additional providers and payload decoders follow real requests. Extension points
 
 ## Versioning and maintenance
 
-Follow SemVer 2.0.0. Use `0.x.y` while contracts evolve and prerelease suffixes such as `-alpha.1` where appropriate. Announce breaking pre-1.0 changes. From 1.0, incompatible public-contract changes require a major release, compatible features a minor release and compatible fixes a patch.
+Follow SemVer 2.0.0. From 1.0, major/minor releases (patch zero) also carry a Star Wars character name: major 1 uses A, major 2 B, and so on. **1.0.0 is Ackbar.** Patch releases have no name; the current 0.x development milestones remain numeric. Store the chosen name as `releaseName` in package metadata for the named release, and remove it when bumping a patch. Tags and asset versions stay numeric SemVer; the app and GitHub Release title display the optional character name. Character authenticity is checked during release review; automated validation enforces the initial, patch rule and Ackbar for 1.0. Agree a continuation after Z before a major beyond 26. Use `0.x.y` while contracts evolve and prerelease suffixes such as `-alpha.1` where appropriate. Announce breaking pre-1.0 changes. From 1.0, incompatible public-contract changes require a major release, compatible features a minor release and compatible fixes a patch.
 
 The public contract includes documented configuration schemas, dump formats and supported user-facing behavior. Version schemas independently and document migrations. Never silently discard connection data during upgrades.
 
-All artifacts intended for distribution are built through GitHub Actions. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. Windows signing uses Azure Artifact Signing; provisioning and a real signed build remain pending.
+All artifacts intended for distribution are built through GitHub Actions only after a pull request merges into `main`. Development/PR compilation tests do not package release artifacts. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. Windows signing uses Azure Artifact Signing; provisioning and a real signed build remain pending.
 
 Update status when scope or release expectations change. Mark tasks complete only with implementation and verification evidence.

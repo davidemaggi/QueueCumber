@@ -22,6 +22,7 @@ import { registerOperations } from './ipc'
 import {
   validateConnection,
   type ConnectionProfile,
+  summarizeConnection,
 } from '../shared/connection'
 let window: BrowserWindow | undefined
 if (!app.requestSingleInstanceLock()) app.exit(0)
@@ -268,11 +269,7 @@ app.whenReady().then(async () => {
       ...(await rpc('state')),
       profiles: vault
         ? vault.list()
-        : [...ephemeralProfiles.values()].map(({ id, name }) => ({
-            id,
-            name,
-            provider: 'rabbitmq',
-          })),
+        : [...ephemeralProfiles.values()].map(summarizeConnection),
       storageMode,
       desktop: {
         preferences: desktopPreferences,
@@ -288,11 +285,14 @@ app.whenReady().then(async () => {
       if (ephemeralProfiles.size >= 100 && !ephemeralProfiles.has(id))
         throw Error('Connection limit')
       ephemeralProfiles.set(id, { ...p, id })
-      return { id, name: p.name, provider: 'rabbitmq' }
+      return summarizeConnection({ ...p, id })
     }),
     testConnection: withReady(async (id) => rpc('test', await getProfile(id))),
     listResources: withReady(async (id, query, page) =>
       rpc('resources', await getProfile(id), query, page),
+    ),
+    getPartitions: withReady(async (id, resource) =>
+      rpc('partitions', await getProfile(id), resource),
     ),
     getBindings: withReady(async (id, resource) =>
       rpc('bindings', await getProfile(id), resource),

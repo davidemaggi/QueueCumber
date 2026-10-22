@@ -29,6 +29,7 @@ export type State = {
   stats: { cacheBytes: number; diskBytes: number; evicted: number }
 }
 export type MessageDetail = {
+  kafka?: import('./kafka').KafkaProvenance
   offset?: number
   id: number
   payload: string
@@ -61,6 +62,10 @@ export interface DesktopApi {
     id: string,
   ): Promise<{ protocol: EndpointStatus; management: EndpointStatus }>
   listResources(id: string, query: string, page: number): Promise<ResourcePage>
+  getPartitions(
+    id: string,
+    resource: ResourceRef,
+  ): Promise<import('./kafka').KafkaPartition[]>
   getBindings(id: string, resource: ResourceRef): Promise<Binding[]>
   startCapture(
     id: string,

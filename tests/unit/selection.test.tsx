@@ -214,3 +214,60 @@ it('disables language changes while a background preference save is pending', as
   await waitFor(() => expect(language.disabled).toBe(false))
   expect(state.desktop.preferences.closeToTray).toBe(false)
 })
+
+function kafkaBrowse() {
+  state.profiles[1].provider = 'kafka'
+  const topic = { name: 'topic-a', vhost: '', kind: 'topic' as const }
+  bridge.listResources = async (id) => ({
+    resources: id === 'profile-b' ? [topic] : [resource('queue-a')],
+    page: 1,
+    hasMore: false,
+  })
+  bridge.getPartitions = async () =>
+    [0, 1].map((partition) => ({ partition, first: '0', end: '10', leader: 1 }))
+  return topic
+}
+it('restores the actual partition subset when reopening an active topic', async () => {
+  const topic = kafkaBrowse()
+  state.sessions.push({
+    ...session('kafka-active', 'topic-a'),
+    connectionId: 'profile-b',
+    provider: 'kafka',
+    resource: topic,
+    state: 'capturing',
+    kafkaPositions: [
+      { partition: 1, first: '0', end: '10', leader: 1, start: '4', next: '7' },
+    ],
+  })
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Connection B' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'topic topic-a' }))
+  await waitFor(() =>
+    expect(
+      (
+        screen.getByRole('checkbox', {
+          name: 'Partition 1',
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true),
+  )
+  expect(
+    (screen.getByRole('checkbox', { name: 'Partition 0' }) as HTMLInputElement)
+      .checked,
+  ).toBe(false)
+  expect(
+    (screen.getByLabelText('Kafka offset 1') as HTMLInputElement).value,
+  ).toBe('4')
+})
+it('resets provider-specific filters when switching connections in either direction', async () => {
+  kafkaBrowse()
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Connection B' }))
+  await screen.findByRole('button', { name: 'topic topic-a' })
+  fireEvent.click(screen.getByRole('button', { name: 'Topics' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Connection A' }))
+  await screen.findByRole('button', { name: 'queue queue-a' })
+  fireEvent.click(screen.getByRole('button', { name: 'Queues' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Connection B' }))
+  await screen.findByRole('button', { name: 'topic topic-a' })
+})

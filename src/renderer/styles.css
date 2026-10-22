@@ -975,3 +975,51 @@ pre {
   margin: 0 14px 8px;
   align-self: flex-start;
 }
+
+.partition-table {
+  overflow-x: auto;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-block: 12px;
+}
+.partition-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.partition-table th,
+.partition-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.partition-table td:nth-child(2),
+.partition-table td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.partition-table select {
+  max-width: 230px;
+}
+.partition-start {
+  display: grid;
+  gap: 6px;
+  min-width: 160px;
+}
+.partition-start input {
+  max-width: 230px;
+}
+.kafka-partitions .actions {
+  justify-content: flex-start;
+  align-items: end;
+}
+.kafka-partitions .notice {
+  display: block;
+  white-space: normal;
+  max-width: 220px;
+}
+
+.capture-heading.kafka-heading {
+  max-height: 55%;
+}

@@ -10,10 +10,10 @@ Architecture was approved on 2026-10-22. The MVP implementation plan at `docs/su
 
 - Work on `development`; base isolated feature branches on it when needed. Preserve unrelated changes. Never push, publish or tag a release without authorization.
 - When the maintainer authorizes a whole milestone, execute its full scope continuously, including verification, review and documentation; report the integrated result instead of stopping between blocks.
-- Build every distribution/release artifact through GitHub Actions; publish through GitHub Releases. Local packaging is for development only. For packaging, signing or release work, read [docs/RELEASING.md](docs/RELEASING.md). Windows signing uses Azure Artifact Signing; maintainer account notes belong in ignored `maintainer-local/`.
+- Build every distribution/release artifact through GitHub Actions, only after a pull request merges into `main`; publish through GitHub Releases. Keep ordinary development/PR compilation checks separate from release packaging. Local packaging is for development only. For packaging, signing or release work, read [docs/RELEASING.md](docs/RELEASING.md). Windows signing uses Azure Artifact Signing; maintainer account notes belong in ignored `maintainer-local/`.
 - Keep README instructions accurate for what runs. Update ROADMAP when status/scope changes and PRODUCT when confirmed requirements change.
 - Write documentation, identifiers and comments in English; follow the user's language in conversation. Use a friendly developer voice and restrained humor. Keep errors and security instructions plain.
-- Follow ROADMAP's SemVer/schema policy. Never invent releases, screenshots, benchmarks, install commands or compatibility claims.
+- Follow ROADMAP's SemVer/schema and Star Wars release-name policy (1.0.0 Ackbar; A for major 1, B for major 2; patch releases unnamed). Never invent releases, screenshots, benchmarks, install commands or compatibility claims.
 - Prefer small working vertical slices and focused modules. Put provider-specific behavior behind explicit capabilities rather than scattered UI conditions.
 
 ## Interface work

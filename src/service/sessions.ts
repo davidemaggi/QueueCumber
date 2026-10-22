@@ -1,3 +1,9 @@
+import { KafkaCapture } from './kafka-capture'
+import {
+  kafkaSelectionSchema,
+  type KafkaSelection,
+  type KafkaPosition,
+} from '../shared/kafka'
 import { randomUUID } from 'node:crypto'
 import type { ChannelModel, ConsumeMessage } from 'amqplib'
 import type { ConnectionProfile } from '../shared/connection'
@@ -6,6 +12,9 @@ import { RabbitMQ, failureCode } from './providers/rabbitmq'
 import type { ResourceRef, Binding } from './providers/provider'
 import type { CaptureStorage } from './storage'
 export type SessionSummary = {
+  provider?: 'rabbitmq' | 'kafka'
+  kafkaPositions?: KafkaPosition[]
+  kafkaTopologyChanged?: boolean
   id: string
   connectionId: string
   resource: ResourceRef
@@ -24,6 +33,7 @@ export type SessionSummary = {
   potentialOverflow: boolean
 }
 export type CaptureOptions = {
+  kafkaPartitions?: KafkaSelection
   allowPartial: boolean
   streamStart?: 'first' | 'next' | number
   limits?: Partial<CaptureSettings>
@@ -33,6 +43,7 @@ type Session = {
   profile?: ConnectionProfile
   options: CaptureOptions
   generation: number
+  kafka?: KafkaCapture
   connection?: ChannelModel
   timer?: ReturnType<typeof setTimeout>
   attempt: number
@@ -93,7 +104,13 @@ export class SessionManager {
     resource: ResourceRef,
     options: CaptureOptions,
   ): Promise<SessionSummary> {
-    if (!['queue', 'stream'].includes(resource.kind))
+    const isKafka = profile.provider === 'kafka'
+    if (isKafka) {
+      if (resource.kind !== 'topic' || resource.vhost !== '')
+        throw Error('Choose a Kafka topic')
+      kafkaSelectionSchema.parse(options.kafkaPartitions)
+    }
+    if (!isKafka && !['queue', 'stream'].includes(resource.kind))
       throw Error('Choose a queue or stream')
     if (
       resource.kind === 'stream' &&
@@ -123,6 +140,7 @@ export class SessionManager {
     }
     const s: Session = {
       summary: {
+        provider: profile.provider ?? 'rabbitmq',
         id: randomUUID(),
         connectionId: profile.id,
         resource,
@@ -138,7 +156,7 @@ export class SessionManager {
           resource.kind === 'stream' && typeof options.streamStart === 'number'
             ? 'OFFSET_UNVERIFIED'
             : undefined,
-        potentialOverflow: resource.kind !== 'stream',
+        potentialOverflow: !isKafka && resource.kind !== 'stream',
       },
       profile,
       options,
@@ -153,12 +171,30 @@ export class SessionManager {
     )
     this.sessions.set(s.summary.id, s)
     try {
-      await this.connect(s)
+      if (profile.provider === 'kafka') {
+        s.kafka = new KafkaCapture(
+          profile,
+          s.summary,
+          options.kafkaPartitions!,
+          (record) => {
+            try {
+              this.admit(s, record)
+            } catch {
+              throw Object.assign(Error('Storage failure'), {
+                code: 'STORAGE_OR_LIMIT_FAILURE',
+              })
+            }
+          },
+          () => this.persist(),
+        )
+        await s.kafka.start()
+      } else await this.connect(s)
       return structuredClone({
         ...s.summary,
         retained: this.store.retainedRange?.(s.summary.id),
       })
     } catch (error) {
+      if (s.summary.state === 'stopped') return structuredClone(s.summary)
       s.summary.state = 'failed'
       s.summary.error = failureCode(error)
       throw Error(
@@ -167,9 +203,31 @@ export class SessionManager {
       )
     }
   }
+  private admit(s: Session, record: import('./storage').IncomingRecord) {
+    const current = resolveSessionSettings(
+      this.settings(),
+      s.options.limits ?? {},
+    )
+    if (Date.now() - s.rateStart >= 1000) {
+      s.rateStart = Date.now()
+      s.rateCount = 0
+    }
+    if (
+      current.admittedMessagesPerSecond !== null &&
+      s.rateCount >= current.admittedMessagesPerSecond
+    ) {
+      s.summary.omitted++
+      return
+    }
+    s.rateCount++
+    const result = this.store.append(s.summary.id, record)
+    if (result.omitted) s.summary.omitted++
+    else s.summary.captured++
+  }
   private async connect(s: Session): Promise<void> {
     const generation = ++s.generation
     if (!s.profile) throw Error('Restored sessions require a new capture')
+    if (s.profile.provider === 'kafka') throw Error('Wrong capture driver')
     const broker = new RabbitMQ(s.profile)
     const isStream = s.summary.resource.kind === 'stream'
     const definition = await broker.request(
@@ -298,25 +356,7 @@ export class SessionManager {
               if (!alreadyReported) s.summary.gaps++
             }
           }
-          const current = resolveSessionSettings(
-            this.settings(),
-            s.options.limits ?? {},
-          )
-          if (Date.now() - s.rateStart >= 1000) {
-            s.rateStart = Date.now()
-            s.rateCount = 0
-          }
-          if (
-            current.admittedMessagesPerSecond !== null &&
-            s.rateCount >= current.admittedMessagesPerSecond
-          ) {
-            s.summary.omitted++
-            if (offset !== undefined) s.summary.lastOffset = offset
-            channel.ack(message)
-            return
-          }
-          s.rateCount++
-          const result = this.store.append(s.summary.id, {
+          this.admit(s, {
             payload: message.content,
             headers: {
               ...message.properties,
@@ -327,8 +367,6 @@ export class SessionManager {
             contentType: message.properties.contentType,
             offset,
           })
-          if (result.omitted) s.summary.omitted++
-          else s.summary.captured++
           if (offset !== undefined) s.summary.lastOffset = offset
           channel.ack(message)
         } catch {
@@ -444,6 +482,7 @@ export class SessionManager {
     if (s.timer) clearTimeout(s.timer)
     s.timer = undefined
     s.summary.state = 'stopped'
+    await s.kafka?.stop()
     await s.connection?.close().catch(() => {})
     s.connection = undefined
     this.persist()

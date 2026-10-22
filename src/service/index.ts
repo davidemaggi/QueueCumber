@@ -1,3 +1,9 @@
+import { KafkaProvider } from './providers/kafka'
+import type { ConnectionProfile } from '../shared/connection'
+const providerFor = (profile: ConnectionProfile) =>
+  profile.provider === 'kafka'
+    ? new KafkaProvider(profile)
+    : new RabbitMQ(profile)
 import { ExportJournal } from './export-journal'
 import { ExportManager } from './exports'
 import { CaptureStorage } from './storage'
@@ -62,13 +68,19 @@ parent.on('message', async ({ data }) => {
           }
           break
         case 'test':
-          value = await new RabbitMQ(args[0]).test()
+          value = await providerFor(args[0]).test()
           break
         case 'resources':
-          value = await new RabbitMQ(args[0]).listResources(args[1], args[2])
+          value = await providerFor(args[0]).listResources(args[1], args[2])
           break
+        case 'partitions': {
+          const p = providerFor(args[0])
+          if (!(p instanceof KafkaProvider)) throw Error('Choose Kafka')
+          value = await p.partitions(args[1].name)
+          break
+        }
         case 'bindings':
-          value = await new RabbitMQ(args[0]).bindings(args[1].name)
+          value = await providerFor(args[0]).bindings(args[1].name)
           break
         case 'start':
           if (warning || historyWarning)
@@ -117,6 +129,7 @@ parent.on('message', async ({ data }) => {
             exchange: record.exchange,
             timestamp: record.timestamp,
             offset: record.offset,
+            kafka: record.kafka,
           }
           break
         }

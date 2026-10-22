@@ -1,8 +1,9 @@
 export type ResourceRef = {
   name: string
   vhost: string
-  kind: 'queue' | 'stream' | 'exchange'
+  kind: 'queue' | 'stream' | 'exchange' | 'topic'
   type?: string
+  partitions?: number
   messages?: number
 }
 export type ResourcePage = {
@@ -20,6 +21,12 @@ export type Binding = {
   supported: boolean
 }
 export interface Provider {
+  readonly capabilities: {
+    readonly label: string
+    readonly resourceKinds: readonly string[]
+    readonly bindings: boolean
+    readonly partitions: boolean
+  }
   test(): Promise<{ protocol: EndpointStatus; management: EndpointStatus }>
   listResources(query: string, page: number): Promise<ResourcePage>
   bindings(queue: string): Promise<Binding[]>

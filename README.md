@@ -2,14 +2,15 @@
 
 **A little less queue confusion. A little more cucumber.**
 
-A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ first. Kafka next. Bring your own broker.
+A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **0.2.0 development milestone.** RabbitMQ inspection, portable captures and protected connection transfer work locally. No downloadable release has been published yet.
+> **0.3.0 development milestone.** RabbitMQ and Kafka inspection, portable captures and protected connection transfer work locally. No downloadable release has been published yet.
 
 ## Working in the alpha
 
-- Save encrypted RabbitMQ connection profiles, or use session-only storage when OS protection is unavailable.
-- Test AMQP and management independently; browse and search queues, streams and exchanges.
+- Save encrypted RabbitMQ and Kafka connection profiles, or use session-only storage when OS protection is unavailable.
+- Test RabbitMQ AMQP/management independently; discover Kafka topics/partitions without a management endpoint.
+- Read selected Kafka partitions from independent beginning/live/64-bit offsets, with no consumer-group joins or commits.
 - Mirror supported queue bindings into a private observation queue and inspect incoming messages.
 - Read RabbitMQ streams from the first retained message, live end or a specific offset, with local resume after reconnects.
 - Read structured headers, formatted JSON and every retained original byte through bounded chunk navigation.
@@ -19,7 +20,7 @@ A cross-platform desktop tool for developers who want to see what's flowing thro
 - Export retained messages as JSONL, a folder or ZIP; cancel exports and delete local capture history.
 - Move password-encrypted connection profiles between installations, preview conflicts and choose copies, skipping or replacement.
 
-The [roadmap](ROADMAP.md) tracks the next steps: Kafka, platform validation and packaged releases.
+The [roadmap](ROADMAP.md) tracks the next steps: release hardening, platform validation and packaged releases.
 
 ## Inspect the traffic. Leave application queues alone.
 
@@ -46,7 +47,7 @@ This is early software, not a security certification. Desktop tests deliberately
 | [Product context](PRODUCT.md) | Confirmed requirements and open decisions |
 | [Agent conventions](AGENTS.md) | How AI-assisted work is designed and checked |
 
-Development happens on `development`. Releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). All distribution builds will run in GitHub Actions. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Windows signing uses Azure Artifact Signing. Install commands will appear when those packages actually exist.
+Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Windows signing uses Azure Artifact Signing. Install commands will appear when those packages actually exist.
 
 ## Contributing
 
@@ -60,9 +61,13 @@ For now, the most useful contributions are broker edge cases and reproducible us
 
 Use Node.js 22.18+ and the pinned pnpm version. Run `pnpm install`, then `pnpm dev`. Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
-Local packaging is for development only. The manual [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions and creates a GitHub Release draft; Azure provisioning, real signed Windows validation and macOS signing/notarization are still pending.
+Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft; Azure provisioning, real signed Windows validation and macOS signing/notarization are still pending.
 
-## RabbitMQ permissions and test broker
+## Kafka
+
+Choose Kafka in the connection form, supply bootstrap brokers, verified TLS/custom CA and optional SASL PLAIN or SCRAM credentials. Select explicit partitions and independent starting positions. Offsets stay local as exact decimal strings; keys, repeated binary headers and tombstones survive capture and export. Reads include uncommitted transactional records. See [Kafka behavior and tested support matrix](docs/KAFKA.md) for permissions, retention, reconnects and limitations. Real hosted accounts are not yet certified.
+
+## RabbitMQ permissions and test brokers
 
 Supply an AMQP URL and a separate management base URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication currently uses the username/password from the AMQP URL. Cloud-specific IAM and client-certificate authentication are outside this alpha's tested matrix.
 
@@ -80,7 +85,7 @@ pnpm test:e2e
 docker compose -p queuecumber-test -f compose.test.yml down
 ```
 
-This fixture uses synthetic credentials and binds only loopback ports 25672/25673. The TLS fixtures under `tests/fixtures/tls/` are public test-only keys/certificates; never deploy or trust them outside tests.
+This fixture uses synthetic credentials and binds only loopback ports 25672/25673 (RabbitMQ) and 29092/29093/29094 (Kafka plain/TLS/SASL). Kafka startup provisions synthetic SCRAM credentials automatically. The TLS fixtures under `tests/fixtures/tls/` are public test-only keys/certificates; never deploy or trust them outside tests.
 
 ## Current limits
 
@@ -96,6 +101,6 @@ In secure mode, encrypted session history and retained records can be reopened a
 
 ## Verification status
 
-Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Installer signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
+Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 and Apache Kafka 4.2.0 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Installer signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
 
 Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt). Other dependencies keep their own licenses.

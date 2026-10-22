@@ -50,7 +50,9 @@ export function MessageList({
             </span>
             <span>
               <strong className="mono">
-                {m.routingKey || m.exchange || '—'}
+                {m.kafka
+                  ? `p${m.kafka.partition} · ${m.kafka.offset}`
+                  : m.routingKey || m.exchange || '—'}
               </strong>
               <small>{m.omission ? t('omission') : m.preview || '—'}</small>
             </span>
@@ -89,6 +91,13 @@ export function MessageView({
               {message.bytes.toLocaleString()} {t('bytes')}
             </span>
           </div>
+          {message.kafka ? (
+            <p className="mono small">
+              {t('kafkaPartition')}: {message.kafka.partition} ·{' '}
+              {t('kafkaOffset')}: {message.kafka.offset}
+              {message.kafka.tombstone ? ` · ${t('kafkaTombstone')}` : ''}
+            </p>
+          ) : null}
           {message.offset !== undefined ? (
             <p className="detail-meta mono">
               {t('streamOffset')}: {message.offset.toLocaleString()}

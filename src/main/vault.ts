@@ -6,6 +6,7 @@ import { seal, open } from '../service/crypto'
 import {
   validateConnection,
   type ConnectionProfile,
+  summarizeConnection,
   type ConnectionSummary,
 } from '../shared/connection'
 export interface KeyProtector {
@@ -63,11 +64,7 @@ export class Vault {
     return Buffer.from(this.key)
   }
   list(): ConnectionSummary[] {
-    return this.profiles.map(({ id, name }) => ({
-      id,
-      name,
-      provider: 'rabbitmq',
-    }))
+    return this.profiles.map(summarizeConnection)
   }
   async get(id: string): Promise<ConnectionProfile> {
     const p = this.profiles.find((p) => p.id === id)
@@ -106,7 +103,7 @@ export class Vault {
     const next = [...this.profiles.filter((p) => p.id !== profile.id), profile]
     if (next.length > 100) throw Error('Connection limit reached')
     await this.writeProfiles(next)
-    return { id: profile.id, name: profile.name, provider: 'rabbitmq' }
+    return summarizeConnection(profile)
   }
   private async writeProfiles(next: ConnectionProfile[]) {
     const data = Buffer.from(JSON.stringify(next))

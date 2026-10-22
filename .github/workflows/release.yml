@@ -1,33 +1,34 @@
 name: Build release draft
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Existing v-prefixed SemVer tag reachable from development
-        required: true
-        type: string
+  pull_request_target:
+    types: [closed]
+    branches: [main]
 permissions:
   contents: read
 concurrency:
-  group: release-${{ inputs.tag }}
+  group: release-${{ github.event.pull_request.merge_commit_sha }}
   cancel-in-progress: false
 jobs:
   validate:
-    if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/main'
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     outputs:
       commit: ${{ steps.tag.outputs.commit }}
       prerelease: ${{ steps.tag.outputs.prerelease }}
+      tag: ${{ steps.tag.outputs.tag }}
+      title: ${{ steps.tag.outputs.title }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '22.18.0'
       - id: tag
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
         run: node scripts/validate-release.mjs
   windows:
     needs: validate
@@ -140,12 +141,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_TITLE: ${{ needs.validate.outputs.title }}
           PRERELEASE: ${{ needs.validate.outputs.prerelease }}
           EXPECTED_COMMIT: ${{ needs.validate.outputs.commit }}
         run: |
-          actual="$(gh api "repos/${GH_REPO}/commits/${RELEASE_TAG}" --jq .sha)"
-          if [[ "$actual" != "$EXPECTED_COMMIT" ]]; then echo "Release tag moved during the build"; exit 1; fi
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then echo "Release already exists; bump the version"; exit 1; fi
+          if gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            resolved="$(gh api "repos/${GH_REPO}/commits/${RELEASE_TAG}" --jq .sha)"
+            if [[ "$resolved" != "$EXPECTED_COMMIT" ]]; then echo "Release tag belongs to another commit"; exit 1; fi
+          fi
           flags=()
           if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" --verify-tag --draft --generate-notes --title "$RELEASE_TAG" --notes "Windows x64 uses Azure Artifact Signing. macOS arm64 artifacts are unsigned and unnotarized early testing builds. Linux x64 artifacts include AppImage, DEB and tar.gz. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*
+          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Windows x64 uses Azure Artifact Signing. macOS arm64 artifacts are unsigned and unnotarized early testing builds. Linux x64 artifacts include AppImage, DEB and tar.gz. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*

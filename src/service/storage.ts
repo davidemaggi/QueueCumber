@@ -10,6 +10,7 @@ import {
   type CaptureSettings,
 } from '../shared/limits'
 export type IncomingRecord = {
+  kafka?: import('../shared/kafka').KafkaProvenance
   offset?: number
   payload: Buffer
   headers: Record<string, unknown>
@@ -24,6 +25,7 @@ export type StoredRecord = IncomingRecord & {
   sessionId: string
 }
 export type MessageSummary = {
+  kafka?: import('../shared/kafka').KafkaProvenance
   id: number
   timestamp: number
   bytes: number
@@ -337,6 +339,7 @@ END;`)
           preview: m.payload.subarray(0, 160).toString('utf8'),
           omission: m.omission,
           offset: m.offset,
+          kafka: m.kafka,
         }
       }),
       nextCursor: rows.length > limit ? selected.at(-1)!.id : null,

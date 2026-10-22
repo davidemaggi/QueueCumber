@@ -92,9 +92,13 @@ it('previews conflicts between incoming profiles before copy, skip or replace', 
       if (mode === 'copy')
         expect(new Set(profiles.map((p) => p.name)).size).toBe(2)
       else
-        expect(profiles[0].protocolUrl).toBe(
-          incoming[mode === 'skip' ? 0 : 1].protocolUrl,
-        )
+        expect(profiles[0]).toMatchObject({
+          protocolUrl: (
+            incoming[
+              mode === 'skip' ? 0 : 1
+            ] as import('../../src/shared/connection').RabbitConnectionProfile
+          ).protocolUrl,
+        })
     }
   } finally {
     files.clear()

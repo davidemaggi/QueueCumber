@@ -16,8 +16,12 @@ const profile = {
 const password = 'synthetic long password'
 it('encrypts the complete versioned configuration and preserves secrets only when requested', async () => {
   const profiles = portableProfiles([profile], false)
-  expect(profiles[0].protocolUrl).not.toContain('secret')
-  expect(profiles[0].protocolUrl).not.toContain('token')
+  expect(
+    profiles[0].provider === 'kafka' ? '' : profiles[0].protocolUrl,
+  ).not.toContain('secret')
+  expect(
+    profiles[0].provider === 'kafka' ? '' : profiles[0].protocolUrl,
+  ).not.toContain('token')
   expect(profiles[0].caPem).toBeUndefined()
   const bytes = await encryptConfiguration([profile], password, true)
   expect(bytes.includes('Private staging')).toBe(false)
@@ -55,4 +59,27 @@ it('rejects wrong passwords, tampering, unsupported versions, oversize and inval
       true,
     ),
   ).rejects.toThrow()
+})
+it('keeps explicitly tagged RabbitMQ-only exports readable by the strict 0.2 v1 wire schema', async () => {
+  const { z } = await import('zod')
+  const legacy = z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      protocolUrl: z.string(),
+      managementUrl: z.string(),
+      allowInsecure: z.boolean(),
+      caPem: z.string().optional(),
+    })
+    .strict()
+  for (const secrets of [false, true]) {
+    const bytes = await encryptConfiguration(
+      [{ ...profile, provider: 'rabbitmq' }],
+      password,
+      secrets,
+    )
+    expect(bytes[8]).toBe(1)
+    const data = await decryptConfiguration(bytes, password)
+    expect(() => legacy.parse(data.profiles[0])).not.toThrow()
+  }
 })

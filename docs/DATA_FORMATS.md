@@ -1,6 +1,6 @@
 # Portable connections and captured messages
 
-These are version 1 formats introduced by the 0.2.0 development milestone. App versions use SemVer; file schemas have their own version. Unsupported configuration versions fail without importing anything. Keep a backup before upgrading early-development data; there is no migration from an unreleased prototype format.
+Dump schema 1 and connection container 1 were introduced in 0.2.0. Connection container 2 adds Kafka in 0.3.0; schema 1 dumps gain optional Kafka provenance. App versions use SemVer; file schemas have their own version. Unsupported configuration versions fail without importing anything. Keep a backup before upgrading early-development data; there is no migration from an unreleased prototype format.
 
 ## Connection configuration (`.qcc`)
 
@@ -11,15 +11,17 @@ The binary layout is:
 | Byte range | Value |
 | --- | --- |
 | 0–7 | ASCII `QCBRCFG` followed by a zero byte |
-| 8 | Container version: `1` |
+| 8 | Container version: `1` (RabbitMQ) or `2` (mixed providers) |
 | 9–24 | Random 16-byte scrypt salt |
 | 25–36 | Random 12-byte AES-GCM nonce |
 | 37–52 | 16-byte authentication tag |
 | 53 onward | AES-256-GCM ciphertext |
 
-Derive a 32-byte key with scrypt, `N=131072`, `r=8`, `p=1`. The implementation allows 256 MiB for the KDF and admits only one transfer operation at a time. The first 37 bytes are GCM additional authenticated data. Version 1 fixes these parameters; files cannot request arbitrary KDF costs. Fresh randomness is generated for each export.
+Derive a 32-byte key with scrypt, `N=131072`, `r=8`, `p=1`. The implementation allows 256 MiB for the KDF and admits only one transfer operation at a time. The first 37 bytes are GCM additional authenticated data. Both versions fix these parameters; files cannot request arbitrary KDF costs. Fresh randomness is generated for each export.
 
-Decrypted UTF-8 JSON contains `schemaVersion: 1`, ISO `createdAt`, `includeSecrets` and `profiles`. Profiles follow the validated RabbitMQ connection schema: UUID `id`, `name`, `protocolUrl`, `managementUrl`, `allowInsecure`, optional `caPem`. The whole file is limited to 8 MiB and 100 profiles, with unique IDs; field and endpoint limits apply before import. Unknown schema fields are rejected.
+Decrypted UTF-8 JSON contains `schemaVersion` matching the container byte (1 or 2), ISO `createdAt`, `includeSecrets` and `profiles`. Profiles follow the validated RabbitMQ connection schema: UUID `id`, `name`, `protocolUrl`, `managementUrl`, `allowInsecure`, optional `caPem`. The whole file is limited to 8 MiB and 100 profiles, with unique IDs; field and endpoint limits apply before import. Unknown schema fields are rejected.
+
+Container 1 remains the output for RabbitMQ-only exports and is still readable by 0.2.0. Any Kafka profile selects container/schema 2, whose profiles discriminate with `provider: "kafka"` or optional `provider: "rabbitmq"`. Kafka profiles contain UUID `id`, `name`, `brokers` (1–20 validated host:port addresses), `tls`, `allowInsecure`, optional `caPem`, and optional strict `sasl` (`mechanism`, `username`, `password`). SASL mechanisms are PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512. Secret-free exports remove Kafka SASL and custom CAs. Other encryption/KDF/file limits are unchanged. Older apps reject v2 before decrypting; keep backups before downgrading a vault containing Kafka profiles. No connections are silently discarded for compatibility.
 
 Without secrets, export removes AMQP user/password, all AMQP URL query parameters and custom CA material. Management URLs cannot contain userinfo, queries or fragments in the connection schema. Names, hosts and vhosts remain private data and are still encrypted. Use **Edit connection** to supply complete endpoints, credentials and a CA again. The edit form never reloads saved secrets into the renderer.
 
@@ -75,3 +77,7 @@ Beginning means the first message still retained by the broker. Live end request
 On reconnect, the next requested offset follows the last locally processed delivery, including intentional admission drops. Duplicate offsets are skipped. A bounded first-retained-message probe detects positions removed from the prefix, and clamping/discontinuities remain visible. The probe holds at most one unacknowledged delivery for up to one second and closes its channel. Broker/version behavior can still change the actual position. On RabbitMQ 4.2 a future offset can wait; the UI marks it unverified until a delivery confirms it. Gap counters describe interruptions or discontinuities, not exact lost-message counts.
 
 Stream reads check the actual queue type through management before consuming and again before acknowledging deliveries. Stream acknowledgements provide non-destructive flow control. QueueCumber writes no consumer-group offsets, creates no replacement stream and never falls back to consuming a classic/quorum application queue.
+
+## Kafka provenance in dump schema 1
+
+Kafka records add optional `kafka: {topic, partition, offset, timestamp, tombstone, transactional}`. Offsets and broker timestamps are decimal strings, preserving signed 64-bit values without JavaScript rounding; the usual record `timestamp` remains local epoch milliseconds. Kafka timestamps preserve producer `CreateTime` or broker `LogAppendTime`, according to the batch timestamp type. Original Kafka values become the payload bytes. A null value produces empty retained bytes with `tombstone: true`, distinct from an empty non-null value. `headers.key` contains the binary/null record key. `headers.kafkaHeaders` contains ordered `{key,value}` byte/null pairs, so duplicate names are preserved by the typed-header rules above. Dump consumers should tolerate optional provenance fields while continuing to require supported schema versions. See [Kafka semantics](KAFKA.md), including READ_UNCOMMITTED and per-partition ordering.

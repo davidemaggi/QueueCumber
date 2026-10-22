@@ -1,4 +1,16 @@
-import { version } from '../../package.json'
+import { KafkaPartitions } from './components/KafkaPartitions'
+import {
+  kafkaSelectionSchema,
+  type KafkaPartition,
+  type KafkaSelection,
+} from '../shared/kafka'
+import { PROVIDER_CAPABILITIES } from '../shared/providers'
+import packageInfo from '../../package.json'
+const { version } = packageInfo
+const releaseName =
+  'releaseName' in packageInfo && typeof packageInfo.releaseName === 'string'
+    ? packageInfo.releaseName
+    : undefined
 import type { ConnectionSummary } from '../shared/connection'
 import { CaptureTools } from './components/CaptureTools'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -68,6 +80,11 @@ export default function App() {
       'next',
     ),
     [streamOffset, setStreamOffset] = useState('')
+  const [partitions, setPartitions] = useState<KafkaPartition[]>([]),
+    [kafkaSelection, setKafkaSelection] = useState<KafkaSelection>([])
+  const chosenProvider =
+    state?.profiles.find((p) => p.id === connection)?.provider ?? 'rabbitmq'
+  const capabilities = PROVIDER_CAPABILITIES[chosenProvider]
   const desktopLocaleLoaded = useRef(false)
   const selection = useRef(0),
     messageSelection = useRef(0),
@@ -202,6 +219,28 @@ export default function App() {
         s.state === 'capturing',
     )
     setSessionId(existing?.id ?? '')
+    setPartitions([])
+    setKafkaSelection([])
+    if (r.kind === 'topic') {
+      try {
+        const p = await api.getPartitions(connection, r)
+        if (token === selection.current) {
+          setPartitions(p)
+          setKafkaSelection(
+            existing?.kafkaPositions?.map((p) => ({
+              partition: p.partition,
+              from: p.start,
+            })) ??
+              p
+                .slice(0, 128)
+                .map((p) => ({ partition: p.partition, from: 'next' })),
+          )
+        }
+      } catch {
+        if (token === selection.current) setError(true)
+      }
+      return
+    }
     if (r.kind !== 'queue') return
     try {
       const b = await api.getBindings(connection, r)
@@ -243,6 +282,9 @@ export default function App() {
       const s = await api.startCapture(connection, resource, {
         allowPartial: partial,
         limits,
+        ...(resource.kind === 'topic'
+          ? { kafkaPartitions: kafkaSelection }
+          : {}),
         ...(resource.kind === 'stream'
           ? {
               streamStart:
@@ -335,6 +377,7 @@ export default function App() {
                 selection.current++
                 messageSelection.current++
                 setNextCursor(null)
+                setKind('all')
                 setConnection(p.id)
                 setResource(null)
                 setRows([])
@@ -350,7 +393,7 @@ export default function App() {
               <Database size={15} />
               <span>
                 {p.name}
-                <small>RabbitMQ</small>
+                <small>{PROVIDER_CAPABILITIES[p.provider].label}</small>
               </span>
               <ChevronRight size={14} />
             </button>
@@ -375,6 +418,7 @@ export default function App() {
                     setRows([])
                     setNextCursor(null)
                     setPartial(false)
+                    setKind('all')
                     setConnection(s.connectionId)
                     setResource(s.resource)
                     setStreamChoice(
@@ -386,6 +430,13 @@ export default function App() {
                       typeof s.streamStart === 'number'
                         ? String(s.streamStart)
                         : '',
+                    )
+                    setPartitions(s.kafkaPositions ?? [])
+                    setKafkaSelection(
+                      s.kafkaPositions?.map((p) => ({
+                        partition: p.partition,
+                        from: p.start,
+                      })) ?? [],
                     )
                     setBindings(s.bindings)
                     setBindingReady(true)
@@ -413,13 +464,16 @@ export default function App() {
                 : 'closeBehaviorQuit',
             )}
           </p>
-          <span className="small">{version}</span>
+          <span className="small">
+            {version}
+            {releaseName ? ` · ${releaseName}` : ''}
+          </span>
         </div>
       </aside>
       <div className="workspace">
         <header className="topbar">
           <div>
-            <span className="muted">RabbitMQ</span>
+            <span className="muted">{capabilities.label}</span>
             <ChevronRight size={13} />
             <strong>
               {state?.profiles.find((p) => p.id === connection)?.name ??
@@ -597,8 +651,12 @@ export default function App() {
                       const result = await api.testConnection(connection)
                       setNotice(
                         result.protocol.ok && result.management.ok
-                          ? t('testPassed')
-                          : `${t('testFailed')}: ${t('protocol')} ${result.protocol.ok ? t('ok') : result.protocol.code}; ${t('management')} ${result.management.ok ? t('ok') : result.management.code}`,
+                          ? t(
+                              chosenProvider === 'kafka'
+                                ? 'kafkaTestPassed'
+                                : 'testPassed',
+                            )
+                          : `${t('testFailed')}: ${chosenProvider === 'kafka' ? 'Kafka' : t('protocol')} ${result.protocol.ok ? t('ok') : result.protocol.code}; ${chosenProvider === 'kafka' ? t('kafkaMetadata') : t('management')} ${result.management.ok ? t('ok') : result.management.code}`,
                       )
                     })
                   }
@@ -638,10 +696,16 @@ export default function App() {
                   {t('allResources')}
                 </button>
                 <button
-                  className={kind === 'queue' ? 'active' : ''}
-                  onClick={() => setKind('queue')}
+                  className={
+                    kind === (capabilities.partitions ? 'topic' : 'queue')
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() =>
+                    setKind(capabilities.partitions ? 'topic' : 'queue')
+                  }
                 >
-                  {t('queues')}
+                  {t(capabilities.partitions ? 'topics' : 'queues')}
                 </button>
               </div>
               <div className="resource-list">
@@ -692,7 +756,12 @@ export default function App() {
               ) : null}
             </section>
             <div className="capture-workspace">
-              <section className="capture-heading">
+              <section
+                className={
+                  'capture-heading' +
+                  (resource?.kind === 'topic' ? ' kafka-heading' : '')
+                }
+              >
                 <div className="capture-title">
                   <div>
                     <h1 className="mono">
@@ -700,18 +769,26 @@ export default function App() {
                     </h1>
                     <p className="muted">
                       {t(
-                        resource?.kind === 'stream'
-                          ? 'streamHint'
-                          : 'bindingHint',
+                        resource?.kind === 'topic'
+                          ? 'kafkaHint'
+                          : resource?.kind === 'stream'
+                            ? 'streamHint'
+                            : 'bindingHint',
                       )}
                     </p>
                   </div>
                   {resource &&
-                  (resource.kind === 'queue' || resource.kind === 'stream') ? (
+                  (resource.kind === 'queue' ||
+                    resource.kind === 'stream' ||
+                    resource.kind === 'topic') ? (
                     <button
                       className={active ? '' : 'primary'}
                       disabled={
                         busy ||
+                        (!active &&
+                          resource.kind === 'topic' &&
+                          !kafkaSelectionSchema.safeParse(kafkaSelection)
+                            .success) ||
                         (resource.kind === 'queue' &&
                           (!bindingReady ||
                             (!active &&
@@ -737,6 +814,18 @@ export default function App() {
                     </button>
                   ) : null}
                 </div>
+                {resource?.kind === 'topic' ? (
+                  <KafkaPartitions
+                    key={connection + resource.name}
+                    t={t}
+                    partitions={partitions}
+                    value={kafkaSelection}
+                    onChange={setKafkaSelection}
+                    disabled={!!active || busy}
+                    positions={session?.kafkaPositions}
+                    topologyChanged={session?.kafkaTopologyChanged}
+                  />
+                ) : null}
                 {session ? (
                   <CaptureTools
                     key={session.id}
@@ -883,11 +972,13 @@ export default function App() {
                       </p>
                     ) : null}
                   </div>
-                ) : resource ? (
+                ) : resource?.kind === 'topic' ? null : resource ? (
                   <p className="empty-line">{t('futureResource')}</p>
                 ) : null}
                 {resource &&
-                (resource.kind === 'queue' || resource.kind === 'stream') ? (
+                (resource.kind === 'queue' ||
+                  resource.kind === 'stream' ||
+                  resource.kind === 'topic') ? (
                   <>
                     {' '}
                     <details className="session-options">
@@ -1012,9 +1103,11 @@ export default function App() {
                   {session ? (
                     <p className="buffer-note">
                       {t(
-                        session.resource.kind === 'stream'
-                          ? 'streamRetention'
-                          : 'potentialOverflow',
+                        session.resource.kind === 'topic'
+                          ? 'kafkaRetention'
+                          : session.resource.kind === 'stream'
+                            ? 'streamRetention'
+                            : 'potentialOverflow',
                       )}
                     </p>
                   ) : null}

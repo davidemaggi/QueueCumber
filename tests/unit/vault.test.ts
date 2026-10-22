@@ -23,7 +23,13 @@ it('encrypts whole profiles, refuses unavailable protection and detects tamperin
       allowInsecure: true,
     })
     expect(summary).not.toHaveProperty('protocolUrl')
-    expect((await vault.get(summary.id)).protocolUrl).toContain('secret')
+    expect(
+      (
+        (await vault.get(
+          summary.id,
+        )) as import('../../src/shared/connection').RabbitConnectionProfile
+      ).protocolUrl,
+    ).toContain('secret')
     const bytes = await readFile(join(dir, 'profiles.bin'))
     expect(bytes.includes('Private staging')).toBe(false)
     expect(bytes.includes('secret')).toBe(false)
