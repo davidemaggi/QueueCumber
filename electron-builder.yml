@@ -9,5 +9,7 @@ mac:
   target: [dmg, zip]
 win:
   target: [nsis, zip]
+nsis:
+  artifactName: QueueCumber-${version}-${arch}-setup.${ext}
 linux:
-  target: [AppImage, deb]
+  target: [AppImage, deb, tar.gz]

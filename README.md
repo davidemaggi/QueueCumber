@@ -38,7 +38,7 @@ This is early software, not a security certification. The desktop tests delibera
 | [Product context](PRODUCT.md) | Confirmed requirements and open decisions |
 | [Agent conventions](AGENTS.md) | How AI-assisted work is designed and checked |
 
-Development happens on `development`. Releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Planned distribution includes GitHub installers and archives, followed by Homebrew, WinGet and Chocolatey. Install commands will appear when those packages actually exist.
+Development happens on `development`. Releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). All distribution builds will run in GitHub Actions. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Windows signing uses Azure Artifact Signing. Install commands will appear when those packages actually exist.
 
 ## Contributing
 
@@ -51,6 +51,8 @@ For now, the most useful contributions are broker edge cases and reproducible us
 ## Local development
 
 Use Node.js 22.18+ and the pinned pnpm version. Run `pnpm install`, then `pnpm dev`. Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
+
+Local packaging is for development only. The manual [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions and creates a GitHub Release draft; Azure provisioning, real signed Windows validation and macOS signing/notarization are still pending.
 
 ## RabbitMQ permissions and test broker
 

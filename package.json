@@ -4,7 +4,10 @@
   "description": "A local desktop inspector for messaging systems.",
   "private": true,
   "license": "MIT",
-  "author": "Davide Maggi",
+  "author": {
+    "name": "Davide Maggi",
+    "email": "me@davidemaggi.dev"
+  },
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -15,8 +18,9 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "package": "pnpm build && electron-builder --dir",
-    "format": "prettier --write src tests",
-    "format:check": "prettier --check src tests"
+    "format": "prettier --write src tests scripts electron-builder.windows.mjs",
+    "format:check": "prettier --check src tests scripts electron-builder.windows.mjs",
+    "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.windows.mjs --publish never"
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.3.0",
@@ -48,5 +52,10 @@
   "packageManager": "pnpm@11.8.0",
   "engines": {
     "node": ">=22.18.0"
+  },
+  "homepage": "https://github.com/davidemaggi/QueueCumber",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davidemaggi/QueueCumber.git"
   }
 }

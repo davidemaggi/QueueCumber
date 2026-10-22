@@ -43,3 +43,11 @@ One Minor UI finding is deferred: narrow desktop windows stack the detail below 
 ## Release gates still open
 
 Windows/Linux execution, real OS-keystore checks on all targets, hosted-provider authentication, signed installers and remote CI results remain unverified. Stream consumption, tray mode, dumps, password-encrypted configuration transfer and Kafka stay in their roadmap milestones. No release has been published.
+
+## Release automation preparation
+
+A later local check on the same date adds six release-tool tests (28 unit tests total). They cover required Azure settings and endpoint restrictions, SemVer matching, real temporary Git tag ancestry/version checks, deterministic checksums, and signature-verifier failure handling with a mocked PowerShell certificate provider. The mock does not validate a real Authenticode signature or Azure authentication.
+
+The merged Windows signing configuration passes the schema validator of the installed electron-builder 26.15.3, preserving the shared targets and requiring code signing. Both Actions workflows pass actionlint 1.7.7. Lint, type checking, formatting and the production build pass. No release tags, Azure resources, remote workflow runs or GitHub Releases were created. The first real Azure-signed Windows build and the configured macOS/Linux distributable formats still need runner and clean-machine verification. See [release workflow notes](RELEASING.md).
+
+Independent review of the release workflow found one Important blocker: DEB packaging lacked a maintainer email. The maintainer supplied `me@davidemaggi.dev`; package metadata now includes it and the public repository URL. The installed builder's DEB metadata check passes after the fix. No Critical or additional Minor findings were established. This metadata check does not replace an actual Linux package build/install.

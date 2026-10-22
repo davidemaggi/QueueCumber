@@ -68,3 +68,6 @@ Desktop.ini
 
 # Plan execution scratch
 .superpowers/
+
+# Maintainer-only account setup notes (never commit resource identifiers)
+/maintainer-local/

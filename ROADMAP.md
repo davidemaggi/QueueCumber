@@ -54,6 +54,8 @@ Exit gate: shared inspection workflows with explicit broker-specific semantics. 
 - [ ] IPC, credential protection, capture encryption and import/export security review.
 - [ ] Meet documented resource budgets under sustained load.
 - [ ] Tested Windows installers/archives, macOS DMG/archives and Linux packages/archives.
+- [x] Prepare GitHub Actions builds and draft GitHub Releases with checksums; Windows Azure Artifact Signing configuration.
+- [ ] Validate Azure-signed Windows app/installer on a real runner and clean machine.
 - [ ] Applicable signing, macOS notarization, checksums and release notes.
 - [ ] Homebrew, WinGet and Chocolatey submission/verification, subject to registry requirements.
 - [ ] Installation, permissions, capture limitations, retention and troubleshooting docs.
@@ -70,5 +72,7 @@ Additional providers and payload decoders follow real requests. Extension points
 Follow SemVer 2.0.0. Use `0.x.y` while contracts evolve and prerelease suffixes such as `-alpha.1` where appropriate. Announce breaking pre-1.0 changes. From 1.0, incompatible public-contract changes require a major release, compatible features a minor release and compatible fixes a patch.
 
 The public contract includes documented configuration schemas, dump formats and supported user-facing behavior. Version schemas independently and document migrations. Never silently discard connection data during upgrades.
+
+All artifacts intended for distribution are built through GitHub Actions. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. Windows signing uses Azure Artifact Signing; provisioning and a real signed build remain pending.
 
 Update status when scope or release expectations change. Mark tasks complete only with implementation and verification evidence.
