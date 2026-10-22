@@ -13,6 +13,6 @@ foreach ($file in @($app, $installers[0].FullName)) {
     throw "Missing, invalid or untimestamped signature: $([IO.Path]::GetFileName($file))"
   }
   $name = $signature.SignerCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
-  if ($name -cne $Publisher) { throw 'Signed publisher does not match AZURE_SIGNING_PUBLISHER' }
+  if ($name -cne $Publisher) { throw 'Signed publisher does not match the configured publisher' }
 }
 Write-Output 'Application and installer signatures are valid and timestamped.'

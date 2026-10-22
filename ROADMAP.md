@@ -60,10 +60,10 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [x] Finite cache/disk workloads and eviction/omission measurements.
 - [ ] Representative long-running soak and RSS acceptance on release machines.
 - [ ] Tested Windows installers/archives, macOS DMG/archives and Linux packages/archives.
-- [x] Prepare GitHub Actions builds and draft GitHub Releases with checksums; Windows Azure Artifact Signing configuration.
-- [ ] Validate Azure-signed Windows app/installer on a real runner and clean machine.
-- [x] Fail-closed macOS Developer ID/notarization pipeline, checksum generation and prepared Ackbar release notes.
-- [ ] Real signed/notarized artifacts and clean-machine verification.
+- [x] Prepare GitHub Actions builds and draft GitHub Releases with checksums; unsigned Windows/macOS/Linux packaging.
+- [ ] Validate unsigned 1.0.0 downloads on clean machines, including expected OS warnings.
+- [x] Unsigned 1.0.0 packaging, explicit asset names, checksum generation and prepared Ackbar release notes.
+- [ ] Optional signed artifacts and platform signing/notarization acceptance when those channels are enabled.
 - [ ] Homebrew, WinGet and Chocolatey submission/verification, subject to registry requirements.
 - [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
 - [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
@@ -71,6 +71,16 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 The maintainer will perform [final acceptance](docs/ACCEPTANCE.md) after implementation, as requested. These external checks remain required before public release; source version 1.0.0 is not evidence they passed. Package-manager submissions follow actual verified release assets.
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
+
+## 1.0.1 — optional signed Windows downloads (planned patch; no character name)
+
+- [x] Always build unsigned variants independently on GitHub-hosted runners.
+- [x] Isolated optional signing workflow with idle-runner preflight, queue watchdog, local certificate selection and signature checks.
+- [x] Distinct signed asset names/checksums on the same release; no unsigned overwrite or automatic publication.
+- [ ] Provision the self-hosted signing runner and its repository settings; verify real signing/upload and runner-unavailable behavior remotely.
+- [ ] Bump to 1.0.1 and remove releaseName when preparing that release.
+
+The current source remains 1.0.0 Ackbar; the optional signer deliberately skips it. Unsigned release drafts are created regardless of signing availability. See [release policy](docs/RELEASING.md).
 
 ## After 1.0 — candidates, not commitments
 
@@ -82,6 +92,6 @@ Follow SemVer 2.0.0. From 1.0, major/minor releases (patch zero) also carry a St
 
 The public contract includes documented configuration schemas, dump formats and supported user-facing behavior. Version schemas independently and document migrations. Never silently discard connection data during upgrades.
 
-All artifacts intended for distribution are built through GitHub Actions only after a pull request merges into `main`. Development/PR compilation tests do not package release artifacts. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. Windows signing uses Azure Artifact Signing; provisioning and a real signed build remain pending.
+All artifacts intended for distribution are built through GitHub Actions only after a pull request merges into `main`. Development/PR compilation tests do not package release artifacts. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. 1.0.0 is unsigned by maintainer decision. From 1.0.1, optional verified Windows signing uses a self-hosted runner; no runner means unsigned output only. Actual self-hosted signing and remote Actions remain unverified.
 
 Update status when scope or release expectations change. Mark tasks complete only with implementation and verification evidence.

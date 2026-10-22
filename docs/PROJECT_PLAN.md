@@ -126,7 +126,7 @@ Make close-to-tray explicit and configurable. Tray menus show session state and 
 
 Test real disposable brokers with a baseline application consumer. Cover overlapping routing patterns, header arguments, partial setup failure, binding changes, restart and supported/unsupported exchanges. Use synthetic data only. Add Kafka fixtures and Windows/macOS/Linux CI as their scope arrives. Test behavior at boundaries rather than implementation details.
 
-Packaging decision (confirmed 2026-10-22): build every distribution artifact through GitHub Actions only after a pull request merges into `main`, and distribute through GitHub Releases first. Use Windows installer/ZIP, macOS DMG/ZIP and Linux AppImage/DEB/TAR after target validation. Windows executables and installers use Azure Artifact Signing. Homebrew, WinGet and Chocolatey follow when their configurations are ready. See [release workflow](RELEASING.md). Determine supported CPU architectures from actual builds/tests. Package publication, signing and notarization require maintainer-owned accounts and registry compliance; prepare reviewable artifacts before requesting final publication authorization.
+Packaging decision (confirmed 2026-10-22): build every distribution artifact through GitHub Actions only after a pull request merges into `main`, and distribute through GitHub Releases first. Use Windows installer/ZIP, macOS DMG/ZIP and Linux AppImage/DEB/TAR after target validation. The maintainer superseded mandatory signing: 1.0.0 ships unsigned; from 1.0.1, available self-hosted Windows signing adds verified signed variants without blocking unsigned downloads. Homebrew, WinGet and Chocolatey follow when their configurations are ready. See [release workflow](RELEASING.md). Determine supported CPU architectures from actual builds/tests. Package publication, signing and notarization require maintainer-owned accounts and registry compliance; prepare reviewable artifacts before requesting final publication authorization.
 
 ## Decision record and remaining work
 
@@ -150,3 +150,5 @@ The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp
 - [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html): version/public-contract policy.
 
 The maintainer authorized the complete [Ackbar hardening plan](superpowers/plans/2026-10-22-ackbar.md), with final external checks to follow implementation. This does not authorize publishing, tagging or merging main.
+
+The [optional-signing plan](superpowers/plans/2026-10-22-optional-signing.md) supersedes the earlier mandatory Azure/Apple release gating. This changes distribution policy, not broker/data scope.

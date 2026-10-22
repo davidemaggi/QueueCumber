@@ -18,9 +18,9 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "package": "pnpm build && electron-builder --dir",
-    "format": "prettier --write src tests scripts electron-builder.windows.mjs electron-builder.mac.mjs",
-    "format:check": "prettier --check src tests scripts electron-builder.windows.mjs electron-builder.mac.mjs",
-    "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.windows.mjs --publish never"
+    "format": "prettier --write src tests scripts electron-builder.unsigned.mjs electron-builder.self-hosted.mjs",
+    "format:check": "prettier --check src tests scripts electron-builder.unsigned.mjs electron-builder.self-hosted.mjs",
+    "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.unsigned.mjs --publish never"
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.3.0",

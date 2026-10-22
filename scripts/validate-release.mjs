@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { execFileSync } from 'node:child_process'
-import { appendFileSync, readFileSync } from 'node:fs'
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { releaseVersion } from './release-config.mjs'
 import { releaseTitle } from './release-name.mjs'
 const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
@@ -37,3 +37,9 @@ appendFileSync(
   process.env.GITHUB_OUTPUT,
   `commit=${commit}\ntag=${tag}\nversion=${version}\ntitle=${title}\nprerelease=${version.split('+')[0].includes('-')}\n`,
 )
+
+if (process.env.RELEASE_CONTEXT)
+  writeFileSync(
+    process.env.RELEASE_CONTEXT,
+    JSON.stringify({ commit, tag, version }),
+  )

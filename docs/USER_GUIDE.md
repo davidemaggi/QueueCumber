@@ -6,8 +6,8 @@ Before a published GitHub Release exists, run the source with the README's devel
 
 Once available, download the asset matching your OS/architecture from this repository's GitHub Releases and verify it against the same release's SHA256SUMS.txt. Planned first targets are Windows x64 (NSIS installer or ZIP), macOS arm64 (DMG or ZIP) and Linux x64 (AppImage, DEB or tar.gz). These are build targets; actual platform certification lives in the acceptance record. Intel Macs, Windows ARM and Linux ARM have no prepared distribution target.
 
-- Windows: verify the executable/installer's Authenticode signature and publisher before opening it. Run the installer or extract the complete ZIP; keep its supporting files together.
-- macOS: verify signing/notarization, open the DMG and drag QueueCumber to Applications, or extract the ZIP and move the app there. Do not disable Gatekeeper to work around a failed release signature.
+- Windows: choose the explicitly labeled unsigned 1.0.0 download, or a verified signed variant when available from 1.0.1. Record expected OS warnings on unsigned builds; verify Authenticode/publisher on signed variants. Run the installer or extract the complete ZIP; keep its supporting files together.
+- macOS: the current unsigned channel uses ad-hoc signing without Developer ID/notarization. Review the unsigned release status and OS warnings before choosing to run it. Open the DMG and drag QueueCumber to Applications, or extract the ZIP and move the app there. Do not treat an ad-hoc signature as publisher verification or disable Gatekeeper system-wide.
 - Linux: use the DEB through your package manager, make the AppImage executable and open it, or extract the whole tar.gz and run its executable. AppImage/FUSE support depends on the distribution. Retain Chromium's sandbox; do not use `--no-sandbox` as a workaround. Linux tray/keyring availability depends on the desktop.
 
 Homebrew, WinGet and Chocolatey will follow verified release assets and registry acceptance. No automatic updater or automatic package-manager enrollment is implemented; install updates deliberately.
@@ -53,6 +53,6 @@ Dump locally retained data as JSONL, folder or ZIP. Dumps contain plaintext head
 | Cannot unlock saved data | Use the original OS account/keychain and complete backup. Reinstalling cannot recreate a lost key. Do not overwrite/delete the originals; recovery may require the original machine. |
 | Disk/cache limit reached | Eviction/omission is expected. Increase within allowed limits or export earlier. A disk write error stops capture; free space before restarting. |
 | Import rejected | Correct password, intact supported `.qcc` file, current app and size limits. Failed imports leave profiles unchanged. |
-| Signed app will not open | Stop and check its signature, notarization, checksum and supported architecture. Report the exact OS/error; do not bypass OS protections. |
+| Signed app will not open | Check the asset’s signed/unsigned label, checksum and supported architecture; verify publisher signatures only on the signed channel. Report the exact OS/error; do not bypass OS protections. |
 
 Before upgrading, Quit and back up the complete app user-data directory through a trusted OS backup. OS-protected keys are not portable backups: export `.qcc` separately for another machine. Portable captures are dumps, not a history-import format. Uninstall behavior and data locations must be confirmed on the acceptance machines; Electron normally uses `%APPDATA%/QueueCumber` on Windows, `~/Library/Application Support/QueueCumber` on macOS and `$XDG_CONFIG_HOME/QueueCumber` (or `~/.config/QueueCumber`) on Linux. Actual name/path comes from the running build's userData location. Do not remove it while the app is running.

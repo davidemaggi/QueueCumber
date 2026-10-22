@@ -29,59 +29,23 @@ jobs:
       - id: tag
         env:
           RELEASE_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+          RELEASE_CONTEXT: release-context.json
         run: node scripts/validate-release.mjs
-  windows:
-    needs: validate
-    runs-on: windows-latest
-    environment: windows-signing
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
-      AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
-      AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
-      AZURE_SIGNING_PUBLISHER: ${{ vars.AZURE_SIGNING_PUBLISHER }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ needs.validate.outputs.commit }}
-          persist-credentials: false
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22.18.0'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Check signing configuration before Azure login
-        run: node --input-type=module -e "import config from './electron-builder.windows.mjs'; config()"
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
-      - uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - name: Package and sign app, embedded uninstaller and installer
-        run: pnpm exec electron-builder --win --x64 --config electron-builder.windows.mjs --publish never
-      - name: Verify application and installer signatures
-        shell: pwsh
-        run: ./scripts/verify-windows-signatures.ps1 -Directory release -Publisher $env:AZURE_SIGNING_PUBLISHER
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: packages-windows-x64-signed
+          name: release-context
+          path: release-context.json
           if-no-files-found: error
           retention-days: 7
-          path: |
-            release/*-setup.exe
-            release/*.zip
-  desktop:
+  packages:
     needs: validate
     strategy:
       fail-fast: false
       matrix:
         include:
+          - os: windows-latest
+            platform: win
+            arch: x64
           - os: macos-latest
             platform: mac
             arch: arm64
@@ -89,7 +53,10 @@ jobs:
             platform: linux
             arch: x64
     runs-on: ${{ matrix.os }}
-    environment: release-desktop
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      CSC_LINK: ''
+      WIN_CSC_LINK: ''
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -104,37 +71,22 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      - name: Package Linux
-        if: matrix.platform == 'linux'
-        run: pnpm exec electron-builder --linux --x64 --publish never
-      - name: Package, sign and notarize macOS
-        if: matrix.platform == 'mac'
-        env:
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-        run: pnpm exec electron-builder --mac --arm64 --config electron-builder.mac.mjs --publish never
-      - name: Verify macOS signature, Gatekeeper and notarization ticket
-        if: matrix.platform == 'mac'
-        run: |
-          codesign --verify --deep --strict --verbose=2 release/mac-arm64/QueueCumber.app
-          spctl --assess --type execute --verbose=2 release/mac-arm64/QueueCumber.app
-          xcrun stapler validate release/mac-arm64/QueueCumber.app
+      - name: Package unsigned distribution
+        run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --config electron-builder.unsigned.mjs --publish never
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: packages-${{ matrix.platform }}-${{ matrix.arch }}
+          name: packages-${{ matrix.platform }}-${{ matrix.arch }}-unsigned
           if-no-files-found: error
           retention-days: 7
           path: |
-            release/*.dmg
-            release/*.zip
-            release/*.AppImage
-            release/*.deb
-            release/*.tar.gz
+            release/*unsigned-setup.exe
+            release/*unsigned.zip
+            release/*unsigned.dmg
+            release/*unsigned.AppImage
+            release/*unsigned.deb
+            release/*unsigned.tar.gz
   draft:
-    needs: [validate, windows, desktop]
+    needs: [validate, packages]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -169,4 +121,4 @@ jobs:
           fi
           flags=()
           if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Windows x64 uses Azure Artifact Signing. macOS arm64 artifacts require Developer ID signing and Apple notarization. Linux x64 artifacts include AppImage, DEB and tar.gz. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*
+          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Unsigned Windows x64, macOS arm64 and Linux x64 downloads. macOS uses ad-hoc signing only, without Developer ID or notarization. From 1.0.1, verified Windows signed variants may be added by the separate optional self-hosted workflow. Their absence means no signed variant was provided. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*

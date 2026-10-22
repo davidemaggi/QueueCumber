@@ -35,6 +35,7 @@ it('accepts only a merged main PR and its immutable versioned commit', () => {
           GITHUB_REPOSITORY: 'synthetic/queuecumber',
           RELEASE_COMMIT: sha,
           GITHUB_OUTPUT: join(dir, 'output'),
+          RELEASE_CONTEXT: join(dir, 'release-context.json'),
         },
       },
     )
@@ -62,6 +63,49 @@ it('accepts only a merged main PR and its immutable versioned commit', () => {
       },
     }
     expect(run(event, sha).status).toBe(0)
+    expect(
+      JSON.parse(readFileSync(join(dir, 'release-context.json'), 'utf8')),
+    ).toEqual({
+      commit: sha,
+      tag: 'v1.2.3+build-alpha',
+      version: '1.2.3+build-alpha',
+    })
+    mkdirSync(join(dir, 'release-context'))
+    writeFileSync(
+      join(dir, 'release-context/release-context.json'),
+      readFileSync(join(dir, 'release-context.json')),
+    )
+    const followup = {
+      repository: { full_name: 'synthetic/queuecumber' },
+      workflow_run: {
+        conclusion: 'success',
+        event: 'pull_request_target',
+        head_branch: 'main',
+        path: '.github/workflows/release.yml@main',
+      },
+    }
+    writeFileSync(join(dir, 'followup.json'), JSON.stringify(followup))
+    const prepare = spawnSync(
+      process.execPath,
+      [resolve('scripts/prepare-signing.mjs')],
+      {
+        cwd: dir,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GITHUB_EVENT_NAME: 'workflow_run',
+          GITHUB_EVENT_PATH: join(dir, 'followup.json'),
+          GITHUB_REPOSITORY: 'synthetic/queuecumber',
+          GITHUB_OUTPUT: join(dir, 'sign-output'),
+          WINDOWS_SIGNING_ENABLED: 'false',
+        },
+      },
+    )
+    expect(prepare.status, prepare.stderr).toBe(0)
+    expect(readFileSync(join(dir, 'sign-output'), 'utf8')).toContain(
+      'available=false',
+    )
+
     expect(readFileSync(join(dir, 'output'), 'utf8')).toContain(
       'tag=v1.2.3+build-alpha',
     )

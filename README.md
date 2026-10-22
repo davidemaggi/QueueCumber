@@ -50,7 +50,7 @@ Prepared source is not a security certification. Desktop tests deliberately use 
 | [Product context](PRODUCT.md) | Confirmed requirements and open decisions |
 | [Agent conventions](AGENTS.md) | How AI-assisted work is designed and checked |
 
-Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Windows signing uses Azure Artifact Signing. Install commands will appear when those packages actually exist.
+Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Version 1.0.0 downloads will be unsigned. From 1.0.1, optional self-hosted Windows signing adds separately labeled signed downloads when its runner is available; unsigned releases remain independent. Install commands will appear when those packages actually exist.
 
 ## Contributing
 
@@ -64,7 +64,7 @@ For now, the most useful contributions are broker edge cases and reproducible us
 
 Use Node.js 22.18+ and the pinned pnpm version. Run `pnpm install`, then `pnpm dev`. Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
-Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft; Azure provisioning, real signed Windows validation and real Apple-signed/notarized validation are still pending. Both Windows and macOS release jobs fail closed when signing setup is missing.
+Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Actual hosted builds and clean-machine checks remain pending. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
 
 ## Kafka
 
@@ -104,6 +104,6 @@ In secure mode, encrypted session history and retained records can be reopened a
 
 ## Verification status
 
-Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 and Apache Kafka 4.2.0 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Installer signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
+Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 and Apache Kafka 4.2.0 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Optional self-hosted Windows signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
 
 Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt). Other dependencies keep their own licenses.

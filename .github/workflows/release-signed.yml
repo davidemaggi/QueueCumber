@@ -1,0 +1,105 @@
+name: Optional Windows signed assets
+on:
+  workflow_run:
+    workflows: [Build release draft]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: optional-signing-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request_target' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      available: ${{ steps.signer.outputs.available }}
+      commit: ${{ steps.signer.outputs.commit }}
+      tag: ${{ steps.signer.outputs.tag }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-context
+          path: release-context
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - id: signer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINDOWS_SIGNING_ENABLED: ${{ vars.WINDOWS_SIGNING_ENABLED }}
+          SIGNING_RUNNER_READ_TOKEN: ${{ secrets.SIGNING_RUNNER_READ_TOKEN }}
+        run: node scripts/prepare-signing.mjs
+  sign-windows:
+    needs: prepare
+    if: needs.prepare.outputs.available == 'true'
+    runs-on: [self-hosted, Windows, X64, queuecumber-signing]
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      WINDOWS_SIGNING_CERTIFICATE_SHA1: ${{ vars.WINDOWS_SIGNING_CERTIFICATE_SHA1 }}
+      WINDOWS_SIGNING_PUBLISHER: ${{ vars.WINDOWS_SIGNING_PUBLISHER }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      EXPECTED_COMMIT: ${{ needs.prepare.outputs.commit }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Package and sign from the runner certificate store
+        run: pnpm exec electron-builder --win --x64 --config electron-builder.self-hosted.mjs --publish never
+      - name: Verify before attaching any signed assets
+        shell: pwsh
+        run: ./scripts/verify-windows-signatures.ps1 -Directory release -Publisher $env:WINDOWS_SIGNING_PUBLISHER
+      - name: Attach verified signed variants to the existing release
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory signed-assets | Out-Null
+          Copy-Item release/*-signed-setup.exe,release/*-signed.zip signed-assets/
+          node scripts/make-checksums.mjs signed-assets
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Rename-Item signed-assets/SHA256SUMS.txt SHA256SUMS-signed-windows-x64.txt
+          $resolved = gh api "repos/$env:GH_REPO/commits/$env:RELEASE_TAG" --jq .sha
+          if ($LASTEXITCODE -ne 0 -or $resolved -ne $env:EXPECTED_COMMIT) { throw 'Release tag no longer matches the signed commit' }
+          gh release upload $env:RELEASE_TAG (Get-ChildItem signed-assets -File).FullName
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  watch-queue:
+    needs: prepare
+    if: needs.prepare.outputs.available == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/watch-signing.mjs

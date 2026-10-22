@@ -46,7 +46,7 @@ A local desktop inspector with a common workflow across brokers and explicit han
 - Protect private connection details with secure storage and support password-protected configuration transfer.
 - Localize the UI with English as the default. Italian is the first additional language under the approved proposal.
 - Support light and dark themes. Repository documentation is English, with a friendly developer voice.
-- Build all distribution artifacts through GitHub Actions and distribute them through GitHub Releases first (installers and archives), followed by package-manager channels. Windows executables use the maintainer’s Azure Artifact Signing account.
+- Build all distribution artifacts through GitHub Actions and distribute them through GitHub Releases first (installers and archives), followed by package-manager channels. The maintainer approved unsigned 1.0.0 downloads. From 1.0.1, verified Windows-signed variants use an available self-hosted runner alongside the always-built unsigned downloads; missing signing capacity must not block unsigned output.
 - Follow Semantic Versioning. Target GitHub installers/archives and package managers including Homebrew, WinGet and Chocolatey; availability depends on completed releases and registry acceptance.
 - Numerical defaults and limits must be validated with diverse synthetic workloads; broker/authentication compatibility and supported OS/CPU combinations need testing before public promises.
 

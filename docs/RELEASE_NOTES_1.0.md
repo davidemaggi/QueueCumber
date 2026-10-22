@@ -13,7 +13,7 @@ A little less queue confusion. Ackbar brings RabbitMQ and Kafka inspection to on
 
 ## Downloads and validation
 
-Planned first targets: Windows x64 installer/ZIP, macOS arm64 DMG/ZIP, Linux x64 AppImage/DEB/tar.gz. All artifacts come from the merged-main GitHub Actions run. Windows requires Azure Artifact Signing; macOS requires Developer ID signing/notarization. Validate downloaded SHA256SUMS.txt and signatures before use.
+Planned first targets: Windows x64 installer/ZIP, macOS arm64 DMG/ZIP, Linux x64 AppImage/DEB/tar.gz. All artifacts come from the merged-main GitHub Actions run. The maintainer approved unsigned 1.0.0 downloads; names explicitly say unsigned. macOS uses ad-hoc signing, without Developer ID/notarization. Windows-signed variants are planned from 1.0.1 when a self-hosted signing runner is available. Validate downloaded SHA256SUMS.txt; unsigned builds have no verified publisher signature.
 
 The maintainer must replace this paragraph with the actual tested OS/broker matrix and accepted gate results from [ACCEPTANCE.md](ACCEPTANCE.md) before publishing. Package-manager channels follow registry verification; there is no automatic updater.
 

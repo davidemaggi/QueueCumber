@@ -1,52 +1,40 @@
 # Building release drafts
 
-Every artifact intended for distribution is built in GitHub Actions. Local build/package commands are for development and debugging. The first distribution channel is GitHub Releases; Homebrew, WinGet and Chocolatey integrations follow later and should reference versioned release assets and checksums.
+All distribution artifacts are built through GitHub Actions after a reviewed pull request merges into main. Ordinary development/PR checks do not package releases. GitHub Releases is the first download channel; package-manager submissions follow verified assets. Source metadata alone does not publish a release.
 
-## Current workflow
+## Always-available unsigned path
 
-`.github/workflows/release.yml` builds distribution artifacts **only after a pull request is merged into `main`**. The `pull_request_target` closed event has explicit merged/base guards; a merely closed PR, an open PR, development push, direct push or tag push cannot start release packaging. This post-merge target context also supports accepted contributions from forks without running an unmerged PR head with signing credentials. The validator checks the event repository, immutable merge SHA, actual checkout and `origin/main` ancestry before installing dependencies or requesting signing access.
+`.github/workflows/release.yml` accepts only a merged `pull_request_target.closed` event into main. It validates repository, exact merge SHA, checkout, main ancestry, SemVer/name and tag conflicts before packaging. Direct pushes, tag pushes, open/unmerged PRs and manual dispatch cannot trigger distribution. Every package uses the validated SHA.
 
-All target jobs check out that validated merge SHA. The `v`-prefixed SemVer tag is derived from the merged `package.json`; bump its version before every release merge. An existing tag belonging to another commit fails validation. After all target builds/signing/checks succeed, the draft job creates the corresponding tag/release at the explicit merge SHA; existing releases are never overwritten. Protect `main` and release tags, and require ordinary Checks before merging. Rerunning a failed workflow keeps its original merged commit; no manual dispatch route is provided.
+GitHub-hosted runners build Windows x64 NSIS/ZIP, macOS arm64 DMG/ZIP and Linux x64 AppImage/DEB/tar.gz through `electron-builder.unsigned.mjs`. Filenames explicitly include `unsigned`; these jobs need no signing environment, Azure account or Apple secret. macOS arm64 uses an ad-hoc signature, without a trusted Developer ID identity or notarization. Do not describe these artifacts as publisher-signed.
 
-The normal Checks workflow still compiles/tests development and PR code; those are validation builds, not distributable release artifacts. The release workflow never packages an unmerged development commit. Its event definition must be available on the base repository's main/default branch for GitHub to deliver the event. Validate the first actual merge/run before claiming remote release automation works.
+After all unsigned targets succeed, the workflow creates the version tag at the merge SHA and a **draft** release with unsigned assets and `SHA256SUMS.txt`. Existing releases/assets are never overwritten. The workflow also saves a small release-context artifact (commit/tag/version), retained seven days, for the optional follow-up. Keep main/tags protected and normal Checks required. The workflow must exist on the default branch for its trigger to work.
 
-| Target | Artifacts | Signing |
-| --- | --- | --- |
-| Windows x64 | NSIS installer, ZIP | Azure Artifact Signing required |
-| macOS arm64 | DMG, ZIP | Developer ID signing and Apple notarization required |
-| Linux x64 | AppImage, DEB, tar.gz | No package signature yet |
+The maintainer has explicitly authorized **1.0.0 Ackbar as unsigned**. Signing begins with the planned **1.0.1**, which has no release name under the patch naming rule. Do not bump the package until preparing that release's code. Actual build/install compatibility still needs acceptance; no remote run is claimed here.
 
-These are configured build targets, not a certified compatibility matrix. No remote release workflow has been run yet.
+## Optional signed Windows path, from 1.0.1
 
-Windows uses `electron-builder.windows.mjs`, extending the shared configuration. It requires the account endpoint, account/profile names and exact certificate CN, forces signing, and requests SHA-256 file/timestamp digests. The pinned electron-builder 26 integration still uses the older `azureSignOptions` / `TrustedSigning` names for the renamed Azure service. Keep configuration aligned with the locked builder version; newer builder schemas differ. See [electron-builder v26 signing](https://www.electron.build/v26/docs/features/code-signing/code-signing-win/).
+`.github/workflows/release-signed.yml` follows a successful Build release draft run through `workflow_run`; it has no manual/push/PR-head distribution trigger. Its hosted preflight validates the original workflow path/event/repository/main branch, validates the context against package metadata/main ancestry and the release tag's exact commit, then checks availability. It never sends an unmerged PR head to the signing machine.
 
-Authentication uses Azure login with GitHub OIDC and an environment-scoped federated identity. The signing job uses the `windows-signing` GitHub environment. Configure restricted deployment branches, reviewers and a profile-scoped signing principal before running it. Microsoft documents [OIDC authentication](https://github.com/Azure/artifact-signing-action/blob/main/docs/OIDC.md) and [profile-scoped signer permissions](https://learn.microsoft.com/en-us/azure/artifact-signing/tutorial-assign-roles).
+Enable with repository variable `WINDOWS_SIGNING_ENABLED=true`. Add repository secret `SIGNING_RUNNER_READ_TOKEN`: a fine-grained GitHub token limited to this repository with **Administration: read**, used only on the hosted preflight to list repository self-hosted runners. The ordinary workflow token cannot generally list them. Missing token, inventory errors, missing/offline/busy runners, disabled signing or version 1.0.0 mean no signed job. This implementation expects a repository-visible runner with labels `self-hosted`, `Windows`, `X64`, `queuecumber-signing`; organization-only inventory and custom label selection are not implemented. See [GitHub runner inventory permissions](https://docs.github.com/en/rest/actions/self-hosted-runners).
 
-Account-specific setup instructions are intentionally local and ignored, under `maintainer-local/`. No account identifiers or credentials are committed. Signing configuration errors fail the build instead of producing unsigned Windows release output. A missing Azure setup prevents the Windows job and release draft from completing.
+The dedicated runner needs Node/pnpm tooling access, PowerShell 7, GitHub CLI, Windows signing tools and a code-signing certificate/private key accessible to its service account through the Windows certificate store. Set repository variables:
 
-After packaging, Windows verifies valid timestamped signatures on the application executable and installer, including the expected publisher. The ZIP is built from the signed application. Electron-builder signs the embedded NSIS uninstaller during creation; verification of the installed uninstaller remains part of clean-machine Windows testing.
+| Variable | Meaning |
+| --- | --- |
+| `WINDOWS_SIGNING_CERTIFICATE_SHA1` | Exact 40-hex certificate thumbprint, used to select the certificate; signatures use SHA-256 |
+| `WINDOWS_SIGNING_PUBLISHER` | Exact signer certificate Common Name, checked after signing |
 
-The jobs upload only distributable files as Actions artifacts, retained for seven days. After every build succeeds, the final job downloads artifacts from that run, writes a streamed `SHA256SUMS.txt` manifest and creates a **draft** GitHub Release with generated notes. Prerelease status follows the SemVer prerelease suffix. The workflow neither overwrites an existing release nor publishes a draft, and it performs no package-manager submissions. An existing release makes creation fail; review it instead of replacing its assets automatically.
+The config `electron-builder.self-hosted.mjs` forces signing through the selected local certificate and gives assets distinct `signed` filenames. No Azure login, Azure account variables, exported private key or PFX password is used by this workflow. A hardware-backed key can work when its installed provider exposes the certificate to SignTool; validate that provider/PIN/service-account behavior on the actual machine. A different signing backend requires an explicit integration rather than assuming any HSM works.
 
-## Release names
+Application/installer signatures must be valid, timestamped and match the publisher. Only then are Windows signed installer/ZIP plus `SHA256SUMS-signed-windows-x64.txt` attached to the **same existing release**, without clobbering unsigned files or publishing the draft. The tag is checked again before attachment. A signing error leaves unsigned output intact; a failed upload can leave a subset of already-verified signed files, which the maintainer must inspect before publication. macOS trusted signing/notarization and Linux package signing are outside this optional Windows path.
 
-Starting at 1.0, a release with patch zero requires a `releaseName` in `package.json`: a Star Wars character beginning with the major's letter (1 → A, 2 → B, through 26 → Z). **1.0.0 is Ackbar**, including 1.0.0 prerelease candidates. Choose real character names during review; the validator checks the letter and the fixed 1.0 name, not a fictional-universe encyclopedia. Agree the continuation after Z before using a later major.
+Availability is a snapshot, not a reservation. A hosted watchdog allows two minutes for the signer job to start, then rechecks and cancels only this isolated optional workflow if it is still observed queued (including approval/runner-disappearance delays). If the jobs API remains unavailable or the state is unknown, the watchdog fails visibly without cancelling a potentially active signer; the optional job may then remain queued and needs maintainer attention. Availability/status checks are not atomic reservations, so a start concurrent with cancellation remains possible. Signing itself has a 30-minute execution timeout. The original unsigned release workflow has already finished and is never cancelled by this watchdog. The optional cancellation can appear as a cancelled Actions run; it does not retract the release's unsigned assets. See [GitHub workflow cancellation](https://docs.github.com/en/rest/actions/workflow-runs#cancel-a-workflow-run).
 
-Patch releases omit `releaseName` entirely. Current 0.x development versions stay unnamed. Examples of title format: `v1.0.0 — Ackbar`, `v1.0.1`. Tags, package versions and artifact filenames continue to use numeric SemVer only. The draft title and application version display include the name where present; signing and update-version comparisons retain the ordinary version.
+Use a dedicated, preferably ephemeral self-hosted runner restricted to trusted release work. Clean checkout happens before each run; keep key material outside the workspace. Do not route arbitrary pull-request code to that machine. Inventory authorization does not grant signing-key access. Runner setup and real signing remain maintainer checks; no account provisioning or remote execution has been performed.
 
-## Before publishing
+## Version names and publication
 
-1. Confirm the normal Checks workflow and all release-build jobs pass for the merged commit.
-2. Verify downloaded checksums and clean-machine install, startup, upgrade and uninstall behavior. Check app and installed-uninstaller signatures on Windows.
-3. Complete applicable platform signing/notarization and the roadmap release gates. Require the documented Windows/macOS signing gates; do not publish unsigned 1.0 artifacts.
-4. Review generated release notes and assets, then publish the draft deliberately in GitHub.
+Tags and filenames stay numeric SemVer. Major/minor releases with patch zero use `releaseName`: Star Wars characters with A for major 1, B for major 2, through Z. **1.0.0 is Ackbar**; patch releases such as 1.0.1 omit the field. Automated validation enforces the letter/Ackbar/absence rules; character authenticity remains reviewable content.
 
-Azure/Apple provisioning, the first real signed Windows/macOS runs and clean-machine installation checks remain pending. Preparing workflows does not satisfy those gates.
-
-## macOS signing and notarization
-
-The desktop matrix uses the protected `release-desktop` environment. Its macOS step alone receives secrets `MAC_CSC_LINK` (base64 Developer ID Application PKCS#12), `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and variable `APPLE_TEAM_ID`. Restrict environment deployment to main and trusted approval. Linux does not receive these step-scoped secrets. The ignored maintainer setup guide contains the account walkthrough.
-
-`electron-builder.mac.mjs` extends the shared targets, requires those settings, rejects disabled identity discovery and enables forceCodeSigning, hardened runtime and notarization using the installed v26 schema. The job verifies the packaged app with codesign, Gatekeeper and stapler before uploading. No unsigned fallback is provided for 1.0. Both platform jobs must pass before the combined draft is created. A validated configuration does not prove a real Apple submission succeeds. See [electron-builder v26 macOS options](https://www.electron.build/v26/docs/mac/) and [Apple notarization requirements](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
-
-Use [prepared Ackbar notes](RELEASE_NOTES_1.0.md) when reviewing generated notes. Complete [the acceptance checklist](ACCEPTANCE.md) before publication; package-manager manifests must use the actual published assets and hashes after that decision.
+Review downloaded checksums, install/upgrade/uninstall behavior, actual supported architectures and signing status. Verify the signed app and installed uninstaller when signed variants exist. Unsigned artifacts must remain clearly labeled; expected OS warnings are not evidence of a valid publisher signature. Do not disable system-wide security protections to pass acceptance. Use [prepared notes](RELEASE_NOTES_1.0.md) and [acceptance checklist](ACCEPTANCE.md), then publish the draft deliberately. Neither workflow automatically publishes or submits package-manager manifests.

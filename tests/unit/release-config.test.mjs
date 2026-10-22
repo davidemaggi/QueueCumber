@@ -1,42 +1,5 @@
 import { it, expect } from 'vitest'
-import {
-  windowsSigningConfig,
-  releaseVersion,
-} from '../../scripts/release-config.mjs'
-const signing = {
-  AZURE_SIGNING_ENDPOINT: 'https://weu.codesigning.azure.net/',
-  AZURE_SIGNING_ACCOUNT: 'synthetic-account',
-  AZURE_SIGNING_PROFILE: 'synthetic-profile',
-  AZURE_SIGNING_PUBLISHER: 'Synthetic Publisher',
-}
-it('requires explicit Azure signing settings without falling back to unsigned output', () => {
-  for (const key of Object.keys(signing)) {
-    const env = { ...signing }
-    delete env[key]
-    expect(() => windowsSigningConfig(env)).toThrow(key)
-  }
-  const config = windowsSigningConfig(signing)
-  expect(config.forceCodeSigning).toBe(true)
-  expect(config.win.azureSignOptions.publisherName).toBe(
-    signing.AZURE_SIGNING_PUBLISHER,
-  )
-  expect(config.win.azureSignOptions.fileDigest).toBe('SHA256')
-  expect(config.win.azureSignOptions.timestampDigest).toBe('SHA256')
-  expect(config.extends).toBe('./electron-builder.yml')
-})
-it('rejects non-Azure or insecure signing endpoints without echoing input', () => {
-  for (const endpoint of [
-    'http://weu.codesigning.azure.net/',
-    'https://example.com/',
-    'https://weu.codesigning.azure.net.evil.test/',
-    'https://user:secret@weu.codesigning.azure.net/',
-    'https://weu.codesigning.azure.net/?secret=test',
-  ]) {
-    expect(() =>
-      windowsSigningConfig({ ...signing, AZURE_SIGNING_ENDPOINT: endpoint }),
-    ).toThrow('Invalid AZURE_SIGNING_ENDPOINT')
-  }
-})
+import { releaseVersion } from '../../scripts/release-config.mjs'
 it('requires an existing-tag style SemVer that exactly matches the package version', () => {
   for (const version of ['0.1.0-alpha.1', '1.2.3', '1.2.3-rc.2+build.5'])
     expect(releaseVersion('v' + version, version)).toBe(version)
@@ -70,28 +33,4 @@ it('names major/minor releases after Star Wars characters by major initial and l
     ['1.1.0', 'Ahsoka\nTano'],
   ])
     expect(() => releaseTitle(version, name)).toThrow()
-})
-
-it('requires macOS Developer ID signing and notarization credentials before packaging', async () => {
-  const { macSigningConfig } = await import('../../scripts/release-config.mjs')
-  const settings = {
-    CSC_LINK: 'synthetic-base64-p12',
-    CSC_KEY_PASSWORD: 'synthetic',
-    APPLE_ID: 'synthetic@example.test',
-    APPLE_APP_SPECIFIC_PASSWORD: 'synthetic',
-    APPLE_TEAM_ID: 'ABCDE12345',
-  }
-  for (const key of Object.keys(settings)) {
-    const incomplete = { ...settings }
-    delete incomplete[key]
-    expect(() => macSigningConfig(incomplete)).toThrow(key)
-  }
-  expect(macSigningConfig(settings)).toMatchObject({
-    extends: './electron-builder.yml',
-    forceCodeSigning: true,
-    mac: { hardenedRuntime: true, notarize: true },
-  })
-  expect(() =>
-    macSigningConfig({ ...settings, CSC_IDENTITY_AUTO_DISCOVERY: 'false' }),
-  ).toThrow('CSC_IDENTITY_AUTO_DISCOVERY')
 })
