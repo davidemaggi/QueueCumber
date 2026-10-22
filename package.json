@@ -1,6 +1,6 @@
 {
   "name": "queuecumber",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0",
   "description": "A local desktop inspector for messaging systems.",
   "private": true,
   "license": "MIT",
@@ -28,6 +28,7 @@
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "yazl": "3.3.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -37,6 +38,8 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "^45.0.0",
     "electron-builder": "^26.15.3",
@@ -47,7 +50,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yauzl": "^3.4.0"
   },
   "packageManager": "pnpm@11.8.0",
   "engines": {

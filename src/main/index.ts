@@ -1,3 +1,4 @@
+import { translator } from '../renderer/i18n'
 import {
   app,
   BrowserWindow,
@@ -6,6 +7,7 @@ import {
   Tray,
   Menu,
   nativeImage,
+  dialog,
 } from 'electron'
 import trayIconPath from '../../resources/tray.png?asset'
 import { DesktopPreferencesRepository } from './preferences'
@@ -14,7 +16,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { Vault } from './vault'
+import { Vault, mergeProfiles, profilesFingerprint } from './vault'
+import { ConfigurationFiles } from './configuration-files'
 import { registerOperations } from './ipc'
 import {
   validateConnection,
@@ -89,6 +92,7 @@ app.whenReady().then(async () => {
       await rpc('initialize', {
         dir: app.getPath('userData'),
         key: vault.getKey(),
+        persistent: true,
       })
     } else {
       temporary = await mkdtemp(join(tmpdir(), 'queuecumber-session-'))
@@ -148,6 +152,7 @@ app.whenReady().then(async () => {
     },
     shutdown: async () => {
       try {
+        configuration.clear()
         await rpc('shutdown')
       } finally {
         service.kill()
@@ -155,7 +160,96 @@ app.whenReady().then(async () => {
       }
     },
   })
+  const configuration = new ConfigurationFiles({
+    save: async () => {
+      const result = await dialog.showSaveDialog(window!, {
+        title: translator(desktopPreferences.locale)('configurationExport'),
+        defaultPath: 'QueueCumber.qcc',
+        filters: [
+          { name: 'QueueCumber encrypted configuration', extensions: ['qcc'] },
+        ],
+      })
+      return result.canceled ? undefined : result.filePath
+    },
+    open: async () => {
+      const result = await dialog.showOpenDialog(window!, {
+        title: translator(desktopPreferences.locale)('configurationImport'),
+        properties: ['openFile'],
+        filters: [
+          { name: 'QueueCumber encrypted configuration', extensions: ['qcc'] },
+        ],
+      })
+      return result.canceled ? undefined : result.filePaths[0]
+    },
+    profiles: () =>
+      vault
+        ? vault.all()
+        : [...ephemeralProfiles.values()].map((p) => ({ ...p })),
+    apply: async (profiles, mode, fingerprint) => {
+      if (vault) {
+        await vault.importProfiles(profiles, mode, fingerprint)
+        return
+      }
+      if (profilesFingerprint([...ephemeralProfiles.values()]) !== fingerprint)
+        throw Error('Connections changed; preview the import again')
+      const next = mergeProfiles(
+        [...ephemeralProfiles.values()],
+        profiles,
+        mode,
+      )
+      ephemeralProfiles.clear()
+      for (const p of next) ephemeralProfiles.set(p.id, p)
+    },
+    storageMode: () => storageMode,
+  })
+  let choosingExport = false
   registerOperations(window, {
+    exportCapture: withReady(async (id, format) => {
+      if (choosingExport) throw Error('Export dialog already open')
+      choosingExport = true
+      try {
+        let destination: string | undefined
+        const t = translator(desktopPreferences.locale)
+        if (format === 'folder') {
+          const result = await dialog.showOpenDialog(window!, {
+            title: t('exportCapture'),
+            properties: ['openDirectory', 'createDirectory'],
+          })
+          if (!result.canceled && result.filePaths[0])
+            destination = join(
+              result.filePaths[0],
+              `QueueCumber-${new Date().toISOString().slice(0, 10)}-${randomUUID()}`,
+            )
+        } else {
+          const result = await dialog.showSaveDialog(window!, {
+            title: t('exportCapture'),
+            defaultPath: `QueueCumber.${format}`,
+            filters: [
+              {
+                name: format === 'zip' ? 'ZIP' : 'JSONL',
+                extensions: [format],
+              },
+            ],
+          })
+          if (!result.canceled) destination = result.filePath
+        }
+        return destination ? await rpc('export', id, destination, format) : null
+      } finally {
+        choosingExport = false
+      }
+    }),
+    cancelExport: withReady((id) => rpc('cancelExport', id)),
+    deleteCapture: withReady((id) => rpc('deleteCapture', id)),
+    exportConfiguration: withReady((password, includeSecrets) =>
+      configuration.export(password, includeSecrets),
+    ),
+    previewConfiguration: withReady((password) =>
+      configuration.preview(password),
+    ),
+    applyConfiguration: withReady((token, mode) =>
+      configuration.apply(token, mode),
+    ),
+    discardConfiguration: () => configuration.clear(),
     saveDesktopPreferences: withReady(async (input) => {
       await preferencesRepository.save(input)
       desktopPreferences = input

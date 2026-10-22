@@ -1,6 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { DesktopApi } from '../shared/contracts'
 const api: DesktopApi = {
+  exportCapture: (id, format) =>
+    ipcRenderer.invoke('qc:exportCapture', id, format),
+  cancelExport: (id) => ipcRenderer.invoke('qc:cancelExport', id),
+  deleteCapture: (id) => ipcRenderer.invoke('qc:deleteCapture', id),
+  exportConfiguration: (password, includeSecrets) =>
+    ipcRenderer.invoke('qc:exportConfiguration', password, includeSecrets),
+  previewConfiguration: (password) =>
+    ipcRenderer.invoke('qc:previewConfiguration', password),
+  applyConfiguration: (token, mode) =>
+    ipcRenderer.invoke('qc:applyConfiguration', token, mode),
+  discardConfiguration: () => ipcRenderer.invoke('qc:discardConfiguration'),
   saveDesktopPreferences: (input) =>
     ipcRenderer.invoke('qc:saveDesktopPreferences', input),
   getStatus: () => ipcRenderer.invoke('qc:getStatus'),

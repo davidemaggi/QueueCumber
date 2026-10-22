@@ -922,3 +922,56 @@ pre {
     }
   }
 }
+
+.capture-tools {
+  margin: 16px 0;
+}
+.capture-tools .actions {
+  flex-wrap: wrap;
+  align-items: end;
+}
+.capture-tools label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+}
+.capture-tools > p {
+  margin-top: 10px;
+  max-width: 90ch;
+}
+.export-progress {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.import-preview {
+  max-height: 240px;
+  overflow: auto;
+  padding-left: 20px;
+}
+.import-preview li {
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.stream-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 20px 0;
+  align-items: end;
+}
+.stream-options label {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.stream-options p {
+  flex-basis: 100%;
+}
+
+.edit-connection {
+  margin: 0 14px 8px;
+  align-self: flex-start;
+}

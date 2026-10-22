@@ -1,3 +1,6 @@
+import { version } from '../../package.json'
+import type { ConnectionSummary } from '../shared/connection'
+import { CaptureTools } from './components/CaptureTools'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Plus,
@@ -35,6 +38,9 @@ export default function App() {
     )
   const [screen, setScreen] = useState<'inspect' | 'settings'>('inspect'),
     [form, setForm] = useState(false),
+    [editingProfile, setEditingProfile] = useState<ConnectionSummary | null>(
+      null,
+    ),
     [connection, setConnection] = useState(''),
     [resource, setResource] = useState<ResourceRef | null>(null)
   const [resources, setResources] = useState<ResourceRef[]>([]),
@@ -58,6 +64,10 @@ export default function App() {
     [sessionDisk, setSessionDisk] = useState(''),
     [sessionRate, setSessionRate] = useState('')
   const [resourceRevision, setResourceRevision] = useState(0)
+  const [streamChoice, setStreamChoice] = useState<'first' | 'next' | 'offset'>(
+      'next',
+    ),
+    [streamOffset, setStreamOffset] = useState('')
   const desktopLocaleLoaded = useRef(false)
   const selection = useRef(0),
     messageSelection = useRef(0),
@@ -175,6 +185,8 @@ export default function App() {
     setBindings([])
     setBindingReady(false)
     setPartial(false)
+    setStreamChoice('next')
+    setStreamOffset('')
     setMessage(null)
     messageSelection.current++
     setCursor(null)
@@ -205,6 +217,10 @@ export default function App() {
     active =
       session &&
       ['capturing', 'connecting', 'reconnecting'].includes(session.state)
+  const validStreamOffset =
+    streamOffset.trim() !== '' &&
+    Number.isSafeInteger(Number(streamOffset)) &&
+    Number(streamOffset) >= 0
   const shownBindings = session?.bindings ?? bindings
   const shownResources = resources.filter(
     (r) => kind === 'all' || r.kind === kind,
@@ -227,6 +243,12 @@ export default function App() {
       const s = await api.startCapture(connection, resource, {
         allowPartial: partial,
         limits,
+        ...(resource.kind === 'stream'
+          ? {
+              streamStart:
+                streamChoice === 'offset' ? Number(streamOffset) : streamChoice,
+            }
+          : {}),
       })
       if (token === selection.current) {
         setSessionId(s.id)
@@ -293,6 +315,7 @@ export default function App() {
             aria-label={t('addConnection')}
             title={t('addConnection')}
             onClick={() => {
+              setEditingProfile(null)
               setForm(true)
               setScreen('inspect')
             }}
@@ -354,6 +377,16 @@ export default function App() {
                     setPartial(false)
                     setConnection(s.connectionId)
                     setResource(s.resource)
+                    setStreamChoice(
+                      typeof s.streamStart === 'number'
+                        ? 'offset'
+                        : (s.streamStart ?? 'next'),
+                    )
+                    setStreamOffset(
+                      typeof s.streamStart === 'number'
+                        ? String(s.streamStart)
+                        : '',
+                    )
                     setBindings(s.bindings)
                     setBindingReady(true)
                     setSessionId(s.id)
@@ -380,7 +413,7 @@ export default function App() {
                 : 'closeBehaviorQuit',
             )}
           </p>
-          <span className="small">0.1.0-alpha.1</span>
+          <span className="small">{version}</span>
         </div>
       </aside>
       <div className="workspace">
@@ -424,6 +457,53 @@ export default function App() {
             {notice}
           </div>
         ) : null}
+        {state?.exportRecovery && state.exportRecovery !== 'none' ? (
+          <div role="status" className="notice">
+            {t(
+              state.exportRecovery === 'cleaned'
+                ? 'exportRecoveryCleaned'
+                : 'exportRecoveryManual',
+            )}
+          </div>
+        ) : null}
+        {state?.exportJob ? (
+          <div role="status" className="notice export-progress">
+            <span>
+              {t(
+                (
+                  {
+                    running: 'exportRunning',
+                    cancelling: 'exportCancelling',
+                    complete: 'exportComplete',
+                    cancelled: 'exportCancelled',
+                    failed: 'exportFailed',
+                  } as const
+                )[state.exportJob.state],
+              )}{' '}
+              · {state.exportJob.recordsWritten.toLocaleString()} /{' '}
+              {state.exportJob.expectedRecords.toLocaleString()}
+              {state.exportJob.missingRecords
+                ? ` · ${state.exportJob.missingRecords} ${t('exportMissing')}`
+                : ''}
+            </span>
+            {state.exportJob.error === 'EXPORT_CLEANUP_FAILED' ? (
+              <p role="alert">{t('exportCleanupFailed')}</p>
+            ) : null}
+            {['running', 'cancelling'].includes(state.exportJob.state) ? (
+              <button
+                disabled={state.exportJob.state === 'cancelling'}
+                onClick={() =>
+                  void run(async () => {
+                    await api.cancelExport(state.exportJob!.id)
+                    await refresh()
+                  })
+                }
+              >
+                {t('cancelExport')}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {state?.warning ? (
           <div role="alert" className="notice">
             {t(
@@ -443,6 +523,7 @@ export default function App() {
             }
             desktop={state.desktop}
             onDesktopChange={saveDesktop}
+            onConfigurationChanged={refresh}
             theme={theme}
             setTheme={setTheme}
             busy={busy}
@@ -454,6 +535,8 @@ export default function App() {
           />
         ) : form ? (
           <ConnectionForm
+            key={editingProfile?.id ?? 'new'}
+            initial={editingProfile}
             t={t}
             busy={busy}
             onClose={() => setForm(false)}
@@ -477,7 +560,13 @@ export default function App() {
               </div>
               <h1>{t('noConnections')}</h1>
               <p>{t('intro')}</p>
-              <button className="primary" onClick={() => setForm(true)}>
+              <button
+                className="primary"
+                onClick={() => {
+                  setEditingProfile(null)
+                  setForm(true)
+                }}
+              >
                 <Plus size={16} />
                 {t('addConnection')}
               </button>
@@ -517,6 +606,18 @@ export default function App() {
                   <Network size={16} />
                 </button>
               </div>
+              <button
+                className="text-button edit-connection"
+                disabled={busy}
+                onClick={() => {
+                  setEditingProfile(
+                    state?.profiles.find((p) => p.id === connection) ?? null,
+                  )
+                  setForm(true)
+                }}
+              >
+                {t('editConnection')}
+              </button>
               <div className="resource-search">
                 <Search size={15} />
                 <input
@@ -597,17 +698,30 @@ export default function App() {
                     <h1 className="mono">
                       {resource?.name || t('chooseQueue')}
                     </h1>
-                    <p className="muted">{t('bindingHint')}</p>
+                    <p className="muted">
+                      {t(
+                        resource?.kind === 'stream'
+                          ? 'streamHint'
+                          : 'bindingHint',
+                      )}
+                    </p>
                   </div>
-                  {resource?.kind === 'queue' ? (
+                  {resource &&
+                  (resource.kind === 'queue' || resource.kind === 'stream') ? (
                     <button
                       className={active ? '' : 'primary'}
                       disabled={
                         busy ||
-                        !bindingReady ||
-                        (!active &&
-                          (!bindings.some((b) => b.supported) ||
-                            (bindings.some((b) => !b.supported) && !partial)))
+                        (resource.kind === 'queue' &&
+                          (!bindingReady ||
+                            (!active &&
+                              (!bindings.some((b) => b.supported) ||
+                                (bindings.some((b) => !b.supported) &&
+                                  !partial))))) ||
+                        (resource.kind === 'stream' &&
+                          !active &&
+                          streamChoice === 'offset' &&
+                          !validStreamOffset)
                       }
                       onClick={() =>
                         void (active
@@ -623,6 +737,34 @@ export default function App() {
                     </button>
                   ) : null}
                 </div>
+                {session ? (
+                  <CaptureTools
+                    key={session.id}
+                    t={t}
+                    busy={busy}
+                    exporting={
+                      !!state?.exportJob &&
+                      ['running', 'cancelling'].includes(state.exportJob.state)
+                    }
+                    onExport={async (format) => {
+                      await run(async () => {
+                        await api.exportCapture(session.id, format)
+                        await refresh()
+                      })
+                    }}
+                    onDelete={async () => {
+                      await run(async () => {
+                        await api.deleteCapture(session.id)
+                        selection.current++
+                        messageSelection.current++
+                        setMessage(null)
+                        setSessionId('')
+                        setRows([])
+                        await refresh()
+                      })
+                    }}
+                  />
+                ) : null}
                 {resource?.kind === 'queue' ? (
                   <>
                     <div className="binding-title">
@@ -688,6 +830,66 @@ export default function App() {
                       </label>
                     ) : null}
                     <p className="small muted">{t('partialHint')}</p>
+                  </>
+                ) : resource?.kind === 'stream' ? (
+                  <div className="stream-options">
+                    <label>
+                      {t('streamStart')}
+                      <select
+                        value={streamChoice}
+                        disabled={!!active || busy}
+                        onChange={(e) =>
+                          setStreamChoice(
+                            e.target.value as 'first' | 'next' | 'offset',
+                          )
+                        }
+                      >
+                        <option value="first">{t('streamFirst')}</option>
+                        <option value="next">{t('streamNext')}</option>
+                        <option value="offset">{t('streamSpecific')}</option>
+                      </select>
+                    </label>
+                    {streamChoice === 'offset' ? (
+                      <label>
+                        {t('streamOffset')}
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          max={Number.MAX_SAFE_INTEGER}
+                          disabled={!!active || busy}
+                          value={streamOffset}
+                          onChange={(e) => setStreamOffset(e.target.value)}
+                        />
+                      </label>
+                    ) : null}
+                    {streamChoice === 'offset' && !validStreamOffset ? (
+                      <p role="status" className="small muted">
+                        {t('streamOffsetHint')}
+                      </p>
+                    ) : null}
+                    {session?.lastOffset !== undefined ? (
+                      <p className="mono">
+                        {t('lastOffset')}: {session.lastOffset.toLocaleString()}
+                      </p>
+                    ) : null}
+                    {session?.offsetNotice ? (
+                      <p role="status" className="notice">
+                        {t(
+                          session.offsetNotice === 'OFFSET_UNVERIFIED'
+                            ? 'streamOffsetUnverified'
+                            : 'streamOffsetChanged',
+                        )}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : resource ? (
+                  <p className="empty-line">{t('futureResource')}</p>
+                ) : null}
+                {resource &&
+                (resource.kind === 'queue' || resource.kind === 'stream') ? (
+                  <>
+                    {' '}
                     <details className="session-options">
                       <summary>{t('perSession')}</summary>
                       <div className="session-fields">
@@ -724,8 +926,6 @@ export default function App() {
                       </div>
                     </details>
                   </>
-                ) : resource ? (
-                  <p className="empty-line">{t('futureResource')}</p>
                 ) : null}
               </section>
               <div className="messages-workspace">
@@ -810,7 +1010,13 @@ export default function App() {
                     ) : null}
                   </div>
                   {session ? (
-                    <p className="buffer-note">{t('potentialOverflow')}</p>
+                    <p className="buffer-note">
+                      {t(
+                        session.resource.kind === 'stream'
+                          ? 'streamRetention'
+                          : 'potentialOverflow',
+                      )}
+                    </p>
                   ) : null}
                 </section>
                 <MessageView message={message} t={t} />

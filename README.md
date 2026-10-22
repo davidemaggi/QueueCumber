@@ -4,19 +4,22 @@
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ first. Kafka next. Bring your own broker.
 
-> **Early development.** The architecture and MVP plan are approved. The RabbitMQ inspection workflow runs locally; no downloadable release exists yet.
+> **0.2.0 development milestone.** RabbitMQ inspection, portable captures and protected connection transfer work locally. No downloadable release has been published yet.
 
 ## Working in the alpha
 
 - Save encrypted RabbitMQ connection profiles, or use session-only storage when OS protection is unavailable.
 - Test AMQP and management independently; browse and search queues, streams and exchanges.
 - Mirror supported queue bindings into a private observation queue and inspect incoming messages.
+- Read RabbitMQ streams from the first retained message, live end or a specific offset, with local resume after reconnects.
 - Read structured headers, formatted JSON and every retained original byte through bounded chunk navigation.
 - Configure global and session capture budgets, disk retention and optional admission-rate limits.
 - Switch between English/Italian and light/dark/system themes.
 - Opt into background capture on window close; inspect session status and reopen/quit from the tray.
+- Export retained messages as JSONL, a folder or ZIP; cancel exports and delete local capture history.
+- Move password-encrypted connection profiles between installations, preview conflicts and choose copies, skipping or replacement.
 
-The [roadmap](ROADMAP.md) tracks the rest: stream consumption, dumps, password-protected configuration transfer, Kafka and packaged releases are future milestones.
+The [roadmap](ROADMAP.md) tracks the next steps: Kafka, platform validation and packaged releases.
 
 ## Inspect the traffic. Leave application queues alone.
 
@@ -26,9 +29,13 @@ This needs permission to create temporary queues and bindings. Version 1.0 will 
 
 ## Local by design
 
-The proposed app connects from your computer; it needs no QueueCumber server. Private connection records use authenticated encryption with an OS-protected key. Captured sensitive content is encrypted in a local SQLite database. If secure OS storage is unavailable, profiles remain in memory and captures use a temporary encrypted session directory. Password-protected configuration exports are planned for 0.2.
+The app connects from your computer; it needs no QueueCumber server. Private connection records use authenticated encryption with an OS-protected key. Captured sensitive content is encrypted in a local SQLite database. If secure OS storage is unavailable, profiles remain in memory and captures use a temporary encrypted session directory.
 
-This is early software, not a security certification. The desktop tests deliberately use session-only storage; real key-store behavior still needs checks on every target OS. Message dumps are not implemented yet.
+Connection transfers encrypt the entire file with scrypt and AES-256-GCM. Secrets are excluded by default; include them explicitly or re-enter full endpoints and credentials with **Edit connection** after importing. Capture budgets, appearance and OS keys stay machine-local. Imports never connect automatically.
+
+Message dumps contain **plaintext private data**, including headers and payloads. Choose their destination accordingly. Cancel and Quit clean partial files; forced termination in session-only mode can leave `.queuecumber-export-*` files beside the selected destination. Secure mode uses an encrypted recovery journal to clean interrupted exports on the next launch. See [data formats and recovery](docs/DATA_FORMATS.md).
+
+This is early software, not a security certification. Desktop tests deliberately use session-only storage; real key-store behavior still needs checks on every target OS.
 
 ## Follow along
 
@@ -61,6 +68,8 @@ Supply an AMQP URL and a separate management base URL. Prefer `amqps://` and HTT
 
 The account needs management API visibility for the vhost and relevant queues/exchanges, configure/read permission for `queuecumber.*` observation queues, and binding permissions for the source exchanges. RabbitMQ binding operations require write permission on the destination queue and read permission on the source exchange. Validate these regex permissions with your administrator; monitoring-only accounts cannot create observation resources.
 
+Stream inspection additionally needs read permission on the selected stream. It reads the stream log directly after checking its type; acknowledgements provide stream flow control and do not delete its messages. No application consumer-group position is written. Classic and quorum application queues always use observation copies.
+
 For disposable integration tests:
 
 ```sh
@@ -78,6 +87,10 @@ This fixture uses synthetic credentials and binds only loopback ports 25672/2567
 Capture cache defaults to 64 MiB, disk quota to 2 GiB, retention to seven days and retained payloads to 16 MiB. The UI preview accepts 256 KiB by default, with a separate 64 KiB per-detail IPC ceiling. Optional message-rate admission drops are counted. Budgets stay finite; a session can narrow the global settings. Four concurrent captures and 100 retained session entries are the current safety limits. Starting a capture at the history limit removes the oldest stopped/failed session and its retained data.
 
 The RAM setting is a cache budget, not a cap on Electron's total RSS. Broker clients may allocate oversized deliveries before the app can omit them. Disk storage reserves headroom for SQLite pages/journaling and may evict before reaching the displayed quota. Saving limits stops active captures and asks for confirmation when effects require it.
+
+Exports read one retained record at a time, with one active export job. The start snapshot fixes the upper record ID; it does not pin records against retention. The final manifest reports records removed during export. ZIP is capped at 10,000 messages to bound archive metadata; JSONL and folder dumps handle larger captures. These are local captures, never a dump of an application's queued backlog.
+
+Stream offsets accept exact JavaScript integers from zero through 9,007,199,254,740,991. A retained-prefix check can clamp an unavailable old position, with a visible notice. Future offsets may wait for more data on RabbitMQ 4.2 and remain marked unverified until a delivery confirms the position. Gaps count interruptions/discontinuities, not an exact number of lost messages.
 
 In secure mode, encrypted session history and retained records can be reopened after restart. Restored sessions stay stopped; interrupted captures show a gap and require an explicit new capture. Retained counts and timestamps show the available range. Closing quits by default. Enable background capture in Settings to keep subscriptions running; use Quit QueueCumber to stop and exit. The tray shows up to 16 session entries, prioritizing active captures, and refreshes independently of the hidden renderer. On Linux or when tray creation fails, closing keeps an accessible minimized window. Desktop tray availability and placement depend on the OS/environment. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
 

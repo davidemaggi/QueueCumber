@@ -89,6 +89,11 @@ export function MessageView({
               {message.bytes.toLocaleString()} {t('bytes')}
             </span>
           </div>
+          {message.offset !== undefined ? (
+            <p className="detail-meta mono">
+              {t('streamOffset')}: {message.offset.toLocaleString()}
+            </p>
+          ) : null}
           <div className="tabs">
             <button
               className={tab === 'payload' ? 'active' : ''}

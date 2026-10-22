@@ -1,8 +1,8 @@
-# Local validation — RabbitMQ alpha
+# Local validation — QueueCumber
 
 Checked on 2026-10-22 on macOS arm64 with Node 22.18, Electron 45 and a disposable RabbitMQ 4.2 management container. This is local alpha evidence, not a cross-platform release claim.
 
-The suite passes 22 unit tests, 13 real-broker integration tests and two native Electron end-to-end tests. Type checking, ESLint, formatting and the production build pass. The unsigned macOS application bundle starts its capture utility successfully. The desktop tests use isolated session-only storage; they do not certify OS-keystore persistence.
+The original MVP baseline passed 22 unit tests, 13 real-broker integration tests and two native Electron end-to-end tests. Later milestone results appear below. Type checking, ESLint, formatting and the production build passed. The unsigned macOS application bundle started its capture utility successfully. Desktop tests use isolated session-only storage; they do not certify OS-keystore persistence.
 
 ## What the tests cover
 
@@ -42,7 +42,7 @@ One Minor UI finding is deferred: narrow desktop windows stack the detail below 
 
 ## Release gates still open
 
-Windows/Linux execution, real OS-keystore checks on all targets, hosted-provider authentication, signed installers and remote CI results remain unverified. Stream consumption, tray mode, dumps, password-encrypted configuration transfer and Kafka stay in their roadmap milestones. No release has been published.
+Windows/Linux execution, real OS-keystore checks on all targets, hosted-provider authentication, signed installers and remote CI results remain unverified. Kafka remains in its roadmap milestone. No release has been published.
 
 ## Release automation preparation
 
@@ -62,3 +62,41 @@ Local verification: 34 unit tests, four native Electron tests, type checking, li
 Independent lifecycle review found one Important settings race: changing language during a pending background preference save could restore a stale close behavior. A delayed-save regression first failed, then passed after disabling language changes while settings operations are busy. No Critical or additional confirmed lifecycle/shutdown findings.
 
 Narrow-layout screenshot review also exposed clipped Italian navigation labels; allowing the navigation row to wrap keeps both actions visible. Existing narrow message-pane scrolling remains the separate deferred UI issue documented above.
+
+## Complete 0.2.0 functionality
+
+The full local milestone passes **50 unit tests, 21 integration tests and six native Electron tests**. Type checking, ESLint, formatting, production build and actionlint 1.7.7 pass. CI now includes encrypted connection transfer on Windows/macOS as well as the Linux full suite; these remote runs remain unexecuted here. Version `0.2.0` is development metadata, with no tag, push or published release implied.
+
+Additional coverage:
+
+- Complete encrypted connection-container round trips with fixed scrypt/AES-GCM, fresh randomness, default secret exclusion, wrong password, tampering, unsupported version and size/endpoint rejection.
+- Atomic batch import, conflict modes, serialized concurrent saves, stale-preview rejection and single-use tokens. Native export/import/copy and editing imported credentials without loading stored secrets into the form.
+- JSONL/folder/ZIP raw-byte and binary/big-integer header fidelity, generated filenames and provenance. Immediate and mid-job cancellation in all three formats, overlapping-job rejection, missing destination and injected ENOSPC during an actual staged write, preserving existing files and cleaning partial output.
+- Retention/deletion during export with explicit missing-record counts and no snapshot pinning. Authenticated encrypted recovery-journal cleanup, destination preservation and corrupt-journal refusal.
+- A forced Node child-process kill after committed encrypted SQLite records and an uncommitted transaction: reopening preserves committed records, rolls back the incomplete transaction and exposes no synthetic plaintext in database files. This tests process crash recovery, not sudden power loss or OS-keystore integration.
+- RabbitMQ 4.2 stream first/live/exact positions, independent replay proving the log remains intact, forged classic-queue resource refusal, reconnect without duplicate local offsets, deletion failure and retained-prefix clamping. Numeric future offsets remain visibly unverified while waiting for data.
+- Native stream positioning, all three exports and deleting local history while retaining the broker stream. Settings/import conflict preview inspected in light/dark themes and at 1000 px in Italian; stream/export inspection in the light theme. Existing dense capture screens also cover dark/narrow layouts. Narrow panes remain scrollable with the previously documented layout follow-up.
+
+The retained-prefix test initially exposed a fixture issue: a single coalesced publish batch could remain one oversized log segment. It now confirms small batches to force segment rolls before asserting retention. The actual prefix probe reads at most one message without acknowledging it, then closes the channel. A future offset is not declared exact before the broker delivers it.
+
+### Export resource measurement
+
+`tests/integration/export-load.test.ts` stores 1,024 synthetic random payloads of 65,536 bytes (64 MiB total), then exports each format sequentially with a 16 MiB cache. Each output contains all 1,024 records, zero retention misses, and a largest payload working record of 65,536 bytes. It verifies the storage cache remains within its configured budget. JSONL uses chunked base64; folder/ZIP use raw bytes.
+
+One recorded run on this machine:
+
+| Format | Duration | Output bytes | Baseline / peak sampled RSS |
+| --- | --- | --- | --- |
+| JSONL | 220 ms | 89,773,831 | 195,067,904 / 209,403,904 |
+| Folder | 354 ms | 67,380,690 logical bytes | 209,518,592 / 209,829,888 |
+| ZIP | 1,286 ms | 67,605,176 | 212,516,864 / 224,395,264 |
+
+The OS-temp `queuecumber-export-metrics.json` contains each run's full timings, sampled RSS and OS high-water marks. Samples occur every 5 ms; the process includes storage and the test runner, and later formats inherit earlier allocations. ZIP metadata is additionally capped at 10,000 messages. This finite sequential workload demonstrates streaming behavior; it does not establish a universal throughput or total-RSS guarantee. The broker/client allocation measurement above remains a separate capture workload.
+
+Persistent mode cleans interrupted plaintext exports through its encrypted journal on restart. Session-only mode cannot retain a recoverable key/path after forced termination; partial files can remain beside the chosen destination, as documented in [data formats](DATA_FORMATS.md). Normal cancellation and Quit clean them in either mode. Sleep/resume, real platform tray visibility and power-loss durability remain outside the local proof.
+
+### Final independent review
+
+One fresh-context reviewer inspected the complete 0.2.0 implementation, connected callers, formats and regressions. It found no Critical issues and one preview discrepancy: two incoming profiles sharing a name were not marked as conflicting with each other, although Skip/Replace subsequently merged them. This was treated as a required correctness fix because the preview must disclose possible discarded/replaced profiles. A regression first failed on the missing warning, then passed for preview and copy/skip/replace results after tracking earlier incoming names. The full suite was rerun after the fix; no second review was commissioned.
+
+The review also checked and set aside four suspected problems: prefetch(1) bounds the stream's pending delivery; management validation guards consumer setup without per-message HTTP calls; cancellation at final rename has an ordinary completion boundary; and forced-crash session-only partials are an explicit recovery limitation. Platform/keystore/cloud/release validation remains a separate external gate, not an assumed success. The narrow-pane scrolling follow-up from the MVP review remains deferred; no new UI redesign was included.

@@ -1,3 +1,5 @@
+import type { ExportFormat, ExportStatus } from './export'
+import type { ImportPreview, ImportMode } from './transfer'
 import type { DesktopPreferences } from './desktop'
 import type { ConnectionInput, ConnectionSummary } from './connection'
 import type { CaptureSettings } from './limits'
@@ -21,10 +23,13 @@ export type State = {
     warning: boolean
     platform: NodeJS.Platform
   }
+  exportJob?: ExportStatus
+  exportRecovery?: 'none' | 'cleaned' | 'manual'
   sessions: SessionSummary[]
   stats: { cacheBytes: number; diskBytes: number; evicted: number }
 }
 export type MessageDetail = {
+  offset?: number
   id: number
   payload: string
   headers: Record<string, unknown>
@@ -38,6 +43,16 @@ export type MessageDetail = {
   timestamp: number
 }
 export interface DesktopApi {
+  exportCapture(id: string, format: ExportFormat): Promise<ExportStatus | null>
+  cancelExport(id: string): Promise<void>
+  deleteCapture(id: string): Promise<void>
+  exportConfiguration(
+    password: string,
+    includeSecrets: boolean,
+  ): Promise<boolean>
+  previewConfiguration(password: string): Promise<ImportPreview | null>
+  applyConfiguration(token: string, mode: ImportMode): Promise<void>
+  discardConfiguration(): Promise<void>
   saveDesktopPreferences(input: DesktopPreferences): Promise<void>
   getStatus(): Promise<AppStatus>
   getState(): Promise<State>

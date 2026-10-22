@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ChannelModel } from 'amqplib'
+import type { ChannelModel, ConsumeMessage } from 'amqplib'
 import type { ConnectionProfile } from '../shared/connection'
 import { resolveSessionSettings, type CaptureSettings } from '../shared/limits'
 import { RabbitMQ, failureCode } from './providers/rabbitmq'
@@ -18,10 +18,14 @@ export type SessionSummary = {
   error?: string
   bindingChanged?: boolean
   retained?: { count: number; first: number | null; last: number | null }
+  streamStart?: 'first' | 'next' | number
+  lastOffset?: number
+  offsetNotice?: 'OFFSET_CLAMPED' | 'OFFSET_DISCONTINUITY' | 'OFFSET_UNVERIFIED'
   potentialOverflow: boolean
 }
 export type CaptureOptions = {
   allowPartial: boolean
+  streamStart?: 'first' | 'next' | number
   limits?: Partial<CaptureSettings>
 }
 type Session = {
@@ -89,8 +93,19 @@ export class SessionManager {
     resource: ResourceRef,
     options: CaptureOptions,
   ): Promise<SessionSummary> {
-    if (resource.kind !== 'queue')
-      throw Error('Only queue route capture is available in this milestone')
+    if (!['queue', 'stream'].includes(resource.kind))
+      throw Error('Choose a queue or stream')
+    if (
+      resource.kind === 'stream' &&
+      !(
+        options.streamStart === 'first' ||
+        options.streamStart === 'next' ||
+        (typeof options.streamStart === 'number' &&
+          Number.isSafeInteger(options.streamStart) &&
+          options.streamStart >= 0)
+      )
+    )
+      throw Error('Choose a valid stream start position')
     if (
       [...this.sessions.values()].filter(
         (s) => !['stopped', 'failed'].includes(s.summary.state),
@@ -117,7 +132,13 @@ export class SessionManager {
         gaps: 0,
         startedAt: Date.now(),
         bindings: [],
-        potentialOverflow: true,
+        streamStart:
+          resource.kind === 'stream' ? options.streamStart : undefined,
+        offsetNotice:
+          resource.kind === 'stream' && typeof options.streamStart === 'number'
+            ? 'OFFSET_UNVERIFIED'
+            : undefined,
+        potentialOverflow: resource.kind !== 'stream',
       },
       profile,
       options,
@@ -150,25 +171,41 @@ export class SessionManager {
     const generation = ++s.generation
     if (!s.profile) throw Error('Restored sessions require a new capture')
     const broker = new RabbitMQ(s.profile)
-    const snapshot = await broker.bindings(s.summary.resource.name)
-    if (Buffer.byteLength(JSON.stringify(snapshot)) > 65536)
-      throw Object.assign(Error('Binding snapshot too large'), {
+    const isStream = s.summary.resource.kind === 'stream'
+    const definition = await broker.request(
+      `queues/${encodeURIComponent(broker.vhost)}/${encodeURIComponent(s.summary.resource.name)}`,
+    )
+    if (
+      s.summary.resource.vhost !== broker.vhost ||
+      isStream !== (definition.type === 'stream')
+    )
+      throw Object.assign(Error('Resource type changed'), {
         code: 'UNSUPPORTED_ROUTE',
       })
-    if (
-      !snapshot.some((b) => b.supported) ||
-      (snapshot.some((b) => !b.supported) && !s.options.allowPartial)
-    )
-      throw Object.assign(Error('Unsupported bindings'), {
-        code: 'UNSUPPORTED_ROUTE',
-      })
-    if (
-      s.summary.bindings.length &&
-      JSON.stringify(snapshot) !== JSON.stringify(s.summary.bindings)
-    )
-      s.summary.bindingChanged = true
-    if (generation !== s.generation) return
+    const snapshot = isStream
+      ? []
+      : await broker.bindings(s.summary.resource.name)
+    if (!isStream) {
+      if (Buffer.byteLength(JSON.stringify(snapshot)) > 65536)
+        throw Object.assign(Error('Binding snapshot too large'), {
+          code: 'UNSUPPORTED_ROUTE',
+        })
+      if (
+        !snapshot.some((b) => b.supported) ||
+        (snapshot.some((b) => !b.supported) && !s.options.allowPartial)
+      )
+        throw Object.assign(Error('Unsupported bindings'), {
+          code: 'UNSUPPORTED_ROUTE',
+        })
+      if (
+        s.summary.bindings.length &&
+        JSON.stringify(snapshot) !== JSON.stringify(s.summary.bindings)
+      )
+        s.summary.bindingChanged = true
+      if (generation !== s.generation) return
+    }
     s.summary.bindings = snapshot
+    if (generation !== s.generation) return
     this.persist()
     const connection = await broker.connect()
     if (generation !== s.generation) {
@@ -187,78 +224,171 @@ export class SessionManager {
         this.settings(),
         s.options.limits ?? {},
       )
-      const own = await channel.assertQueue(
-        `queuecumber.${s.summary.id}.${randomUUID()}`,
-        {
-          exclusive: true,
-          autoDelete: true,
-          durable: false,
-          arguments: {
-            'x-max-length-bytes': Math.min(limits.diskBytes, 64 * 1024 * 1024),
-            'x-overflow': 'drop-head',
-            'x-expires': 300000,
+      let queue = s.summary.resource.name
+      if (!isStream) {
+        const own = await channel.assertQueue(
+          `queuecumber.${s.summary.id}.${randomUUID()}`,
+          {
+            exclusive: true,
+            autoDelete: true,
+            durable: false,
+            arguments: {
+              'x-max-length-bytes': Math.min(
+                limits.diskBytes,
+                64 * 1024 * 1024,
+              ),
+              'x-overflow': 'drop-head',
+              'x-expires': 300000,
+            },
           },
-        },
-      )
-      for (const binding of snapshot.filter((b) => b.supported))
-        await channel.bindQueue(
-          own.queue,
-          binding.source,
-          binding.routing_key,
-          binding.arguments,
         )
+        for (const binding of snapshot.filter((b) => b.supported))
+          await channel.bindQueue(
+            own.queue,
+            binding.source,
+            binding.routing_key,
+            binding.arguments,
+          )
+        queue = own.queue
+      }
       if (generation !== s.generation) {
         await connection.close()
         return
       }
-      await channel.consume(
-        own.queue,
-        (message) => {
-          if (!message) {
-            if (generation === s.generation) this.reconnect(s)
-            return
-          }
-          if (generation !== s.generation) return
-          try {
-            const current = resolveSessionSettings(
-              this.settings(),
-              s.options.limits ?? {},
-            )
-            if (Date.now() - s.rateStart >= 1000) {
-              s.rateStart = Date.now()
-              s.rateCount = 0
-            }
+      const receive = (message: ConsumeMessage | null) => {
+        if (!message) {
+          if (generation === s.generation) this.reconnect(s)
+          return
+        }
+        if (generation !== s.generation) return
+        try {
+          let offset: number | undefined
+          if (isStream) {
+            offset = message.properties.headers?.['x-stream-offset']
             if (
-              current.admittedMessagesPerSecond !== null &&
-              s.rateCount >= current.admittedMessagesPerSecond
+              typeof offset !== 'number' ||
+              !Number.isSafeInteger(offset) ||
+              offset < 0
+            )
+              throw Error('Unsupported stream offset')
+            if (
+              s.summary.lastOffset !== undefined &&
+              offset <= s.summary.lastOffset
             ) {
-              s.summary.omitted++
               channel.ack(message)
               return
             }
-            s.rateCount++
-            const result = this.store.append(s.summary.id, {
-              payload: message.content,
-              headers: {
-                ...message.properties,
-                headers: message.properties.headers,
-              },
-              routingKey: message.fields.routingKey,
-              exchange: message.fields.exchange,
-              contentType: message.properties.contentType,
-            })
-            if (result.omitted) s.summary.omitted++
-            else s.summary.captured++
-            channel.ack(message)
-          } catch {
-            s.summary.state = 'failed'
-            s.summary.error = 'STORAGE_OR_LIMIT_FAILURE'
-            s.generation++
-            void connection.close().catch(() => {})
+            if (
+              s.summary.lastOffset === undefined &&
+              s.summary.offsetNotice === 'OFFSET_UNVERIFIED'
+            )
+              s.summary.offsetNotice = undefined
+            const requested =
+              s.summary.lastOffset === undefined
+                ? s.options.streamStart
+                : s.summary.lastOffset + 1
+            if (typeof requested === 'number' && offset !== requested) {
+              const alreadyReported =
+                s.summary.lastOffset === undefined &&
+                s.summary.offsetNotice === 'OFFSET_CLAMPED'
+              s.summary.offsetNotice =
+                s.summary.lastOffset === undefined
+                  ? 'OFFSET_CLAMPED'
+                  : 'OFFSET_DISCONTINUITY'
+              if (!alreadyReported) s.summary.gaps++
+            }
           }
+          const current = resolveSessionSettings(
+            this.settings(),
+            s.options.limits ?? {},
+          )
+          if (Date.now() - s.rateStart >= 1000) {
+            s.rateStart = Date.now()
+            s.rateCount = 0
+          }
+          if (
+            current.admittedMessagesPerSecond !== null &&
+            s.rateCount >= current.admittedMessagesPerSecond
+          ) {
+            s.summary.omitted++
+            if (offset !== undefined) s.summary.lastOffset = offset
+            channel.ack(message)
+            return
+          }
+          s.rateCount++
+          const result = this.store.append(s.summary.id, {
+            payload: message.content,
+            headers: {
+              ...message.properties,
+              headers: message.properties.headers,
+            },
+            routingKey: message.fields.routingKey,
+            exchange: message.fields.exchange,
+            contentType: message.properties.contentType,
+            offset,
+          })
+          if (result.omitted) s.summary.omitted++
+          else s.summary.captured++
+          if (offset !== undefined) s.summary.lastOffset = offset
+          channel.ack(message)
+        } catch {
+          s.summary.state = 'failed'
+          s.summary.error = 'STORAGE_OR_LIMIT_FAILURE'
+          s.generation++
+          void connection.close().catch(() => {})
+        }
+      }
+      let readyToRead = !isStream,
+        pending: ConsumeMessage | null = null
+      let start =
+        s.summary.lastOffset === undefined
+          ? s.options.streamStart
+          : s.summary.lastOffset + 1
+      if (isStream && typeof start === 'number' && !Number.isSafeInteger(start))
+        throw Object.assign(Error('Unsupported offset'), {
+          code: 'UNSUPPORTED_ROUTE',
+        })
+      if (isStream && typeof start === 'number') {
+        const first = await firstRetainedOffset(connection, queue)
+        if (first !== undefined && start < first) {
+          start = first
+          s.summary.offsetNotice = 'OFFSET_CLAMPED'
+          s.summary.gaps++
+        }
+        if (generation !== s.generation) {
+          await connection.close().catch(() => {})
+          return
+        }
+      }
+      await channel.consume(
+        queue,
+        (message) => {
+          if (isStream && !readyToRead && message) {
+            pending = message
+            return
+          }
+          receive(message)
         },
-        { noAck: false },
+        {
+          noAck: false,
+          ...(isStream ? { arguments: { 'x-stream-offset': start } } : {}),
+        },
       )
+      if (isStream) {
+        const current = await broker.request(
+          `queues/${encodeURIComponent(broker.vhost)}/${encodeURIComponent(queue)}`,
+        )
+        if (current.type !== 'stream')
+          throw Object.assign(Error('Resource type changed'), {
+            code: 'UNSUPPORTED_ROUTE',
+          })
+        readyToRead = true
+        if (pending) {
+          receive(pending)
+          pending = null
+        }
+      }
+
       if (generation !== s.generation) {
         await connection.close().catch(() => {})
         return
@@ -291,7 +421,9 @@ export class SessionManager {
           if (s.summary.state === 'stopped') return
           const code = failureCode(error)
           if (
-            ['ACCESS_REFUSED', 'UNSUPPORTED_ROUTE'].includes(code) ||
+            ['ACCESS_REFUSED', 'UNSUPPORTED_ROUTE', 'NOT_FOUND'].includes(
+              code,
+            ) ||
             [403, 404, 406].includes((error as { code: number }).code)
           ) {
             s.summary.state = 'failed'
@@ -316,9 +448,52 @@ export class SessionManager {
     s.connection = undefined
     this.persist()
   }
+  async deleteCapture(id: string): Promise<void> {
+    if (!this.sessions.has(id)) throw Error('Session not found')
+    await this.stopCapture(id)
+    this.store.deleteSession?.(id)
+    this.sessions.delete(id)
+    this.persist()
+  }
   async close(): Promise<void> {
     await Promise.all(
       [...this.sessions.keys()].map((id) => this.stopCapture(id)),
     )
+  }
+}
+
+async function firstRetainedOffset(
+  connection: ChannelModel,
+  queue: string,
+): Promise<number | undefined> {
+  const channel = await connection.createChannel()
+  channel.on('error', () => {})
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await channel.prefetch(1)
+    let finish!: (value: number | undefined) => void
+    const value = new Promise<number | undefined>((resolve) => {
+      finish = resolve
+      timer = setTimeout(() => resolve(undefined), 1000)
+    })
+    channel.once('close', () => finish(undefined))
+    await channel.consume(
+      queue,
+      (message) => {
+        const offset = message?.properties.headers?.['x-stream-offset']
+        finish(
+          typeof offset === 'number' &&
+            Number.isSafeInteger(offset) &&
+            offset >= 0
+            ? offset
+            : undefined,
+        )
+      },
+      { noAck: false, arguments: { 'x-stream-offset': 'first' } },
+    )
+    return await value
+  } finally {
+    if (timer) clearTimeout(timer)
+    await channel.close().catch(() => {})
   }
 }

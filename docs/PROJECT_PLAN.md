@@ -136,7 +136,7 @@ Packaging decision (confirmed 2026-10-22): build every distribution artifact thr
 4. Confirmed: user-configurable resource settings with conservative defaults. No traffic estimate is available or required. Validate defaults with synthetic workloads.
 5. Hosted-service/authentication and OS/CPU compatibility remain test-driven. Begin with ordinary endpoints and TLS credentials; cloud-specific IAM requires explicit support work.
 
-The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp.md) was approved with native execution. The RabbitMQ alpha is implemented and under independent review; later milestones receive separate scoped plans.
+The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp.md) was approved with native execution and its review corrections are implemented. The maintainer subsequently authorized continuous execution of the complete [0.2.0 implementation plan](superpowers/plans/2026-10-22-portable-captures.md). See [validation](VALIDATION.md) for evidence and outstanding platform/release gates, and [data formats](DATA_FORMATS.md) for the implemented transfer/dump contracts.
 
 ## Primary references
 

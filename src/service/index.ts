@@ -1,3 +1,5 @@
+import { ExportJournal } from './export-journal'
+import { ExportManager } from './exports'
 import { CaptureStorage } from './storage'
 import { SettingsRepository } from './settings'
 import { SessionManager } from './sessions'
@@ -12,7 +14,8 @@ let settings = { ...DEFAULT_SETTINGS },
   historyWarning: string | undefined,
   store: CaptureStorage,
   sessions: SessionManager,
-  repository: SettingsRepository
+  repository: SettingsRepository,
+  exporter: ExportManager
 const parent = process.parentPort
 let inFlight = 0
 parent.on('message', async ({ data }) => {
@@ -25,12 +28,17 @@ parent.on('message', async ({ data }) => {
   try {
     let value: unknown
     if (operation === 'initialize') {
-      const { dir, key } = args[0]
+      const { dir, key, persistent } = args[0]
       repository = new SettingsRepository(dir)
       const saved = await repository.read()
       settings = saved.settings
       warning = saved.warning
       store = new CaptureStorage(dir, Buffer.from(key), settings)
+      exporter = new ExportManager(
+        store,
+        persistent ? new ExportJournal(dir, Buffer.from(key)) : undefined,
+      )
+      await exporter.recover()
       sessions = new SessionManager(store, () => settings)
       value = true
     } else {
@@ -49,6 +57,8 @@ parent.on('message', async ({ data }) => {
             warning: warning ?? historyWarning,
             sessions: sessions.list(),
             stats: store.stats(),
+            exportJob: exporter.status(),
+            exportRecovery: exporter.recovery,
           }
           break
         case 'test':
@@ -64,6 +74,18 @@ parent.on('message', async ({ data }) => {
           if (warning || historyWarning)
             throw Error('Review settings and storage')
           value = await sessions.startCapture(args[0], args[1], args[2])
+          break
+        case 'export': {
+          const session = sessions.list().find((s) => s.id === args[0])
+          if (!session) throw Error('Session not found')
+          value = exporter.start(session, args[1], args[2])
+          break
+        }
+        case 'cancelExport':
+          exporter.cancel(args[0])
+          break
+        case 'deleteCapture':
+          await sessions.deleteCapture(args[0])
           break
         case 'stop':
           value = await sessions.stopCapture(args[0])
@@ -94,6 +116,7 @@ parent.on('message', async ({ data }) => {
             routingKey: record.routingKey,
             exchange: record.exchange,
             timestamp: record.timestamp,
+            offset: record.offset,
           }
           break
         }
@@ -122,7 +145,9 @@ parent.on('message', async ({ data }) => {
           break
         }
         case 'shutdown':
-          await sessions.close()
+          exporter.cancel()
+          await Promise.all([sessions.close(), exporter.wait()])
+          exporter.destroy()
           store.close()
           value = true
           break

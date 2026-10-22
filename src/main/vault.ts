@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, rename, stat, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID, createHash } from 'node:crypto'
+import type { ImportMode } from '../shared/transfer'
 import { seal, open } from '../service/crypto'
 import {
   validateConnection,
@@ -78,23 +79,86 @@ export class Vault {
     this.writeChain = result.catch(() => {})
     return result
   }
+  all(): ConnectionProfile[] {
+    return this.profiles.map((p) => ({ ...p }))
+  }
+  importProfiles(
+    inputs: ConnectionProfile[],
+    mode: ImportMode,
+    expectedFingerprint?: string,
+  ): Promise<ConnectionSummary[]> {
+    const result = this.writeChain.then(async () => {
+      if (
+        expectedFingerprint &&
+        expectedFingerprint !== profilesFingerprint(this.profiles)
+      )
+        throw Error('Connections changed; preview the import again')
+      const next = mergeProfiles(this.profiles, inputs, mode)
+      await this.writeProfiles(next)
+      return this.list()
+    })
+    this.writeChain = result.catch(() => {})
+    return result
+  }
   private async saveRecord(input: unknown): Promise<ConnectionSummary> {
     const p = validateConnection(input),
       profile = { ...p, id: p.id ?? randomUUID() }
     const next = [...this.profiles.filter((p) => p.id !== profile.id), profile]
     if (next.length > 100) throw Error('Connection limit reached')
+    await this.writeProfiles(next)
+    return { id: profile.id, name: profile.name, provider: 'rabbitmq' }
+  }
+  private async writeProfiles(next: ConnectionProfile[]) {
+    const data = Buffer.from(JSON.stringify(next))
+    if (data.length > 16 * 1024 ** 2) throw Error('Vault too large')
     const temp = join(this.dir, `profiles.${randomUUID()}.tmp`)
     try {
-      await writeFile(
-        temp,
-        seal(this.getKey(), Buffer.from(JSON.stringify(next))),
-        { mode: 0o600 },
-      )
+      await writeFile(temp, seal(this.getKey(), data), { mode: 0o600 })
       await rename(temp, join(this.dir, 'profiles.bin'))
       this.profiles = next
     } finally {
       await rm(temp, { force: true })
     }
-    return { id: profile.id, name: profile.name, provider: 'rabbitmq' }
+    data.fill(0)
   }
+}
+
+export function mergeProfiles(
+  existing: ConnectionProfile[],
+  inputs: ConnectionProfile[],
+  mode: ImportMode,
+): ConnectionProfile[] {
+  if (!['copy', 'skip', 'replace'].includes(mode) || inputs.length > 100)
+    throw Error('Invalid import')
+  const incoming = inputs.map((p) => {
+    const value = validateConnection(p)
+    if (!value.id) throw Error('Missing connection ID')
+    return value as ConnectionProfile
+  })
+  if (new Set(incoming.map((p) => p.id)).size !== incoming.length)
+    throw Error('Duplicate connection IDs')
+  const next = existing.map((p) => ({ ...p }))
+  for (const source of incoming) {
+    const index = next.findIndex(
+      (p) => p.id === source.id || p.name === source.name,
+    )
+    if (index >= 0 && mode === 'skip') continue
+    if (mode === 'replace' && index >= 0) {
+      next[index] = { ...source, id: next[index].id }
+      continue
+    }
+    const p = { ...source, id: mode === 'copy' ? randomUUID() : source.id }
+    if (mode === 'copy') {
+      let attempt = 0
+      while (next.some((other) => other.name === p.name))
+        p.name = source.name.slice(0, 75) + ` (imported ${++attempt})`
+    }
+    next.push(p)
+  }
+  if (next.length > 100) throw Error('Connection limit reached')
+  return next
+}
+
+export function profilesFingerprint(profiles: ConnectionProfile[]): string {
+  return createHash('sha256').update(JSON.stringify(profiles)).digest('hex')
 }

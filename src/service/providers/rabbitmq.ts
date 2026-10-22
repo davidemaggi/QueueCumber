@@ -52,7 +52,9 @@ export class RabbitMQ implements Provider {
               code:
                 res.statusCode === 401 || res.statusCode === 403
                   ? 'ACCESS_REFUSED'
-                  : 'MANAGEMENT_FAILED',
+                  : res.statusCode === 404
+                    ? 'NOT_FOUND'
+                    : 'MANAGEMENT_FAILED',
             })
             reject(e)
             return

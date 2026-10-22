@@ -1,6 +1,6 @@
 # Roadmap
 
-A proposed sequence, not a delivery calendar. The RabbitMQ alpha works locally; cross-platform release validation is still pending.
+A proposed sequence, not a delivery calendar. The 0.2.0 functionality works locally; cross-platform release validation is still pending. The package version does not mean a release has been published.
 
 ## Foundation — complete
 
@@ -29,14 +29,14 @@ Exit gate: a usable RabbitMQ vertical slice, measured resource bounds and securi
 
 ## 0.2.0 — Longer sessions and portable data
 
-- [ ] RabbitMQ stream reads from beginning, live end and explicit offset.
+- [x] RabbitMQ stream reads from beginning, live end and explicit offset, including reconnect and retained-prefix notices.
 - [x] Opt-in tray/background lifecycle and subscription status; explicit Quit stops capture (local macOS verified).
 - [ ] Validate Windows tray and Linux desktop fallback behavior on actual desktops.
-- [ ] Streaming JSONL, folder and ZIP exports with a versioned manifest.
-- [ ] Password-encrypted configuration transfer and safe import conflict handling.
-- [ ] Retention controls, disk-full behavior, cancelable exports and recovery tests.
+- [x] Streaming JSONL, folder and ZIP exports with a versioned manifest.
+- [x] Password-encrypted configuration transfer and safe import conflict handling.
+- [x] Retention controls, disk-full behavior, cancelable exports and recovery tests.
 
-Next implementation order: encrypted configuration transfer → capture dumps → RabbitMQ stream positioning → Kafka → cross-platform release gates.
+Implementation complete locally; the actual Windows/Linux desktop gate remains open. Next implementation milestone: Kafka. Release validation continues through GitHub Actions and clean-machine checks.
 
 Exit gate: long-session/reconnect tests, wrong-password and tampered-import rejection, tray validation across supported desktop environments.
 

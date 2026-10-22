@@ -1,3 +1,4 @@
+import { ConfigurationTransfer } from './ConfigurationTransfer'
 import { useState } from 'react'
 import {
   DEFAULT_SETTINGS,
@@ -18,6 +19,7 @@ export function Settings({
   busy,
   desktop,
   onDesktopChange,
+  onConfigurationChanged,
 }: {
   t: ReturnType<typeof translator>
   settings: CaptureSettings
@@ -27,6 +29,7 @@ export function Settings({
   setTheme: (v: string) => void
   onSave: (s: CaptureSettings, confirmed: boolean) => Promise<void>
   busy: boolean
+  onConfigurationChanged: () => Promise<void>
   desktop: State['desktop']
   onDesktopChange: (preferences: DesktopPreferences) => Promise<void>
 }) {
@@ -196,6 +199,7 @@ export function Settings({
           </div>
         </div>
       </section>
+      <ConfigurationTransfer t={t} onChanged={onConfigurationChanged} />
     </main>
   )
 }

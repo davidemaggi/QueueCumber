@@ -101,3 +101,52 @@ it('retains both profiles when saves overlap', async () => {
     await rm(dir, { recursive: true, force: true })
   }
 })
+it('imports conflict batches atomically without losing concurrent unrelated saves', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'qc-import-')),
+    key = randomBytes(32)
+  const protector = {
+    protect: async (s: string) => seal(key, Buffer.from(s)),
+    unprotect: async (b: Buffer) => open(key, b).toString(),
+  }
+  try {
+    const vault = new Vault(dir, protector)
+    await vault.initialize()
+    const first = await vault.save({
+      name: 'Existing',
+      protocolUrl: 'amqps://one.example',
+      managementUrl: 'https://one.example',
+      allowInsecure: false,
+    })
+    const original = await vault.get(first.id),
+      before = await readFile(join(dir, 'profiles.bin'))
+    await expect(
+      vault.importProfiles(
+        [original, { ...original, id: 'not-a-uuid' }],
+        'replace',
+      ),
+    ).rejects.toThrow()
+    expect((await readFile(join(dir, 'profiles.bin'))).equals(before)).toBe(
+      true,
+    )
+    await Promise.all([
+      vault.importProfiles([{ ...original, name: 'Replacement' }], 'replace'),
+      vault.save({
+        name: 'Unrelated',
+        protocolUrl: 'amqps://two.example',
+        managementUrl: 'https://two.example',
+        allowInsecure: false,
+      }),
+    ])
+    expect(vault.list().map((p) => p.name)).toEqual([
+      'Replacement',
+      'Unrelated',
+    ])
+    await vault.importProfiles([original], 'skip')
+    expect(vault.list()).toHaveLength(2)
+    await vault.importProfiles([original], 'copy')
+    expect(vault.list()).toHaveLength(3)
+    expect(new Set(vault.list().map((p) => p.id)).size).toBe(3)
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})

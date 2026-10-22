@@ -1,3 +1,4 @@
+import type { ConnectionSummary } from '../../shared/connection'
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import type { translator } from '../i18n'
@@ -6,13 +7,15 @@ export function ConnectionForm({
   onClose,
   onSave,
   busy,
+  initial,
 }: {
   t: ReturnType<typeof translator>
   onClose: () => void
   onSave: (input: any) => Promise<void>
   busy: boolean
+  initial?: ConnectionSummary | null
 }) {
-  const [name, setName] = useState(''),
+  const [name, setName] = useState(initial?.name ?? ''),
     [url, setUrl] = useState(''),
     [management, setManagement] = useState(''),
     [insecure, setInsecure] = useState(false),
@@ -20,6 +23,7 @@ export function ConnectionForm({
   async function submit(event: FormEvent) {
     event.preventDefault()
     await onSave({
+      ...(initial ? { id: initial.id } : {}),
       name,
       protocolUrl: url,
       managementUrl: management,
@@ -30,7 +34,7 @@ export function ConnectionForm({
   return (
     <section className="connection-form">
       <div className="section-heading">
-        <h2>{t('newConnection')}</h2>
+        <h2>{t(initial ? 'editConnection' : 'newConnection')}</h2>
         <button
           className="icon-button"
           onClick={onClose}
@@ -39,7 +43,9 @@ export function ConnectionForm({
           <X size={18} />
         </button>
       </div>
-      <p className="muted">{t('connectionHint')}</p>
+      <p className="muted">
+        {t(initial ? 'editConnectionHint' : 'connectionHint')}
+      </p>
       <form onSubmit={submit}>
         <label>
           {t('connectionName')}

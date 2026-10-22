@@ -1,3 +1,5 @@
+import { exportFormatSchema } from '../shared/export'
+import { passwordSchema, importModeSchema } from '../shared/transfer'
 import { desktopPreferencesSchema } from '../shared/desktop'
 import { ipcMain, type BrowserWindow } from 'electron'
 import { z } from 'zod'
@@ -25,6 +27,13 @@ const limits = z
   })
   .strict()
 export const operationSchemas = {
+  exportCapture: z.tuple([id, exportFormatSchema]),
+  cancelExport: z.tuple([z.string().uuid()]),
+  deleteCapture: z.tuple([id]),
+  exportConfiguration: z.tuple([passwordSchema, z.boolean()]),
+  previewConfiguration: z.tuple([passwordSchema]),
+  applyConfiguration: z.tuple([z.string().uuid(), importModeSchema]),
+  discardConfiguration: z.tuple([]),
   saveDesktopPreferences: z.tuple([desktopPreferencesSchema]),
   getStatus: z.tuple([]),
   getState: z.tuple([]),
@@ -35,7 +44,19 @@ export const operationSchemas = {
   startCapture: z.tuple([
     id,
     resource,
-    z.object({ allowPartial: z.boolean(), limits: limits.optional() }).strict(),
+    z
+      .object({
+        allowPartial: z.boolean(),
+        limits: limits.optional(),
+        streamStart: z
+          .union([
+            z.literal('first'),
+            z.literal('next'),
+            z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+          ])
+          .optional(),
+      })
+      .strict(),
   ]),
   stopCapture: z.tuple([id]),
   readMessages: z.tuple([id, z.number().int().positive().nullable()]),

@@ -10,6 +10,7 @@ import {
   type CaptureSettings,
 } from '../shared/limits'
 export type IncomingRecord = {
+  offset?: number
   payload: Buffer
   headers: Record<string, unknown>
   routingKey: string
@@ -30,6 +31,7 @@ export type MessageSummary = {
   exchange: string
   preview: string
   omission?: string
+  offset?: number
 }
 export class CaptureStorage {
   private catalogHashes = new Map<string, string>()
@@ -143,6 +145,28 @@ export class CaptureStorage {
       totalBytes: record.payload.length,
       offset,
     }
+  }
+  exportSnapshot(sessionId: string) {
+    this.pruneSession(sessionId, 0)
+    this.prune(0)
+    const range = this.retainedRange(sessionId)
+    const first = this.db
+      .prepare('SELECT id FROM captures WHERE session=? ORDER BY id LIMIT 1')
+      .get(sessionId) as { id: number } | undefined
+    const last = this.db
+      .prepare(
+        'SELECT id FROM captures WHERE session=? ORDER BY id DESC LIMIT 1',
+      )
+      .get(sessionId) as { id: number } | undefined
+    return { firstId: first?.id ?? 0, lastId: last?.id ?? 0, ...range }
+  }
+  nextExportRecord(sessionId: string, after: number, through: number) {
+    const row = this.db
+      .prepare(
+        'SELECT id FROM captures WHERE session=? AND id>? AND id<=? ORDER BY id LIMIT 1',
+      )
+      .get(sessionId, after, through) as { id: number } | undefined
+    return row ? { id: row.id, record: this.get(row.id) } : null
   }
   private sessionLimits = new Map<string, CaptureSettings>()
   private cacheOwners = new Map<number, string>()
@@ -312,6 +336,7 @@ END;`)
           exchange: m.exchange.slice(0, 255),
           preview: m.payload.subarray(0, 160).toString('utf8'),
           omission: m.omission,
+          offset: m.offset,
         }
       }),
       nextCursor: rows.length > limit ? selected.at(-1)!.id : null,
