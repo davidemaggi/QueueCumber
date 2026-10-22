@@ -30,3 +30,24 @@ it('rejects other windows and malformed renderer operations before invoking priv
   ).rejects.toThrow()
   expect(writes).toBe(0)
 })
+
+it('bounds privileged concurrency and redacts secret-bearing failures', async () => {
+  const frame = {},
+    webContents = { mainFrame: frame },
+    event = { sender: webContents, senderFrame: frame }
+  const releases: (() => void)[] = []
+  registerOperations({ webContents } as any, {
+    getState: () => new Promise<void>((resolve) => releases.push(resolve)),
+    testConnection: () => {
+      throw Error('amqps://private:secret@example.test')
+    },
+  })
+  const invoke = handlers.get('qc:getState')!
+  const pending = Array.from({ length: 16 }, () => invoke(event))
+  await expect(invoke(event)).rejects.toThrow('Too many pending operations')
+  releases.forEach((resolve) => resolve())
+  await Promise.all(pending)
+  await expect(handlers.get('qc:testConnection')!(event, 'id')).rejects.toThrow(
+    'Operation failed. Check connection, permissions, storage and input.',
+  )
+})

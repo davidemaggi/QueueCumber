@@ -19,6 +19,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { Vault, mergeProfiles, profilesFingerprint } from './vault'
 import { ConfigurationFiles } from './configuration-files'
 import { registerOperations } from './ipc'
+import { hardenWindow } from './security'
 import {
   validateConnection,
   type ConnectionProfile,
@@ -309,8 +310,7 @@ app.whenReady().then(async () => {
       rpc('settings', input, confirmed),
     ),
   })
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  window.webContents.on('will-navigate', (event) => event.preventDefault())
+  hardenWindow(window.webContents)
   if (process.env.ELECTRON_RENDERER_URL)
     await window.loadURL(process.env.ELECTRON_RENDERER_URL)
   else await window.loadFile(join(__dirname, '../renderer/index.html'))

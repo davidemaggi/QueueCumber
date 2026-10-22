@@ -1,6 +1,6 @@
 # Roadmap
 
-A proposed sequence, not a delivery calendar. The 0.3.0 functionality works locally; cross-platform release validation is still pending. The package version does not mean a release has been published.
+Implementation through 1.0.0 Ackbar is prepared for maintainer acceptance; cross-platform release validation is still pending. The package version does not mean a release has been published.
 
 ## Foundation — complete
 
@@ -52,17 +52,23 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 
 ## 1.0.0 — Ackbar
 
-- [ ] Complete approved RabbitMQ and Kafka inspection scope.
-- [ ] Keyboard/screen-reader checks, translation and theme review.
-- [ ] IPC, credential protection, capture encryption and import/export security review.
-- [ ] Meet documented resource budgets under sustained load.
+- [x] Complete approved RabbitMQ and Kafka inspection scope.
+- [x] Keyboard message navigation, semantic selection states, locale completeness and light/dark/narrow UI hardening.
+- [ ] Manual screen-reader, high-contrast and platform accessibility acceptance.
+- [x] Local IPC, credential protection, capture encryption and import/export boundary review and regressions.
+- [ ] Actual OS-keystore and maintainer security acceptance.
+- [x] Finite cache/disk workloads and eviction/omission measurements.
+- [ ] Representative long-running soak and RSS acceptance on release machines.
 - [ ] Tested Windows installers/archives, macOS DMG/archives and Linux packages/archives.
 - [x] Prepare GitHub Actions builds and draft GitHub Releases with checksums; Windows Azure Artifact Signing configuration.
 - [ ] Validate Azure-signed Windows app/installer on a real runner and clean machine.
-- [ ] Applicable signing, macOS notarization, checksums and release notes.
+- [x] Fail-closed macOS Developer ID/notarization pipeline, checksum generation and prepared Ackbar release notes.
+- [ ] Real signed/notarized artifacts and clean-machine verification.
 - [ ] Homebrew, WinGet and Chocolatey submission/verification, subject to registry requirements.
-- [ ] Installation, permissions, capture limitations, retention and troubleshooting docs.
-- [ ] Stable configuration/dump compatibility and migration behavior.
+- [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
+- [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
+
+The maintainer will perform [final acceptance](docs/ACCEPTANCE.md) after implementation, as requested. These external checks remain required before public release; source version 1.0.0 is not evidence they passed. Package-manager submissions follow actual verified release assets.
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
 

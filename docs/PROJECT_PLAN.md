@@ -1,6 +1,6 @@
 # QueueCumber project proposal
 
-Status: **architecture and MVP implementation plan approved on 2026-10-22; local RabbitMQ/Kafka implementation through 0.3.0; prior independent review corrections verified; release gates pending**.
+Status: **architecture and MVP implementation plan approved on 2026-10-22; 1.0.0 Ackbar hardening authorized for continuous execution; external acceptance delegated to the maintainer after implementation; publication gates remain pending**.
 
 Date: 2026-10-22. Requirements live in [PRODUCT.md](../PRODUCT.md). The maintainer confirmed RabbitMQ temporary-queue capture. The architecture and staged scope below were approved. Resource settings are configurable: no representative user traffic estimate is required.
 
@@ -148,3 +148,5 @@ The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp
 - [Electron security](https://www.electronjs.org/docs/latest/tutorial/security): renderer/IPC boundaries.
 - [Electron safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage): OS protection and caveats.
 - [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html): version/public-contract policy.
+
+The maintainer authorized the complete [Ackbar hardening plan](superpowers/plans/2026-10-22-ackbar.md), with final external checks to follow implementation. This does not authorize publishing, tagging or merging main.

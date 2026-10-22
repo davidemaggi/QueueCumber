@@ -52,7 +52,7 @@ test('saves a session-only connection, captures a real message and changes theme
       { contentType: 'application/json', headers: { region: 'eu' } },
     )
     await page
-      .getByRole('button', { name: /order.created/ })
+      .getByRole('option', { name: /order.created/ })
       .first()
       .click()
     await expect(page.locator('pre')).toContainText('"event": "created"')
@@ -102,6 +102,23 @@ test('saves a session-only connection, captures a real message and changes theme
     await expect
       .poll(() => page.locator('.message-row').count())
       .toBeGreaterThan(10)
+    const messageList = page.getByRole('listbox', {
+      name: 'Messages',
+      exact: true,
+    })
+    await messageList.focus()
+    await messageList.press('End')
+    await expect(
+      messageList.getByRole('option', { selected: true }),
+    ).toHaveAttribute('aria-posinset', '30')
+    await expect(page.locator('.message-detail pre')).toBeVisible()
+    await messageList.press('Home')
+    await expect(
+      messageList.getByRole('option', { selected: true }),
+    ).toHaveAttribute('aria-posinset', '1')
+    await expect(page.locator('.message-detail pre')).toContainText(
+      'background',
+    )
     const qaDir = join(tmpdir(), 'queuecumber-qa')
     await mkdir(qaDir, { recursive: true })
     await page.screenshot({ path: join(qaDir, 'inspection-light.png') })
@@ -118,7 +135,15 @@ test('saves a session-only connection, captures a real message and changes theme
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0].setSize(1000, 800),
     )
+    await page.locator('.message-detail').scrollIntoViewIfNeeded()
+    await expect(page.locator('.message-detail pre')).toBeVisible()
     await page.screenshot({ path: join(qaDir, 'inspection-narrow.png') })
+    await page
+      .getByRole('button', { name: 'Stop capture', exact: true })
+      .scrollIntoViewIfNeeded()
+    await expect(
+      page.getByRole('button', { name: 'Stop capture', exact: true }),
+    ).toBeInViewport()
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

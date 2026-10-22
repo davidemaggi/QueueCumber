@@ -1,6 +1,6 @@
 {
   "name": "queuecumber",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "A local desktop inspector for messaging systems.",
   "private": true,
   "license": "MIT",
@@ -18,8 +18,8 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "package": "pnpm build && electron-builder --dir",
-    "format": "prettier --write src tests scripts electron-builder.windows.mjs",
-    "format:check": "prettier --check src tests scripts electron-builder.windows.mjs",
+    "format": "prettier --write src tests scripts electron-builder.windows.mjs electron-builder.mac.mjs",
+    "format:check": "prettier --check src tests scripts electron-builder.windows.mjs electron-builder.mac.mjs",
     "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.windows.mjs --publish never"
   },
   "dependencies": {
@@ -62,5 +62,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/davidemaggi/QueueCumber.git"
-  }
+  },
+  "releaseName": "Ackbar"
 }

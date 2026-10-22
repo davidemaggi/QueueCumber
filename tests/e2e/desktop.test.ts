@@ -1,5 +1,5 @@
 import { test, expect, _electron as electron } from '@playwright/test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 test('sandboxed desktop exposes only the narrow ready bridge', async () => {
@@ -29,6 +29,21 @@ test('sandboxed desktop exposes only the narrow ready bridge', async () => {
     expect(preferences.sandbox).toBe(true)
     expect(preferences.contextIsolation).toBe(true)
     expect(preferences.nodeIntegration).toBe(false)
+    await expect(page.locator('.sidebar-bottom')).toContainText(
+      '1.0.0 · Ackbar',
+    )
+    expect(
+      await page.evaluate(() => window.open('https://example.test')),
+    ).toBeNull()
+    expect(
+      await page.evaluate(
+        async () =>
+          (await navigator.permissions.query({ name: 'notifications' })).state,
+      ),
+    ).toBe('denied')
+    const qa = join(tmpdir(), 'queuecumber-qa')
+    await mkdir(qa, { recursive: true })
+    await page.screenshot({ path: join(qa, 'ackbar-empty.png') })
     await app.evaluate(({ app }) => {
       const metric = app
         .getAppMetrics()
@@ -48,6 +63,7 @@ test('sandboxed desktop exposes only the narrow ready bridge', async () => {
         'The local service is unavailable. Restart QueueCumber to recover; active captures may have a gap.',
       ),
     ).toBeVisible()
+    await page.screenshot({ path: join(qa, 'ackbar-service-failed.png') })
   } finally {
     await app.close()
     await rm(dir, { recursive: true, force: true })

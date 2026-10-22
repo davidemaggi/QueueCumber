@@ -10,7 +10,7 @@
   --ink: #202420;
   --muted: #62675f;
   --border: #dedfda;
-  --control: #9b9f97;
+  --control: #858a80;
   --accent: #3c6b2e;
   --danger: #a82c30;
   --primary: #222820;
@@ -78,7 +78,8 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-summary:focus-visible {
+summary:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -1022,4 +1023,41 @@ pre {
 
 .capture-heading.kafka-heading {
   max-height: 55%;
+}
+
+/* One outer inspection scroll at narrow widths; list and raw bytes keep bounded viewports. */
+@media (max-width: 1150px) {
+  .capture-workspace {
+    overflow: auto;
+    display: block;
+  }
+  .capture-heading,
+  .capture-heading.kafka-heading {
+    max-height: none;
+    overflow: visible;
+  }
+  .messages-workspace {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .messages-pane {
+    height: 360px;
+    flex: none;
+    min-height: 0;
+  }
+  .message-scroll {
+    max-height: none;
+    min-height: 0;
+  }
+  .message-detail {
+    min-height: 320px;
+    overflow: visible;
+    flex: none;
+  }
+  .message-detail pre,
+  .header-table {
+    max-height: 360px;
+    overflow: auto;
+  }
 }

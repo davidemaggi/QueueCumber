@@ -89,8 +89,7 @@ jobs:
             platform: linux
             arch: x64
     runs-on: ${{ matrix.os }}
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    environment: release-desktop
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -105,10 +104,27 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      - run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+      - name: Package Linux
+        if: matrix.platform == 'linux'
+        run: pnpm exec electron-builder --linux --x64 --publish never
+      - name: Package, sign and notarize macOS
+        if: matrix.platform == 'mac'
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: pnpm exec electron-builder --mac --arm64 --config electron-builder.mac.mjs --publish never
+      - name: Verify macOS signature, Gatekeeper and notarization ticket
+        if: matrix.platform == 'mac'
+        run: |
+          codesign --verify --deep --strict --verbose=2 release/mac-arm64/QueueCumber.app
+          spctl --assess --type execute --verbose=2 release/mac-arm64/QueueCumber.app
+          xcrun stapler validate release/mac-arm64/QueueCumber.app
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: packages-${{ matrix.platform }}-${{ matrix.arch }}-unsigned
+          name: packages-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
           retention-days: 7
           path: |
@@ -153,4 +169,4 @@ jobs:
           fi
           flags=()
           if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Windows x64 uses Azure Artifact Signing. macOS arm64 artifacts are unsigned and unnotarized early testing builds. Linux x64 artifacts include AppImage, DEB and tar.gz. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*
+          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Windows x64 uses Azure Artifact Signing. macOS arm64 artifacts require Developer ID signing and Apple notarization. Linux x64 artifacts include AppImage, DEB and tar.gz. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*

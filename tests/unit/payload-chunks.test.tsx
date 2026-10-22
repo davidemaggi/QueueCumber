@@ -35,3 +35,29 @@ it('pages the complete original bytes without accumulating previous chunks', asy
   expect(screen.queryByText(/68 65 61 64/)).toBeNull()
   expect(readPayloadChunk.mock.calls.map((c) => c[1])).toEqual([0, 65536])
 })
+
+it('renders message markup as inert text', () => {
+  const content =
+    '<img src="https://example.test/private" onerror="alert(1)"><script>throw 1</script>'
+  const { container } = render(
+    <MessageView
+      t={translator('en')}
+      message={{
+        id: 1,
+        payload: btoa(content),
+        headers: { untrusted: content },
+        bytes: content.length,
+        previewLimit: 1024,
+        truncated: false,
+        routingKey: '',
+        exchange: '',
+        timestamp: 0,
+      }}
+    />,
+  )
+  expect(container.querySelector('pre')?.textContent).toContain(content)
+  expect(container.querySelectorAll('img,script')).toHaveLength(0)
+  fireEvent.click(screen.getByRole('button', { name: 'Headers & properties' }))
+  expect(container.querySelector('td')?.textContent).toContain('<img')
+  expect(container.querySelectorAll('img,script')).toHaveLength(0)
+})

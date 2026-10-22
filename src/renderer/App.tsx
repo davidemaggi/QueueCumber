@@ -300,6 +300,7 @@ export default function App() {
     })
   }
   async function selectMessage(id: number) {
+    setMessage(null)
     const token = ++messageSelection.current
     await run(async () => {
       const detail = await api.readMessage(id)
@@ -329,10 +330,10 @@ export default function App() {
             />
           </svg>
           <strong>QueueCumber</strong>
-          <span className="version">α</span>
         </div>
-        <nav className="main-nav" aria-label="Workspace">
+        <nav className="main-nav" aria-label={t('workspace')}>
           <button
+            aria-pressed={screen === 'inspect'}
             className={screen === 'inspect' ? 'active' : ''}
             onClick={() => setScreen('inspect')}
           >
@@ -340,6 +341,7 @@ export default function App() {
             {t('inspect')}
           </button>
           <button
+            aria-pressed={screen === 'settings'}
             className={screen === 'settings' ? 'active' : ''}
             onClick={() => {
               setScreen('settings')

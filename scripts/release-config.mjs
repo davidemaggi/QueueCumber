@@ -61,3 +61,27 @@ export function releaseVersion(tag, packageVersion) {
     throw new Error('Release tag must match the package version')
   return version
 }
+
+export function macSigningConfig(env) {
+  for (const key of [
+    'CSC_LINK',
+    'CSC_KEY_PASSWORD',
+    'APPLE_ID',
+    'APPLE_APP_SPECIFIC_PASSWORD',
+    'APPLE_TEAM_ID',
+  ]) {
+    if (
+      typeof env[key] !== 'string' ||
+      !env[key].trim() ||
+      /[\r\n\0]/.test(env[key])
+    )
+      throw Error(`Missing or invalid ${key}`)
+  }
+  if (env.CSC_IDENTITY_AUTO_DISCOVERY === 'false')
+    throw Error('CSC_IDENTITY_AUTO_DISCOVERY must allow Developer ID signing')
+  return {
+    extends: './electron-builder.yml',
+    forceCodeSigning: true,
+    mac: { hardenedRuntime: true, notarize: true },
+  }
+}

@@ -4,9 +4,9 @@
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **0.3.0 development milestone.** RabbitMQ and Kafka inspection, portable captures and protected connection transfer work locally. No downloadable release has been published yet.
+> **1.0.0 — Ackbar, prepared for acceptance.** The implementation is ready for the maintainer’s final platform, broker and signing checks. No downloadable release has been published yet. See the [acceptance checklist](docs/ACCEPTANCE.md).
 
-## Working in the alpha
+## What you can do
 
 - Save encrypted RabbitMQ and Kafka connection profiles, or use session-only storage when OS protection is unavailable.
 - Test RabbitMQ AMQP/management independently; discover Kafka topics/partitions without a management endpoint.
@@ -20,13 +20,13 @@ A cross-platform desktop tool for developers who want to see what's flowing thro
 - Export retained messages as JSONL, a folder or ZIP; cancel exports and delete local capture history.
 - Move password-encrypted connection profiles between installations, preview conflicts and choose copies, skipping or replacement.
 
-The [roadmap](ROADMAP.md) tracks the next steps: release hardening, platform validation and packaged releases.
+Start with the [field guide](docs/USER_GUIDE.md), [RabbitMQ permission recipe](docs/RABBITMQ.md) or [Kafka guide](docs/KAFKA.md). The [roadmap](ROADMAP.md) separates implemented work from final acceptance gates.
 
 ## Inspect the traffic. Leave application queues alone.
 
 For RabbitMQ queue inspection, QueueCumber will copy supported routing bindings onto its own temporary queue. It observes newly routed messages without consuming from the selected application queue. It cannot show messages already waiting there, and not every exchange can be mirrored this way.
 
-This needs permission to create temporary queues and bindings. Version 1.0 will offer no publishing, purging or editing of application resources. See the [capture contract](docs/PROJECT_PLAN.md#rabbitmq-capture-contract) for the precise boundaries.
+This needs permission to create temporary queues and bindings. Version 1.0 offers no publishing, purging or editing of application resources. See the [capture contract](docs/PROJECT_PLAN.md#rabbitmq-capture-contract) for the precise boundaries.
 
 ## Local by design
 
@@ -36,12 +36,15 @@ Connection transfers encrypt the entire file with scrypt and AES-256-GCM. Secret
 
 Message dumps contain **plaintext private data**, including headers and payloads. Choose their destination accordingly. Cancel and Quit clean partial files; forced termination in session-only mode can leave `.queuecumber-export-*` files beside the selected destination. Secure mode uses an encrypted recovery journal to clean interrupted exports on the next launch. See [data formats and recovery](docs/DATA_FORMATS.md).
 
-This is early software, not a security certification. Desktop tests deliberately use session-only storage; real key-store behavior still needs checks on every target OS.
+Prepared source is not a security certification. Desktop tests deliberately use session-only storage; real key-store behavior still needs checks on every target OS.
 
 ## Follow along
 
 | Document | What's inside |
 | --- | --- |
+| [Field guide](docs/USER_GUIDE.md) | Installation, keyboard use, permissions and troubleshooting |
+| [Acceptance checklist](docs/ACCEPTANCE.md) | Maintainer tests before public release |
+| [Security](SECURITY.md) | Trust boundaries and private vulnerability reporting |
 | [Roadmap](ROADMAP.md) | Milestones and release gates |
 | [Project proposal](docs/PROJECT_PLAN.md) | Architecture, trade-offs and verification |
 | [Product context](PRODUCT.md) | Confirmed requirements and open decisions |
@@ -61,7 +64,7 @@ For now, the most useful contributions are broker edge cases and reproducible us
 
 Use Node.js 22.18+ and the pinned pnpm version. Run `pnpm install`, then `pnpm dev`. Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
-Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft; Azure provisioning, real signed Windows validation and macOS signing/notarization are still pending.
+Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft; Azure provisioning, real signed Windows validation and real Apple-signed/notarized validation are still pending. Both Windows and macOS release jobs fail closed when signing setup is missing.
 
 ## Kafka
 
@@ -69,7 +72,7 @@ Choose Kafka in the connection form, supply bootstrap brokers, verified TLS/cust
 
 ## RabbitMQ permissions and test brokers
 
-Supply an AMQP URL and a separate management base URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication currently uses the username/password from the AMQP URL. Cloud-specific IAM and client-certificate authentication are outside this alpha's tested matrix.
+Supply an AMQP URL and a separate management base URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication currently uses the username/password from the AMQP URL. Cloud-specific IAM and client-certificate authentication are outside the tested authentication matrix.
 
 The account needs management API visibility for the vhost and relevant queues/exchanges, configure/read permission for `queuecumber.*` observation queues, and binding permissions for the source exchanges. RabbitMQ binding operations require write permission on the destination queue and read permission on the source exchange. Validate these regex permissions with your administrator; monitoring-only accounts cannot create observation resources.
 

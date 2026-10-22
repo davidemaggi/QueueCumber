@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { MessageSummary } from '../../service/storage'
 import type { DesktopApi, MessageDetail } from '../../shared/contracts'
 import { formatPreview } from '../../shared/payload'
@@ -24,11 +24,66 @@ export function MessageList({
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
+  const listId = useId()
+  const [focused, setFocused] = useState<number>()
+  const active = rows.some((row) => row.id === focused) ? focused : selected
   const [scroll, setScroll] = useState(0),
     start = Math.max(0, Math.floor(scroll / rowHeight) - 3),
     end = Math.min(rows.length, start + Math.ceil(height / rowHeight) + 6)
+  useEffect(() => {
+    if (scroll > Math.max(0, rows.length * rowHeight - height)) {
+      if (container.current) container.current.scrollTop = 0
+      setScroll(0)
+    }
+  }, [rows.length, height, scroll])
+  function choose(index: number) {
+    const row = rows[index]
+    if (!row) return
+    const element = container.current
+    if (element) {
+      const next = Math.min(
+        Math.max(0, rows.length * rowHeight - height),
+        Math.max(0, index * rowHeight - Math.max(0, height - rowHeight) / 2),
+      )
+      element.scrollTop = next
+      setScroll(next)
+      element.focus()
+    }
+    setFocused(row.id)
+    onSelect(row.id)
+  }
   return (
     <div
+      role="listbox"
+      aria-label={t('messages')}
+      tabIndex={0}
+      aria-activedescendant={
+        rows.slice(start, end).some((row) => row.id === active)
+          ? `${listId}-${active}`
+          : undefined
+      }
+      onKeyDown={(event) => {
+        if (
+          !rows.length ||
+          !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
+        )
+          return
+        event.preventDefault()
+        const index = rows.findIndex((row) => row.id === active)
+        choose(
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? rows.length - 1
+              : Math.max(
+                  0,
+                  Math.min(
+                    rows.length - 1,
+                    index + (event.key === 'ArrowDown' ? 1 : -1),
+                  ),
+                ),
+        )
+      }}
       className="message-scroll"
       ref={container}
       onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
@@ -36,14 +91,20 @@ export function MessageList({
       <div style={{ height: rows.length * rowHeight, position: 'relative' }}>
         {rows.slice(start, end).map((m, i) => (
           <button
-            className={'message-row ' + (selected === m.id ? 'selected' : '')}
+            role="option"
+            id={`${listId}-${m.id}`}
+            aria-selected={active === m.id}
+            aria-posinset={start + i + 1}
+            aria-setsize={rows.length}
+            tabIndex={-1}
+            className={'message-row ' + (active === m.id ? 'selected' : '')}
             style={{
               position: 'absolute',
               top: (start + i) * rowHeight,
               height: rowHeight,
             }}
             key={m.id}
-            onClick={() => onSelect(m.id)}
+            onClick={() => choose(start + i)}
           >
             <span className="mono muted">
               {new Date(m.timestamp).toLocaleTimeString()}
@@ -105,12 +166,14 @@ export function MessageView({
           ) : null}
           <div className="tabs">
             <button
+              aria-pressed={tab === 'payload'}
               className={tab === 'payload' ? 'active' : ''}
               onClick={() => setTab('payload')}
             >
               {t('payload')}
             </button>
             <button
+              aria-pressed={tab === 'headers'}
               className={tab === 'headers' ? 'active' : ''}
               onClick={() => setTab('headers')}
             >

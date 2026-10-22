@@ -13,7 +13,7 @@ The normal Checks workflow still compiles/tests development and PR code; those a
 | Target | Artifacts | Signing |
 | --- | --- | --- |
 | Windows x64 | NSIS installer, ZIP | Azure Artifact Signing required |
-| macOS arm64 | DMG, ZIP | Currently unsigned and unnotarized |
+| macOS arm64 | DMG, ZIP | Developer ID signing and Apple notarization required |
 | Linux x64 | AppImage, DEB, tar.gz | No package signature yet |
 
 These are configured build targets, not a certified compatibility matrix. No remote release workflow has been run yet.
@@ -22,7 +22,7 @@ Windows uses `electron-builder.windows.mjs`, extending the shared configuration.
 
 Authentication uses Azure login with GitHub OIDC and an environment-scoped federated identity. The signing job uses the `windows-signing` GitHub environment. Configure restricted deployment branches, reviewers and a profile-scoped signing principal before running it. Microsoft documents [OIDC authentication](https://github.com/Azure/artifact-signing-action/blob/main/docs/OIDC.md) and [profile-scoped signer permissions](https://learn.microsoft.com/en-us/azure/artifact-signing/tutorial-assign-roles).
 
-Account-specific setup instructions are intentionally local and ignored, under `maintainer-local/`. No Azure account identifiers or credentials are committed. Signing configuration errors fail the build instead of producing unsigned Windows release output. A missing Azure setup prevents the Windows job and release draft from completing.
+Account-specific setup instructions are intentionally local and ignored, under `maintainer-local/`. No account identifiers or credentials are committed. Signing configuration errors fail the build instead of producing unsigned Windows release output. A missing Azure setup prevents the Windows job and release draft from completing.
 
 After packaging, Windows verifies valid timestamped signatures on the application executable and installer, including the expected publisher. The ZIP is built from the signed application. Electron-builder signs the embedded NSIS uninstaller during creation; verification of the installed uninstaller remains part of clean-machine Windows testing.
 
@@ -38,7 +38,15 @@ Patch releases omit `releaseName` entirely. Current 0.x development versions sta
 
 1. Confirm the normal Checks workflow and all release-build jobs pass for the merged commit.
 2. Verify downloaded checksums and clean-machine install, startup, upgrade and uninstall behavior. Check app and installed-uninstaller signatures on Windows.
-3. Complete applicable platform signing/notarization and the roadmap release gates. Explicitly describe unsigned early-testing builds.
+3. Complete applicable platform signing/notarization and the roadmap release gates. Require the documented Windows/macOS signing gates; do not publish unsigned 1.0 artifacts.
 4. Review generated release notes and assets, then publish the draft deliberately in GitHub.
 
-Azure provisioning, the first real signed Windows run, Windows/Linux installation checks and macOS signing/notarization remain pending. Preparing workflows does not satisfy those gates.
+Azure/Apple provisioning, the first real signed Windows/macOS runs and clean-machine installation checks remain pending. Preparing workflows does not satisfy those gates.
+
+## macOS signing and notarization
+
+The desktop matrix uses the protected `release-desktop` environment. Its macOS step alone receives secrets `MAC_CSC_LINK` (base64 Developer ID Application PKCS#12), `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and variable `APPLE_TEAM_ID`. Restrict environment deployment to main and trusted approval. Linux does not receive these step-scoped secrets. The ignored maintainer setup guide contains the account walkthrough.
+
+`electron-builder.mac.mjs` extends the shared targets, requires those settings, rejects disabled identity discovery and enables forceCodeSigning, hardened runtime and notarization using the installed v26 schema. The job verifies the packaged app with codesign, Gatekeeper and stapler before uploading. No unsigned fallback is provided for 1.0. Both platform jobs must pass before the combined draft is created. A validated configuration does not prove a real Apple submission succeeds. See [electron-builder v26 macOS options](https://www.electron.build/v26/docs/mac/) and [Apple notarization requirements](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+
+Use [prepared Ackbar notes](RELEASE_NOTES_1.0.md) when reviewing generated notes. Complete [the acceptance checklist](ACCEPTANCE.md) before publication; package-manager manifests must use the actual published assets and hashes after that decision.

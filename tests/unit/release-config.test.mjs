@@ -71,3 +71,27 @@ it('names major/minor releases after Star Wars characters by major initial and l
   ])
     expect(() => releaseTitle(version, name)).toThrow()
 })
+
+it('requires macOS Developer ID signing and notarization credentials before packaging', async () => {
+  const { macSigningConfig } = await import('../../scripts/release-config.mjs')
+  const settings = {
+    CSC_LINK: 'synthetic-base64-p12',
+    CSC_KEY_PASSWORD: 'synthetic',
+    APPLE_ID: 'synthetic@example.test',
+    APPLE_APP_SPECIFIC_PASSWORD: 'synthetic',
+    APPLE_TEAM_ID: 'ABCDE12345',
+  }
+  for (const key of Object.keys(settings)) {
+    const incomplete = { ...settings }
+    delete incomplete[key]
+    expect(() => macSigningConfig(incomplete)).toThrow(key)
+  }
+  expect(macSigningConfig(settings)).toMatchObject({
+    extends: './electron-builder.yml',
+    forceCodeSigning: true,
+    mac: { hardenedRuntime: true, notarize: true },
+  })
+  expect(() =>
+    macSigningConfig({ ...settings, CSC_IDENTITY_AUTO_DISCOVERY: 'false' }),
+  ).toThrow('CSC_IDENTITY_AUTO_DISCOVERY')
+})

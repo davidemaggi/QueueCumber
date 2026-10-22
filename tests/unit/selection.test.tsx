@@ -147,7 +147,7 @@ it('discards a message response after changing connection', async () => {
     })
   await browseA()
   fireEvent.click(screen.getByRole('button', { name: /queue-a.*stopped/i }))
-  fireEvent.click(await screen.findByRole('button', { name: /route-a/ }))
+  fireEvent.click(await screen.findByRole('option', { name: /route-a/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Connection B' }))
   await act(async () =>
     resolve({
@@ -270,4 +270,48 @@ it('resets provider-specific filters when switching connections in either direct
   fireEvent.click(screen.getByRole('button', { name: 'Queues' }))
   fireEvent.click(screen.getByRole('button', { name: 'Connection B' }))
   await screen.findByRole('button', { name: 'topic topic-a' })
+})
+
+it('clears the previous payload while another selected message is pending or fails', async () => {
+  bridge.readMessages = async () => ({
+    records: [1, 2].map((id) => ({
+      id,
+      timestamp: 0,
+      bytes: 10,
+      routingKey: 'message-' + id,
+      exchange: '',
+      preview: 'synthetic',
+    })),
+    nextCursor: null,
+  })
+  let reject!: (error: Error) => void
+  bridge.readMessage = async (id) => {
+    if (id === 2)
+      return new Promise((_resolve, fail) => {
+        reject = fail
+      })
+    return {
+      id,
+      payload: btoa('payload from A'),
+      headers: {},
+      bytes: 14,
+      previewLimit: 1024,
+      truncated: false,
+      routingKey: 'message-1',
+      exchange: '',
+      timestamp: 0,
+    }
+  }
+  await browseA()
+  fireEvent.click(screen.getByRole('button', { name: /queue-a.*stopped/i }))
+  fireEvent.click(await screen.findByRole('option', { name: /message-1/ }))
+  expect(await screen.findByText('payload from A')).toBeTruthy()
+  fireEvent.click(screen.getByRole('option', { name: /message-2/ }))
+  expect(screen.queryByText('payload from A')).toBeNull()
+  await act(async () => reject(Error('Record evicted')))
+  expect(screen.queryByText('payload from A')).toBeNull()
+  expect(
+    screen.getByRole('option', { selected: true, name: /message-2/ })
+      .textContent,
+  ).toContain('message-2')
 })

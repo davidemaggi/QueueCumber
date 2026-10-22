@@ -207,6 +207,11 @@ export class CaptureStorage {
     mkdirSync(dir, { recursive: true, mode: 0o700 })
     this.path = join(dir, 'captures.db')
     this.db = new DatabaseSync(this.path)
+    const version = this.db.prepare('PRAGMA user_version').get()?.user_version
+    if (version !== 0 && version !== 1) {
+      this.db.close()
+      throw Error('Unsupported capture database version')
+    }
     chmodSync(this.path, 0o600)
     this.db.exec(
       `PRAGMA auto_vacuum=FULL; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS captures (id INTEGER PRIMARY KEY AUTOINCREMENT, session TEXT NOT NULL, time INTEGER NOT NULL, data BLOB NOT NULL); CREATE INDEX IF NOT EXISTS session_page ON captures(session,id);
@@ -241,6 +246,7 @@ CREATE TRIGGER capture_delete AFTER DELETE ON captures BEGIN
  DELETE FROM capture_usage WHERE session=old.session AND bytes=0;
  UPDATE capture_total SET bytes=bytes-length(old.data) WHERE singleton=1;
 END;`)
+    this.db.exec('PRAGMA user_version=1')
     this.applyRetention(settings)
   }
   private cached(id: number, bytes: Buffer, sessionId: string) {
