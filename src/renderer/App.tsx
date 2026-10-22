@@ -165,6 +165,7 @@ export default function App() {
     messageSelection.current++
     setCursor(null)
     setRows([])
+    setNextCursor(null)
     setSessionCache('')
     setSessionDisk('')
     setSessionRate('')
@@ -190,11 +191,13 @@ export default function App() {
     active =
       session &&
       ['capturing', 'connecting', 'reconnecting'].includes(session.state)
+  const shownBindings = session?.bindings ?? bindings
   const shownResources = resources.filter(
     (r) => kind === 'all' || r.kind === kind,
   )
   async function start() {
     if (!resource) return
+    const token = selection.current
     await run(async () => {
       const limits = {
         ...(sessionCache
@@ -211,8 +214,10 @@ export default function App() {
         allowPartial: partial,
         limits,
       })
-      setSessionId(s.id)
-      setCursor(null)
+      if (token === selection.current) {
+        setSessionId(s.id)
+        setCursor(null)
+      }
       await refresh()
     })
   }
@@ -291,6 +296,8 @@ export default function App() {
               key={p.id}
               onClick={() => {
                 selection.current++
+                messageSelection.current++
+                setNextCursor(null)
                 setConnection(p.id)
                 setResource(null)
                 setRows([])
@@ -326,6 +333,11 @@ export default function App() {
                   key={s.id}
                   className={sessionId === s.id ? 'selected' : ''}
                   onClick={() => {
+                    selection.current++
+                    messageSelection.current++
+                    setRows([])
+                    setNextCursor(null)
+                    setPartial(false)
                     setConnection(s.connectionId)
                     setResource(s.resource)
                     setBindings(s.bindings)
@@ -394,7 +406,11 @@ export default function App() {
         ) : null}
         {state?.warning ? (
           <div role="alert" className="notice">
-            {t('invalidSettings')}
+            {t(
+              state.warning === 'HISTORY_STORAGE_FAILED'
+                ? 'historyFailure'
+                : 'invalidSettings',
+            )}
           </div>
         ) : null}
         {screen === 'settings' && state ? (
@@ -606,7 +622,7 @@ export default function App() {
                           </tr>
                         </thead>
                         <tbody>
-                          {bindings.map((b, i) => (
+                          {shownBindings.map((b, i) => (
                             <tr key={i}>
                               <td className="mono">
                                 {b.source || t('defaultExchange')}
@@ -708,6 +724,36 @@ export default function App() {
                         {session.gaps.toLocaleString()} {t('gaps')}
                       </span>
                     </div>
+                  ) : null}
+                  {session ? (
+                    <p className="buffer-note">
+                      {t('captureStarted')}:{' '}
+                      {new Date(session.startedAt).toLocaleString()}
+                      {session.retained ? (
+                        <>
+                          {' '}
+                          · {session.retained.count} {t('retained')}
+                          {session.retained.first !== null ? (
+                            <>
+                              {' '}
+                              ·{' '}
+                              {new Date(
+                                session.retained.first,
+                              ).toLocaleString()}{' '}
+                              –{' '}
+                              {new Date(
+                                session.retained.last!,
+                              ).toLocaleString()}
+                            </>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </p>
+                  ) : null}
+                  {session?.bindingChanged ? (
+                    <p role="status" className="notice">
+                      {t('bindingsChanged')}
+                    </p>
                   ) : null}
                   {session?.error ? (
                     <p role="alert" className="notice">

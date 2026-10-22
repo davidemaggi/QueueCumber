@@ -17,6 +17,7 @@ export type SessionSummary = {
   bindings: Binding[]
   error?: string
   bindingChanged?: boolean
+  retained?: { count: number; first: number | null; last: number | null }
   potentialOverflow: boolean
 }
 export type CaptureOptions = {
@@ -25,7 +26,7 @@ export type CaptureOptions = {
 }
 type Session = {
   summary: SessionSummary
-  profile: ConnectionProfile
+  profile?: ConnectionProfile
   options: CaptureOptions
   generation: number
   connection?: ChannelModel
@@ -38,11 +39,50 @@ export class SessionManager {
   private sessions = new Map<string, Session>()
   constructor(
     private store: Pick<CaptureStorage, 'append'> &
-      Partial<Pick<CaptureStorage, 'setSessionLimits'>>,
+      Partial<
+        Pick<
+          CaptureStorage,
+          | 'setSessionLimits'
+          | 'saveSessions'
+          | 'loadSessions'
+          | 'deleteSession'
+          | 'retainedRange'
+        >
+      >,
     private settings: () => CaptureSettings,
-  ) {}
+  ) {
+    for (const summary of this.store.loadSessions?.() ?? []) {
+      const interrupted = !['stopped', 'failed'].includes(summary.state)
+      const range = this.store.retainedRange?.(summary.id)
+      this.sessions.set(summary.id, {
+        summary: {
+          ...summary,
+          state: 'stopped',
+          gaps: summary.gaps + (interrupted ? 1 : 0),
+          error: interrupted ? 'INTERRUPTED_RESTART' : summary.error,
+          captured: Math.max(
+            summary.captured,
+            (range?.count ?? 0) - summary.omitted,
+          ),
+        },
+        options: { allowPartial: false },
+        generation: 0,
+        attempt: 0,
+        rateStart: Date.now(),
+        rateCount: 0,
+      })
+    }
+  }
+  private persist() {
+    this.store.saveSessions?.(this.list())
+  }
   list(): SessionSummary[] {
-    return [...this.sessions.values()].map((s) => structuredClone(s.summary))
+    return [...this.sessions.values()].map((s) =>
+      structuredClone({
+        ...s.summary,
+        retained: this.store.retainedRange?.(s.summary.id),
+      }),
+    )
   }
   async startCapture(
     profile: ConnectionProfile,
@@ -52,12 +92,20 @@ export class SessionManager {
     if (resource.kind !== 'queue')
       throw Error('Only queue route capture is available in this milestone')
     if (
-      this.sessions.size >= 100 ||
       [...this.sessions.values()].filter(
         (s) => !['stopped', 'failed'].includes(s.summary.state),
       ).length >= 4
     )
       throw Error('Capture session limit reached')
+    if (this.sessions.size >= 100) {
+      const oldest = [...this.sessions.values()].find((s) =>
+        ['stopped', 'failed'].includes(s.summary.state),
+      )
+      if (oldest) {
+        this.store.deleteSession?.(oldest.summary.id)
+        this.sessions.delete(oldest.summary.id)
+      }
+    }
     const s: Session = {
       summary: {
         id: randomUUID(),
@@ -85,7 +133,10 @@ export class SessionManager {
     this.sessions.set(s.summary.id, s)
     try {
       await this.connect(s)
-      return structuredClone(s.summary)
+      return structuredClone({
+        ...s.summary,
+        retained: this.store.retainedRange?.(s.summary.id),
+      })
     } catch (error) {
       s.summary.state = 'failed'
       s.summary.error = failureCode(error)
@@ -96,8 +147,9 @@ export class SessionManager {
     }
   }
   private async connect(s: Session): Promise<void> {
-    const generation = ++s.generation,
-      broker = new RabbitMQ(s.profile)
+    const generation = ++s.generation
+    if (!s.profile) throw Error('Restored sessions require a new capture')
+    const broker = new RabbitMQ(s.profile)
     const snapshot = await broker.bindings(s.summary.resource.name)
     if (Buffer.byteLength(JSON.stringify(snapshot)) > 65536)
       throw Object.assign(Error('Binding snapshot too large'), {
@@ -117,6 +169,7 @@ export class SessionManager {
       s.summary.bindingChanged = true
     if (generation !== s.generation) return
     s.summary.bindings = snapshot
+    this.persist()
     const connection = await broker.connect()
     if (generation !== s.generation) {
       await connection.close()
@@ -214,6 +267,7 @@ export class SessionManager {
       s.summary.state = 'capturing'
       s.summary.error = undefined
       s.attempt = 0
+      this.persist()
     } catch (error) {
       s.generation++
       s.connection = undefined
@@ -260,6 +314,7 @@ export class SessionManager {
     s.summary.state = 'stopped'
     await s.connection?.close().catch(() => {})
     s.connection = undefined
+    this.persist()
   }
   async close(): Promise<void> {
     await Promise.all(

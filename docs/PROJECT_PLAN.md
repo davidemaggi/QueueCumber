@@ -1,6 +1,6 @@
 # QueueCumber project proposal
 
-Status: **architecture approved by the maintainer on 2026-10-22; detailed MVP implementation plan awaiting review**.
+Status: **architecture and MVP implementation plan approved on 2026-10-22; local MVP implemented and independent review corrections verified; release gates pending**.
 
 Date: 2026-10-22. Requirements live in [PRODUCT.md](../PRODUCT.md). The maintainer confirmed RabbitMQ temporary-queue capture. The architecture and staged scope below were approved. Resource settings are configurable: no representative user traffic estimate is required.
 
@@ -136,7 +136,7 @@ Packaging proposal: Windows installer/portable archive, macOS DMG/archive, Linux
 4. Confirmed: user-configurable resource settings with conservative defaults. No traffic estimate is available or required. Validate defaults with synthetic workloads.
 5. Hosted-service/authentication and OS/CPU compatibility remain test-driven. Begin with ordinary endpoints and TLS credentials; cloud-specific IAM requires explicit support work.
 
-The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp.md) is ready for review. Application development waits for that review; later milestones receive separate scoped plans.
+The [detailed MVP implementation plan](superpowers/plans/2026-10-22-rabbitmq-mvp.md) was approved with native execution. The RabbitMQ alpha is implemented and under independent review; later milestones receive separate scoped plans.
 
 ## Primary references
 

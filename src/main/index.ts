@@ -152,6 +152,7 @@ app.whenReady().then(async () => {
     stopCapture: withReady((id) => rpc('stop', id)),
     readMessages: withReady((id, cursor) => rpc('page', id, cursor)),
     readMessage: withReady((id) => rpc('message', id)),
+    readPayloadChunk: withReady((id, offset) => rpc('chunk', id, offset)),
     previewSettings: withReady((input) => rpc('previewSettings', input)),
     saveSettings: withReady((input, confirmed) =>
       rpc('settings', input, confirmed),

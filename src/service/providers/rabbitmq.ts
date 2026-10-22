@@ -46,7 +46,7 @@ export class RabbitMQ implements Provider {
           timeout: 5000,
         },
         (res) => {
-          if (res.statusCode !== 200) {
+          if (res.statusCode !== 200 && res.statusCode !== 400) {
             res.resume()
             const e = Object.assign(new Error('Management access failed'), {
               code:
@@ -68,7 +68,19 @@ export class RabbitMQ implements Provider {
           })
           res.on('end', () => {
             try {
-              resolve(JSON.parse(Buffer.concat(chunks).toString()))
+              const body = JSON.parse(Buffer.concat(chunks).toString())
+              if (res.statusCode === 400) {
+                reject(
+                  Object.assign(Error('Management request rejected'), {
+                    code:
+                      body.error === 'page_out_of_range'
+                        ? 'PAGE_OUT_OF_RANGE'
+                        : 'MANAGEMENT_FAILED',
+                  }),
+                )
+                return
+              }
+              resolve(body)
             } catch {
               reject(Error('Invalid management response'))
             }
@@ -114,9 +126,14 @@ export class RabbitMQ implements Provider {
       pagination: 'true',
     })
     const vhost = encodeURIComponent(this.vhost)
+    const exhausted = (error: unknown) => {
+      if (failureCode(error) === 'PAGE_OUT_OF_RANGE')
+        return { items: [], page_count: 0 }
+      throw error
+    }
     const [queues, exchanges] = await Promise.all([
-      this.request(`queues/${vhost}?${params}`),
-      this.request(`exchanges/${vhost}?${params}`),
+      this.request(`queues/${vhost}?${params}`).catch(exhausted),
+      this.request(`exchanges/${vhost}?${params}`).catch(exhausted),
     ])
     const resources = [
       ...queues.items.map((q: any) => ({

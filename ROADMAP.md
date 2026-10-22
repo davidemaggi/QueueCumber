@@ -20,9 +20,10 @@ A proposed sequence, not a delivery calendar. The RabbitMQ alpha works locally; 
 - [x] Inspect headers, raw payloads and size-limited formatted JSON.
 - [x] Bounded RAM and encrypted disk capture from the first working subscription, with validated configurable resource settings.
 - [x] Session cancellation, transient-failure retries and visible capture gaps.
+- [x] Encrypted session history restored after restart, with retained range and bounded raw-byte navigation.
 - [x] Integration tests proving original queues are never consumed or modified.
 
-Pending: real OS-keystore verification, cloud authentication coverage and Windows/Linux execution. Capture session catalog restoration after restart is also still open.
+Pending: real OS-keystore verification, cloud authentication coverage and Windows/Linux execution.
 
 Exit gate: a usable RabbitMQ vertical slice, measured resource bounds and security checks on all three target operating systems. Publish a tested broker/authentication matrix.
 

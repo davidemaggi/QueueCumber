@@ -38,6 +38,14 @@ export const operationSchemas = {
   stopCapture: z.tuple([id]),
   readMessages: z.tuple([id, z.number().int().positive().nullable()]),
   readMessage: z.tuple([z.number().int().positive()]),
+  readPayloadChunk: z.tuple([
+    z.number().int().positive(),
+    z
+      .number()
+      .int()
+      .min(0)
+      .max(64 * 1024 * 1024),
+  ]),
   previewSettings: z.tuple([settingsSchema]),
   saveSettings: z.tuple([settingsSchema, z.boolean()]),
 }

@@ -7,6 +7,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: cucumber
       RABBITMQ_DEFAULT_PASS: local-test-only
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit max_message_size 33554432"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s

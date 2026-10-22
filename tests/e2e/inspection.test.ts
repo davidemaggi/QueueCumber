@@ -73,6 +73,9 @@ test('saves a session-only connection, captures a real message and changes theme
     await expect(page.locator('.message-row').first()).toContainText(
       'order.created',
     )
+    await expect
+      .poll(() => page.locator('.message-row').count())
+      .toBeGreaterThan(10)
     const qaDir = join(tmpdir(), 'queuecumber-qa')
     await mkdir(qaDir, { recursive: true })
     await page.screenshot({ path: join(qaDir, 'inspection-light.png') })

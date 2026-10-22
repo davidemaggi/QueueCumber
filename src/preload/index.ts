@@ -15,6 +15,8 @@ const api: DesktopApi = {
   readMessages: (id, cursor) =>
     ipcRenderer.invoke('qc:readMessages', id, cursor),
   readMessage: (id) => ipcRenderer.invoke('qc:readMessage', id),
+  readPayloadChunk: (id, offset) =>
+    ipcRenderer.invoke('qc:readPayloadChunk', id, offset),
   previewSettings: (input) => ipcRenderer.invoke('qc:previewSettings', input),
   saveSettings: (input, confirmed) =>
     ipcRenderer.invoke('qc:saveSettings', input, confirmed),

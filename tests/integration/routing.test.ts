@@ -1,10 +1,11 @@
-import { it, expect } from 'vitest'
+import { it, expect, vi } from 'vitest'
 import amqp from 'amqplib'
 import { randomUUID, randomBytes } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { profile } from '../fixtures/broker'
+import { RabbitMQ } from '../../src/service/providers/rabbitmq'
 import { SessionManager } from '../../src/service/sessions'
 import { CaptureStorage } from '../../src/service/storage'
 import { DEFAULT_SETTINGS } from '../../src/shared/limits'
@@ -89,5 +90,59 @@ it('refuses default-only routes and marks storage failure without touching origi
     await channel.deleteQueue(name)
     await channel.deleteExchange(name)
     await connection.close()
+  }
+})
+
+it('cleans up its observation queue when a later binding fails during setup', async () => {
+  const c = await amqp.connect(profile.protocolUrl),
+    ch = await c.createChannel()
+  const name = 'qc-test-' + randomUUID()
+  await ch.assertExchange(name, 'direct', { durable: false })
+  await ch.assertQueue(name, { durable: false })
+  await ch.bindQueue(name, name, 'first')
+  const original = RabbitMQ.prototype.bindings
+  const spy = vi
+    .spyOn(RabbitMQ.prototype, 'bindings')
+    .mockImplementation(async function (this: RabbitMQ, queue: string) {
+      return [
+        ...(await original.call(this, queue)),
+        {
+          source: name + '-missing',
+          destination: name,
+          routing_key: 'second',
+          arguments: {},
+          type: 'direct',
+          supported: true,
+        },
+      ]
+    })
+  const sessions = new SessionManager(
+    { append: () => ({ id: 1, omitted: false }) },
+    () => DEFAULT_SETTINGS,
+  )
+  try {
+    await expect(
+      sessions.startCapture(
+        profile,
+        { name, vhost: '/', kind: 'queue' },
+        { allowPartial: true },
+      ),
+    ).rejects.toThrow()
+    const id = sessions.list()[0].id
+    const broker = new RabbitMQ(profile)
+    await expect
+      .poll(async () => {
+        const queues = await broker.request('queues/%2F')
+        return queues.filter((q: any) => q.name.startsWith('queuecumber.' + id))
+          .length
+      })
+      .toBe(0)
+    expect((await ch.checkQueue(name)).consumerCount).toBe(0)
+  } finally {
+    spy.mockRestore()
+    await sessions.close()
+    await ch.deleteQueue(name)
+    await ch.deleteExchange(name)
+    await c.close()
   }
 })

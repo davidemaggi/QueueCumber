@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MessageSummary } from '../../service/storage'
-import type { MessageDetail } from '../../shared/contracts'
+import type { DesktopApi, MessageDetail } from '../../shared/contracts'
 import { formatPreview } from '../../shared/payload'
 import type { translator } from '../i18n'
 const rowHeight = 46
@@ -118,18 +118,14 @@ export function MessageView({
                       : 'Text'}
                 </span>
                 <button aria-pressed={raw} onClick={() => setRaw(!raw)}>
-                  {raw ? t('pretty') : t('raw')}
+                  {raw ? t('pretty') : t('rawBytes')}
                 </button>
               </div>
-              <pre>
-                {raw && preview?.format !== 'binary'
-                  ? new TextDecoder().decode(
-                      Uint8Array.from(atob(message.payload), (c) =>
-                        c.charCodeAt(0),
-                      ),
-                    )
-                  : preview?.text}
-              </pre>
+              {raw && !message.omission ? (
+                <RawChunks key={message.id} id={message.id} t={t} />
+              ) : (
+                <pre>{preview?.text}</pre>
+              )}
             </>
           ) : (
             <div className="header-table">
@@ -154,5 +150,83 @@ export function MessageView({
         </div>
       )}
     </section>
+  )
+}
+
+function RawChunks({
+  id,
+  t,
+}: {
+  id: number
+  t: ReturnType<typeof translator>
+}) {
+  const [offset, setOffset] = useState(0)
+  const [chunk, setChunk] = useState<Awaited<
+    ReturnType<DesktopApi['readPayloadChunk']>
+  > | null>(null)
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    setChunk(null)
+    setError(false)
+    void window.queuecumber
+      .readPayloadChunk(id, offset)
+      .then((value) => {
+        if (!cancelled) setChunk(value)
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, offset])
+  const bytes = chunk
+    ? Uint8Array.from(atob(chunk.payload), (c) => c.charCodeAt(0))
+    : new Uint8Array()
+  const lines: string[] = []
+  for (let i = 0; i < bytes.length; i += 16) {
+    const row = bytes.subarray(i, i + 16)
+    lines.push(
+      (offset + i).toString(16).padStart(8, '0') +
+        '  ' +
+        Array.from(row, (n) => n.toString(16).padStart(2, '0'))
+          .join(' ')
+          .padEnd(47) +
+        '  ' +
+        Array.from(row, (n) =>
+          n >= 32 && n <= 126 ? String.fromCharCode(n) : '.',
+        ).join(''),
+    )
+  }
+  return (
+    <>
+      <div className="payload-controls">
+        <span>
+          {t('chunkRange')}: {offset.toLocaleString()}–
+          {(offset + bytes.length).toLocaleString()}
+          {chunk ? ` / ${chunk.totalBytes.toLocaleString()} B` : ''}
+        </span>
+        <button
+          disabled={!chunk || offset === 0}
+          onClick={() => setOffset(Math.max(0, offset - 65536))}
+        >
+          {t('previousChunk')}
+        </button>
+        <button
+          disabled={!chunk || chunk.nextOffset === null}
+          onClick={() => setOffset(chunk!.nextOffset!)}
+        >
+          {t('nextChunk')}
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="notice">
+          {t('chunkFailure')}
+        </p>
+      ) : (
+        <pre>{chunk ? lines.join('\n') : t('loading')}</pre>
+      )}
+    </>
   )
 }

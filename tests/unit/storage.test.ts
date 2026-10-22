@@ -151,3 +151,96 @@ it('enforces a narrower session disk and cache budget without evicting another s
     await rm(dir, { recursive: true, force: true })
   }
 })
+it('counts expiry through session-specific retention and clears its cache', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'qc-scoped-age-'))
+  const store = new CaptureStorage(dir, randomBytes(32), DEFAULT_SETTINGS)
+  try {
+    store.setSessionLimits('short', DEFAULT_SETTINGS)
+    store.append('short', {
+      payload: Buffer.from('expired'),
+      headers: {},
+      routingKey: 'r',
+      exchange: 'e',
+    })
+    const db = new DatabaseSync(join(dir, 'captures.db'))
+    db.exec('UPDATE captures SET time=0')
+    db.close()
+    expect(store.readPage('short', null, 10).records).toHaveLength(0)
+    expect(store.stats().evicted).toBe(1)
+    expect(store.stats().cacheBytes).toBe(0)
+  } finally {
+    store.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+it('restores encrypted session catalog as stopped without reconnecting', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'qc-catalog-')),
+    key = randomBytes(32)
+  let store = new CaptureStorage(dir, key, DEFAULT_SETTINGS)
+  const summary = {
+    id: 'restored',
+    connectionId: 'profile',
+    resource: { name: 'private.orders', vhost: '/', kind: 'queue' as const },
+    state: 'capturing' as const,
+    captured: 1,
+    omitted: 0,
+    gaps: 0,
+    startedAt: Date.now(),
+    bindings: [],
+    potentialOverflow: true,
+  }
+  try {
+    store.append('restored', {
+      payload: Buffer.from('retained'),
+      headers: {},
+      routingKey: 'private.route',
+      exchange: 'private.exchange',
+    })
+    store.saveSessions([summary])
+    store.close()
+    store = new CaptureStorage(dir, key, DEFAULT_SETTINGS)
+    const { SessionManager } = await import('../../src/service/sessions')
+    const manager = new SessionManager(store, () => DEFAULT_SETTINGS)
+    expect(manager.list()).toHaveLength(1)
+    expect(manager.list()[0].state).toBe('stopped')
+    expect(manager.list()[0].gaps).toBe(1)
+    expect(
+      store
+        .get(store.readPage(manager.list()[0].id, null, 1).records[0].id)
+        .payload.toString(),
+    ).toBe('retained')
+    for (const file of await readdir(dir))
+      expect((await readFile(join(dir, file))).includes('private.orders')).toBe(
+        false,
+      )
+  } finally {
+    store.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+it('pages every retained raw byte including binary beyond the preview', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'qc-raw-')),
+    store = new CaptureStorage(dir, randomBytes(32), DEFAULT_SETTINGS),
+    payload = randomBytes(200000)
+  try {
+    const { id } = store.append('raw', {
+      payload,
+      headers: {},
+      routingKey: 'binary',
+      exchange: 'e',
+    })
+    const chunks: Buffer[] = []
+    let offset: number | null = 0
+    do {
+      const chunk = store.readChunk(id, offset!)
+      expect(chunk.payload.length).toBeLessThanOrEqual(65536)
+      chunks.push(chunk.payload)
+      offset = chunk.nextOffset
+    } while (offset !== null)
+    expect(Buffer.concat(chunks).equals(payload)).toBe(true)
+    expect(() => store.readChunk(id, -1)).toThrow()
+  } finally {
+    store.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

@@ -37,6 +37,9 @@ it('recreates lost observation queues, reports a gap and honors stop', async () 
         { timeout: 8000, interval: 100 },
       )
       .toBe(true)
+    await ch.unbindQueue(name, name, 'event')
+    await ch.bindQueue(name, name, 'changed')
+    const initialStart = session.startedAt
     const result = await fetch(
       profile.managementUrl +
         '/api/connections/' +
@@ -55,6 +58,11 @@ it('recreates lost observation queues, reports a gap and honors stop', async () 
     await expect
       .poll(() => sessions.list()[0].state, { timeout: 8000 })
       .toBe('capturing')
+    expect(sessions.list()[0].bindingChanged).toBe(true)
+    expect(
+      sessions.list()[0].bindings.some((b) => b.routing_key === 'changed'),
+    ).toBe(true)
+    expect(sessions.list()[0].startedAt).toBeGreaterThan(initialStart)
     await sessions.stopCapture(session.id)
     expect(sessions.list()[0].state).toBe('stopped')
     const consumers = await broker.request('consumers/%2F')

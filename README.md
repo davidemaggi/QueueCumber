@@ -11,7 +11,7 @@ A cross-platform desktop tool for developers who want to see what's flowing thro
 - Save encrypted RabbitMQ connection profiles, or use session-only storage when OS protection is unavailable.
 - Test AMQP and management independently; browse and search queues, streams and exchanges.
 - Mirror supported queue bindings into a private observation queue and inspect incoming messages.
-- Read structured headers, raw text and formatted JSON without executing payload content.
+- Read structured headers, formatted JSON and every retained original byte through bounded chunk navigation.
 - Configure global and session capture budgets, disk retention and optional admission-rate limits.
 - Switch between English/Italian and light/dark/system themes.
 
@@ -42,7 +42,7 @@ Development happens on `development`. Releases will follow [Semantic Versioning]
 
 ## Contributing
 
-For now, the most useful contributions are proposal feedback, broker edge cases and reproducible usage scenarios. Share sanitized examples, never real credentials or private messages. Development commands will be documented when the scaffold exists.
+For now, the most useful contributions are broker edge cases and reproducible usage scenarios. Share sanitized examples, never real credentials or private messages. Start with the local development commands below.
 
 ## License
 
@@ -72,14 +72,14 @@ This fixture uses synthetic credentials and binds only loopback ports 25672/2567
 
 ## Current limits
 
-Capture cache defaults to 64 MiB, disk quota to 2 GiB, retention to seven days and retained payloads to 16 MiB. The UI preview accepts 256 KiB by default, with a separate 64 KiB per-detail IPC ceiling. Optional message-rate admission drops are counted. Budgets stay finite; a session can narrow the global settings. Four concurrent captures and 100 session entries per application run are the current safety limits.
+Capture cache defaults to 64 MiB, disk quota to 2 GiB, retention to seven days and retained payloads to 16 MiB. The UI preview accepts 256 KiB by default, with a separate 64 KiB per-detail IPC ceiling. Optional message-rate admission drops are counted. Budgets stay finite; a session can narrow the global settings. Four concurrent captures and 100 retained session entries are the current safety limits. Starting a capture at the history limit removes the oldest stopped/failed session and its retained data.
 
 The RAM setting is a cache budget, not a cap on Electron's total RSS. Broker clients may allocate oversized deliveries before the app can omit them. Disk storage reserves headroom for SQLite pages/journaling and may evict before reaching the displayed quota. Saving limits stops active captures and asks for confirmation when effects require it.
 
-Capture sessions are currently browsable during the current app run. In secure mode, encrypted capture records survive restart, but the UI does not yet restore their session catalog. Closing the window stops the alpha; tray mode is a later milestone. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
+In secure mode, encrypted session history and retained records can be reopened after restart. Restored sessions stay stopped; interrupted captures show a gap and require an explicit new capture. Retained counts and timestamps show the available range. Closing the window stops the alpha; tray mode is a later milestone. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
 
 ## Verification status
 
-Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 in Docker. Unit/integration tests exercise encryption, tampering, raw-byte recovery, mixed-size saturation, scoped budgets, routing types, TLS validation, permission denial and reconnects. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Installer signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
+Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Installer signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
 
 Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt). Other dependencies keep their own licenses.

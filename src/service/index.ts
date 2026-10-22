@@ -9,6 +9,7 @@ import {
 } from '../shared/limits'
 let settings = { ...DEFAULT_SETTINGS },
   warning: string | undefined,
+  historyWarning: string | undefined,
   store: CaptureStorage,
   sessions: SessionManager,
   repository: SettingsRepository
@@ -36,9 +37,16 @@ parent.on('message', async ({ data }) => {
       if (!store) throw Error('Service not initialized')
       switch (operation) {
         case 'state':
+          try {
+            store.saveSessions(sessions.list())
+            historyWarning = undefined
+          } catch {
+            historyWarning = 'HISTORY_STORAGE_FAILED'
+            await sessions.close().catch(() => {})
+          }
           value = {
             settings,
-            warning,
+            warning: warning ?? historyWarning,
             sessions: sessions.list(),
             stats: store.stats(),
           }
@@ -53,7 +61,8 @@ parent.on('message', async ({ data }) => {
           value = await new RabbitMQ(args[0]).bindings(args[1].name)
           break
         case 'start':
-          if (warning) throw Error('Review settings')
+          if (warning || historyWarning)
+            throw Error('Review settings and storage')
           value = await sessions.startCapture(args[0], args[1], args[2])
           break
         case 'stop':
@@ -62,6 +71,11 @@ parent.on('message', async ({ data }) => {
         case 'page':
           value = store.readPage(args[0], args[1], 30)
           break
+        case 'chunk': {
+          const chunk = store.readChunk(args[0], args[1])
+          value = { ...chunk, payload: chunk.payload.toString('base64') }
+          break
+        }
         case 'message': {
           const record = store.get(args[0]),
             previewLimit = Math.min(settings.previewBytes, 65536)
@@ -100,10 +114,11 @@ parent.on('message', async ({ data }) => {
           if ((effects.length || active) && !args[1])
             throw Error('CONFIRM_SETTINGS_EFFECTS')
           await repository.save(next)
-          await sessions.close()
+          await sessions.close().catch(() => {})
           store.applyRetention(next)
           settings = next
           warning = undefined
+          historyWarning = undefined
           break
         }
         case 'shutdown':

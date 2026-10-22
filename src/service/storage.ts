@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync, chmodSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { serialize, deserialize } from 'node:v8'
+import type { SessionSummary } from './sessions'
 import { seal, open } from './crypto'
 import {
   validateSettings,
@@ -31,6 +32,118 @@ export type MessageSummary = {
   omission?: string
 }
 export class CaptureStorage {
+  private catalogHashes = new Map<string, string>()
+  saveSessions(summaries: SessionSummary[]) {
+    if (summaries.length > 100) throw Error('Session history limit')
+    const encoded = summaries.map((summary) => ({
+      id: summary.id,
+      bytes: serialize({ schemaVersion: 1, summary }),
+    }))
+    if (encoded.some((row) => row.bytes.length > 131072))
+      throw Error('Session metadata limit')
+    const currentBytes = Number(
+      (
+        this.db
+          .prepare('SELECT COALESCE(SUM(length(data)),0) AS n FROM sessions')
+          .get() as { n: number }
+      ).n,
+    )
+    const needed = encoded.reduce((n, row) => n + row.bytes.length + 29, 0)
+    if (needed > this.settings.diskBytes * 0.2)
+      throw Error('Session metadata exceeds disk budget')
+    this.prune(Math.max(0, needed - currentBytes))
+    this.db.exec('BEGIN IMMEDIATE')
+    try {
+      for (const row of encoded) {
+        const hash = row.bytes.toString('base64')
+        if (this.catalogHashes.get(row.id) === hash) continue
+        this.db
+          .prepare(
+            'INSERT INTO sessions(id,time,data) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET time=excluded.time,data=excluded.data',
+          )
+          .run(row.id, Date.now(), seal(this.key, row.bytes))
+        this.catalogHashes.set(row.id, hash)
+      }
+      for (const row of this.db.prepare('SELECT id FROM sessions').all() as {
+        id: string
+      }[]) {
+        if (!summaries.some((s) => s.id === row.id)) {
+          this.db.prepare('DELETE FROM sessions WHERE id=?').run(row.id)
+          this.catalogHashes.delete(row.id)
+        }
+      }
+      this.db.exec('COMMIT')
+    } catch (error) {
+      this.db.exec('ROLLBACK')
+      this.catalogHashes.clear()
+      throw error
+    }
+  }
+  loadSessions(): SessionSummary[] {
+    return (
+      this.db.prepare('SELECT id,data FROM sessions ORDER BY time').all() as {
+        id: string
+        data: Uint8Array
+      }[]
+    ).map((row) => {
+      const envelope = deserialize(open(this.key, Buffer.from(row.data)))
+      if (envelope.schemaVersion !== 1 || envelope.summary.id !== row.id)
+        throw Error('Invalid session catalog')
+      return envelope.summary
+    })
+  }
+  deleteSession(id: string) {
+    const result = this.db
+      .prepare('DELETE FROM captures WHERE session=?')
+      .run(id)
+    this.evicted += Number(result.changes)
+    this.db.prepare('DELETE FROM sessions WHERE id=?').run(id)
+    this.sessionLimits.delete(id)
+    this.catalogHashes.delete(id)
+    this.clearCache()
+  }
+  retainedRange(id: string) {
+    const count = Number(
+      (
+        this.db
+          .prepare('SELECT records FROM capture_usage WHERE session=?')
+          .get(id) as { records: number } | undefined
+      )?.records ?? 0,
+    )
+    const first = this.db
+      .prepare('SELECT time FROM captures WHERE session=? ORDER BY id LIMIT 1')
+      .get(id) as { time: number } | undefined
+    const last = this.db
+      .prepare(
+        'SELECT time FROM captures WHERE session=? ORDER BY id DESC LIMIT 1',
+      )
+      .get(id) as { time: number } | undefined
+    return { count, first: first?.time ?? null, last: last?.time ?? null }
+  }
+  readChunk(
+    id: number,
+    offset: number,
+  ): {
+    payload: Buffer
+    nextOffset: number | null
+    totalBytes: number
+    offset: number
+  } {
+    const record = this.get(id)
+    if (
+      !Number.isSafeInteger(offset) ||
+      offset < 0 ||
+      offset > record.payload.length
+    )
+      throw Error('Invalid payload offset')
+    const end = Math.min(record.payload.length, offset + 65536)
+    return {
+      payload: record.payload.subarray(offset, end),
+      nextOffset: end < record.payload.length ? end : null,
+      totalBytes: record.payload.length,
+      offset,
+    }
+  }
   private sessionLimits = new Map<string, CaptureSettings>()
   private cacheOwners = new Map<number, string>()
   private cacheUsage = new Map<string, number>()
@@ -72,20 +185,36 @@ export class CaptureStorage {
     this.db.exec(
       `PRAGMA auto_vacuum=FULL; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; CREATE TABLE IF NOT EXISTS captures (id INTEGER PRIMARY KEY AUTOINCREMENT, session TEXT NOT NULL, time INTEGER NOT NULL, data BLOB NOT NULL); CREATE INDEX IF NOT EXISTS session_page ON captures(session,id);
 CREATE INDEX IF NOT EXISTS capture_age ON captures(time);
-CREATE TABLE IF NOT EXISTS capture_usage(session TEXT PRIMARY KEY, bytes INTEGER NOT NULL);
-INSERT OR IGNORE INTO capture_usage SELECT session,SUM(length(data)) FROM captures GROUP BY session;
+CREATE TABLE IF NOT EXISTS capture_usage(session TEXT PRIMARY KEY, bytes INTEGER NOT NULL, records INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,time INTEGER NOT NULL,data BLOB NOT NULL);
+`,
+    )
+    if (
+      !(
+        this.db.prepare('PRAGMA table_info(capture_usage)').all() as {
+          name: string
+        }[]
+      ).some((c) => c.name === 'records')
+    )
+      this.db.exec(
+        'ALTER TABLE capture_usage ADD COLUMN records INTEGER NOT NULL DEFAULT 0',
+      )
+    this.db
+      .exec(`INSERT OR IGNORE INTO capture_usage(session,bytes,records) SELECT session,SUM(length(data)),COUNT(*) FROM captures GROUP BY session;
+UPDATE capture_usage SET records=(SELECT COUNT(*) FROM captures WHERE captures.session=capture_usage.session);
 CREATE TABLE IF NOT EXISTS capture_total(singleton INTEGER PRIMARY KEY, bytes INTEGER NOT NULL);
 INSERT OR IGNORE INTO capture_total SELECT 1,COALESCE(SUM(length(data)),0) FROM captures;
-CREATE TRIGGER IF NOT EXISTS capture_insert AFTER INSERT ON captures BEGIN
- INSERT INTO capture_usage(session,bytes) VALUES(new.session,length(new.data)) ON CONFLICT(session) DO UPDATE SET bytes=bytes+length(new.data);
+DROP TRIGGER IF EXISTS capture_insert;
+CREATE TRIGGER capture_insert AFTER INSERT ON captures BEGIN
+ INSERT INTO capture_usage(session,bytes,records) VALUES(new.session,length(new.data),1) ON CONFLICT(session) DO UPDATE SET bytes=bytes+length(new.data),records=records+1;
  UPDATE capture_total SET bytes=bytes+length(new.data) WHERE singleton=1;
 END;
-CREATE TRIGGER IF NOT EXISTS capture_delete AFTER DELETE ON captures BEGIN
- UPDATE capture_usage SET bytes=bytes-length(old.data) WHERE session=old.session;
+DROP TRIGGER IF EXISTS capture_delete;
+CREATE TRIGGER capture_delete AFTER DELETE ON captures BEGIN
+ UPDATE capture_usage SET bytes=bytes-length(old.data),records=records-1 WHERE session=old.session;
  DELETE FROM capture_usage WHERE session=old.session AND bytes=0;
  UPDATE capture_total SET bytes=bytes-length(old.data) WHERE singleton=1;
-END;`,
-    )
+END;`)
     this.applyRetention(settings)
   }
   private cached(id: number, bytes: Buffer, sessionId: string) {
@@ -191,9 +320,11 @@ END;`,
   private pruneSession(sessionId: string, incoming: number) {
     const local = this.sessionLimits.get(sessionId)
     if (!local) return
-    this.db
+    const expired = this.db
       .prepare('DELETE FROM captures WHERE session=? AND time<?')
       .run(sessionId, Date.now() - local.retentionMs)
+    this.evicted += Number(expired.changes)
+    if (expired.changes) this.clearCache()
     let total = Number(
       (
         this.db
@@ -226,7 +357,14 @@ END;`,
           .get() as { n: number }
       ).n,
     )
-    const budget = Math.floor(this.settings.diskBytes * 0.6)
+    const metadataBytes = Number(
+      (
+        this.db
+          .prepare('SELECT COALESCE(SUM(length(data)),0) AS n FROM sessions')
+          .get() as { n: number }
+      ).n,
+    )
+    const budget = Math.floor(this.settings.diskBytes * 0.6) - metadataBytes
     while (total + incoming > budget) {
       const row = this.db
         .prepare(

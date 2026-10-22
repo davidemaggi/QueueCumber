@@ -50,6 +50,15 @@ export interface DesktopApi {
     cursor: number | null,
   ): Promise<{ records: MessageSummary[]; nextCursor: number | null }>
   readMessage(id: number): Promise<MessageDetail>
+  readPayloadChunk(
+    id: number,
+    offset: number,
+  ): Promise<{
+    payload: string
+    nextOffset: number | null
+    totalBytes: number
+    offset: number
+  }>
   previewSettings(
     input: CaptureSettings,
   ): Promise<{ effects: string[]; active: number }>

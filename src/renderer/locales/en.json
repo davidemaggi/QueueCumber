@@ -116,5 +116,14 @@
   "capturing": "capturing",
   "reconnecting": "reconnecting",
   "stopped": "stopped",
-  "arguments": "Arguments"
+  "arguments": "Arguments",
+  "rawBytes": "Raw bytes",
+  "nextChunk": "Next chunk",
+  "previousChunk": "Previous chunk",
+  "chunkFailure": "These bytes are no longer available. The retention limit may have removed this message.",
+  "chunkRange": "Byte range",
+  "retained": "retained (older messages may have expired)",
+  "captureStarted": "Current capture started",
+  "bindingsChanged": "Bindings changed during reconnect. The table shows the routes used by the current capture.",
+  "historyFailure": "Could not save capture history. Captures have stopped; check disk space and storage settings."
 }
