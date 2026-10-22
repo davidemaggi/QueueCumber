@@ -4,6 +4,8 @@ import {
   validateSettings,
   type CaptureSettings,
 } from '../../shared/limits'
+import type { State } from '../../shared/contracts'
+import type { DesktopPreferences } from '../../shared/desktop'
 import type { Locale, translator, CopyKey } from '../i18n'
 export function Settings({
   t,
@@ -14,6 +16,8 @@ export function Settings({
   setTheme,
   onSave,
   busy,
+  desktop,
+  onDesktopChange,
 }: {
   t: ReturnType<typeof translator>
   settings: CaptureSettings
@@ -23,6 +27,8 @@ export function Settings({
   setTheme: (v: string) => void
   onSave: (s: CaptureSettings, confirmed: boolean) => Promise<void>
   busy: boolean
+  desktop: State['desktop']
+  onDesktopChange: (preferences: DesktopPreferences) => Promise<void>
 }) {
   const [draft, setDraft] = useState(settings),
     [confirm, setConfirm] = useState(false),
@@ -72,12 +78,45 @@ export function Settings({
             {t('language')}
             <select
               value={locale}
+              disabled={busy}
               onChange={(e) => setLocale(e.target.value as Locale)}
             >
               <option value="en">English</option>
               <option value="it">Italiano</option>
             </select>
           </label>
+        </div>
+      </section>
+      <section className="settings-section">
+        <div>
+          <h2>{t('background')}</h2>
+          <p>{t('backgroundHint')}</p>
+        </div>
+        <div className="settings-fields">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={desktop.preferences.closeToTray}
+              disabled={busy}
+              onChange={(e) =>
+                void onDesktopChange({
+                  ...desktop.preferences,
+                  closeToTray: e.target.checked,
+                })
+              }
+            />
+            {t('closeToTray')}
+          </label>
+          {desktop.platform === 'linux' ? (
+            <p className="muted small">{t('backgroundLinux')}</p>
+          ) : !desktop.trayAvailable ? (
+            <p className="muted small">{t('backgroundUnavailable')}</p>
+          ) : null}
+          {desktop.warning ? (
+            <p role="alert" className="notice">
+              {t('desktopPreferencesWarning')}
+            </p>
+          ) : null}
         </div>
       </section>
       <section className="settings-section">

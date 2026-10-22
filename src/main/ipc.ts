@@ -1,3 +1,4 @@
+import { desktopPreferencesSchema } from '../shared/desktop'
 import { ipcMain, type BrowserWindow } from 'electron'
 import { z } from 'zod'
 import { connectionSchema } from '../shared/connection'
@@ -24,6 +25,7 @@ const limits = z
   })
   .strict()
 export const operationSchemas = {
+  saveDesktopPreferences: z.tuple([desktopPreferencesSchema]),
   getStatus: z.tuple([]),
   getState: z.tuple([]),
   saveConnection: z.tuple([connectionSchema]),

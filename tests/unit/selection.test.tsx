@@ -69,6 +69,12 @@ beforeEach(() => {
     ],
     settings: { ...DEFAULT_SETTINGS },
     storageMode: 'session',
+    desktop: {
+      preferences: { schemaVersion: 1, closeToTray: false, locale: 'en' },
+      trayAvailable: false,
+      warning: false,
+      platform: 'darwin',
+    },
     sessions: [
       session('history-a', 'queue-a'),
       session('history-b', 'queue-b'),
@@ -186,4 +192,25 @@ it('shows the reconnected session binding snapshot, retained range and capture t
   expect(screen.getByText(/Current capture started/).textContent).toContain(
     '1 retained',
   )
+})
+it('disables language changes while a background preference save is pending', async () => {
+  let finish!: () => void
+  state.desktop.preferences.closeToTray = true
+  bridge.saveDesktopPreferences = (preferences) =>
+    new Promise((resolve) => {
+      finish = () => {
+        state.desktop.preferences = preferences
+        resolve()
+      }
+    })
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+  fireEvent.click(screen.getByLabelText('Keep running when the window closes'))
+  const language = screen.getByRole('combobox', {
+    name: /Language/,
+  }) as HTMLSelectElement
+  expect(language.disabled).toBe(true)
+  await act(async () => finish())
+  await waitFor(() => expect(language.disabled).toBe(false))
+  expect(state.desktop.preferences.closeToTray).toBe(false)
 })

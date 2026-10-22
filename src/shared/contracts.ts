@@ -1,3 +1,4 @@
+import type { DesktopPreferences } from './desktop'
 import type { ConnectionInput, ConnectionSummary } from './connection'
 import type { CaptureSettings } from './limits'
 import type {
@@ -14,6 +15,12 @@ export type State = {
   settings: CaptureSettings
   warning?: string
   storageMode: 'secure' | 'session'
+  desktop: {
+    preferences: DesktopPreferences
+    trayAvailable: boolean
+    warning: boolean
+    platform: NodeJS.Platform
+  }
   sessions: SessionSummary[]
   stats: { cacheBytes: number; diskBytes: number; evicted: number }
 }
@@ -31,6 +38,7 @@ export type MessageDetail = {
   timestamp: number
 }
 export interface DesktopApi {
+  saveDesktopPreferences(input: DesktopPreferences): Promise<void>
   getStatus(): Promise<AppStatus>
   getState(): Promise<State>
   saveConnection(input: ConnectionInput): Promise<ConnectionSummary>

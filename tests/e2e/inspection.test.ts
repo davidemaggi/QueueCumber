@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import amqp from 'amqplib'
 import { randomUUID } from 'node:crypto'
+import { RabbitMQ } from '../../src/service/providers/rabbitmq'
 import { profile } from '../fixtures/broker'
 test('saves a session-only connection, captures a real message and changes theme/locale', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'qc-ui-')),
@@ -70,6 +71,31 @@ test('saves a session-only connection, captures a real message and changes theme
         ),
       )
       .toBe(51)
+    await page.evaluate(async () => {
+      const s = await window.queuecumber.getState()
+      await window.queuecumber.saveDesktopPreferences({
+        ...s.desktop.preferences,
+        closeToTray: true,
+      })
+    })
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].close(),
+    )
+    channel.publish(
+      name,
+      'order.created',
+      Buffer.from('{"event":"background"}'),
+      { contentType: 'application/json' },
+    )
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.queuecumber.getState().then((s) => s.sessions[0].captured),
+        ),
+      )
+      .toBe(52)
+    expect((await channel.checkQueue(name)).consumerCount).toBe(0)
+    await app.evaluate(({ app }) => app.emit('activate', {}, false))
     await expect(page.locator('.message-row').first()).toContainText(
       'order.created',
     )
@@ -130,8 +156,25 @@ test('saves a session-only connection, captures a real message and changes theme
     await expect(
       page.getByRole('heading', { name: 'Impostazioni' }),
     ).toBeVisible()
+    await page.evaluate(async (resourceName) => {
+      const state = await window.queuecumber.getState()
+      await window.queuecumber.startCapture(
+        state.profiles[0].id,
+        { name: resourceName, vhost: '/', kind: 'queue' },
+        { allowPartial: true },
+      )
+    }, name)
   } finally {
     await app.close()
+    const management = new RabbitMQ(profile)
+    await expect
+      .poll(async () => {
+        const consumers = await management.request('consumers/%2F')
+        return consumers.filter((c: any) =>
+          c.queue.name.startsWith('queuecumber.'),
+        ).length
+      })
+      .toBe(0)
     await channel.deleteQueue(name)
     await channel.deleteExchange(name)
     await broker.close()

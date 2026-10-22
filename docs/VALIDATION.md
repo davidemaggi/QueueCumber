@@ -51,3 +51,14 @@ A later local check on the same date adds six release-tool tests (28 unit tests 
 The merged Windows signing configuration passes the schema validator of the installed electron-builder 26.15.3, preserving the shared targets and requiring code signing. Both Actions workflows pass actionlint 1.7.7. Lint, type checking, formatting and the production build pass. No release tags, Azure resources, remote workflow runs or GitHub Releases were created. The first real Azure-signed Windows build and the configured macOS/Linux distributable formats still need runner and clean-machine verification. See [release workflow notes](RELEASING.md).
 
 Independent review of the release workflow found one Important blocker: DEB packaging lacked a maintainer email. The maintainer supplied `me@davidemaggi.dev`; package metadata now includes it and the public repository URL. The installed builder's DEB metadata check passes after the fix. No Critical or additional Minor findings were established. This metadata check does not replace an actual Linux package build/install.
+
+
+## Background desktop capture
+
+The next local slice adds opt-in background close, localized native tray session status, versioned desktop preferences and explicit Quit cleanup. Close-to-background defaults to false. On Linux or when tray creation fails, the close action minimizes instead of hiding the only window, retaining an accessible route. A created Linux tray does not prove that the desktop has a visible tray host.
+
+Local verification: 34 unit tests, four native Electron tests, type checking, lint and production build. A real RabbitMQ message is captured after the window closes into background; the original queue still has zero QueueCumber consumers. Quit with an active capture removes the observation consumers. Native tests cover reopen, preference/language persistence, default close and explicit Quit. Unit tests cover minimized fallbacks, bounded localized menu entries, independent status polling, utility failure and one-shot shutdown. Settings were inspected in light/dark themes and the narrower desktop layout. Windows and actual Linux tray behavior remain unverified here; their native background smoke test is included in CI. Machine sleep, OS forced termination and service recovery are not promises of uninterrupted capture.
+
+Independent lifecycle review found one Important settings race: changing language during a pending background preference save could restore a stale close behavior. A delayed-save regression first failed, then passed after disabling language changes while settings operations are busy. No Critical or additional confirmed lifecycle/shutdown findings.
+
+Narrow-layout screenshot review also exposed clipped Italian navigation labels; allowing the navigation row to wrap keeps both actions visible. Existing narrow message-pane scrolling remains the separate deferred UI issue documented above.

@@ -30,10 +30,13 @@ Exit gate: a usable RabbitMQ vertical slice, measured resource bounds and securi
 ## 0.2.0 — Longer sessions and portable data
 
 - [ ] RabbitMQ stream reads from beginning, live end and explicit offset.
-- [ ] Tray lifecycle and subscription status where supported; explicit Quit stops capture.
+- [x] Opt-in tray/background lifecycle and subscription status; explicit Quit stops capture (local macOS verified).
+- [ ] Validate Windows tray and Linux desktop fallback behavior on actual desktops.
 - [ ] Streaming JSONL, folder and ZIP exports with a versioned manifest.
 - [ ] Password-encrypted configuration transfer and safe import conflict handling.
 - [ ] Retention controls, disk-full behavior, cancelable exports and recovery tests.
+
+Next implementation order: encrypted configuration transfer → capture dumps → RabbitMQ stream positioning → Kafka → cross-platform release gates.
 
 Exit gate: long-session/reconnect tests, wrong-password and tampered-import rejection, tray validation across supported desktop environments.
 

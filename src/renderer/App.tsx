@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Radio,
 } from 'lucide-react'
+import type { DesktopPreferences } from '../shared/desktop'
 import type { State, MessageDetail } from '../shared/contracts'
 import type { ResourceRef, Binding } from '../service/providers/provider'
 import type { MessageSummary } from '../service/storage'
@@ -57,12 +58,18 @@ export default function App() {
     [sessionDisk, setSessionDisk] = useState(''),
     [sessionRate, setSessionRate] = useState('')
   const [resourceRevision, setResourceRevision] = useState(0)
+  const desktopLocaleLoaded = useRef(false)
   const selection = useRef(0),
     messageSelection = useRef(0),
     t = translator(locale)
   const refresh = useCallback(async () => {
     try {
-      setState(await api.getState())
+      const next = await api.getState()
+      setState(next)
+      if (!desktopLocaleLoaded.current) {
+        desktopLocaleLoaded.current = true
+        setLocale(next.desktop.preferences.locale)
+      }
       setFatal(false)
     } catch {
       setFatal(true)
@@ -154,6 +161,13 @@ export default function App() {
     } finally {
       setBusy(false)
     }
+  }
+  async function saveDesktop(preferences: DesktopPreferences) {
+    await run(async () => {
+      await api.saveDesktopPreferences(preferences)
+      setLocale(preferences.locale)
+      await refresh()
+    })
   }
   async function chooseResource(r: ResourceRef) {
     const token = ++selection.current
@@ -359,7 +373,13 @@ export default function App() {
           )}
         </div>
         <div className="sidebar-bottom">
-          <p>{t('closeBehavior')}</p>
+          <p>
+            {t(
+              state?.desktop.preferences.closeToTray
+                ? 'closeBehaviorBackground'
+                : 'closeBehaviorQuit',
+            )}
+          </p>
           <span className="small">0.1.0-alpha.1</span>
         </div>
       </aside>
@@ -418,7 +438,11 @@ export default function App() {
             t={t}
             settings={state.settings}
             locale={locale}
-            setLocale={setLocale}
+            setLocale={(next) =>
+              void saveDesktop({ ...state.desktop.preferences, locale: next })
+            }
+            desktop={state.desktop}
+            onDesktopChange={saveDesktop}
             theme={theme}
             setTheme={setTheme}
             busy={busy}

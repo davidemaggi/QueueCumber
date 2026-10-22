@@ -125,5 +125,17 @@
   "retained": "conservati (i messaggi precedenti possono essere scaduti)",
   "captureStarted": "Acquisizione attuale iniziata",
   "bindingsChanged": "Binding cambiati durante la riconnessione. La tabella mostra le rotte usate dall’acquisizione attuale.",
-  "historyFailure": "Impossibile salvare la cronologia. Acquisizioni fermate; controlla spazio e impostazioni."
+  "historyFailure": "Impossibile salvare la cronologia. Acquisizioni fermate; controlla spazio e impostazioni.",
+  "trayOpen": "Apri QueueCumber",
+  "trayQuit": "Esci da QueueCumber",
+  "trayFailed": "Servizio di acquisizione non disponibile",
+  "trayActive": "acquisizioni attive",
+  "background": "Acquisizione in background",
+  "backgroundHint": "Mantieni attive le acquisizioni chiudendo la finestra. Esci da QueueCumber ferma le acquisizioni e termina l’app.",
+  "closeToTray": "Resta attivo quando chiudo la finestra",
+  "backgroundLinux": "Su Linux la chiusura mantiene una finestra minimizzata accessibile; la tray dipende dal desktop.",
+  "backgroundUnavailable": "Tray non disponibile. La finestra resta accessibile quando minimizzata.",
+  "desktopPreferencesWarning": "Impossibile leggere le preferenze desktop. La chiusura in background è disattivata; controlla e salva la preferenza.",
+  "closeBehaviorQuit": "Chiudere la finestra termina QueueCumber.",
+  "closeBehaviorBackground": "Chiudere la finestra mantiene attive le acquisizioni. Usa Esci da QueueCumber per terminare."
 }

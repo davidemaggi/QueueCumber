@@ -34,6 +34,6 @@ jobs:
       - if: runner.os == 'Linux'
         run: xvfb-run -a pnpm test:e2e
       - if: runner.os != 'Linux'
-        run: pnpm test:e2e tests/e2e/desktop.test.ts
+        run: pnpm test:e2e tests/e2e/desktop.test.ts tests/e2e/background.test.ts
       - if: always() && runner.os == 'Linux'
         run: docker compose -p queuecumber-test -f compose.test.yml down

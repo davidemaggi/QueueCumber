@@ -14,8 +14,9 @@ A cross-platform desktop tool for developers who want to see what's flowing thro
 - Read structured headers, formatted JSON and every retained original byte through bounded chunk navigation.
 - Configure global and session capture budgets, disk retention and optional admission-rate limits.
 - Switch between English/Italian and light/dark/system themes.
+- Opt into background capture on window close; inspect session status and reopen/quit from the tray.
 
-The [roadmap](ROADMAP.md) tracks the rest: stream consumption, tray mode, dumps, password-protected configuration transfer, Kafka and packaged releases are future milestones.
+The [roadmap](ROADMAP.md) tracks the rest: stream consumption, dumps, password-protected configuration transfer, Kafka and packaged releases are future milestones.
 
 ## Inspect the traffic. Leave application queues alone.
 
@@ -78,7 +79,7 @@ Capture cache defaults to 64 MiB, disk quota to 2 GiB, retention to seven days a
 
 The RAM setting is a cache budget, not a cap on Electron's total RSS. Broker clients may allocate oversized deliveries before the app can omit them. Disk storage reserves headroom for SQLite pages/journaling and may evict before reaching the displayed quota. Saving limits stops active captures and asks for confirmation when effects require it.
 
-In secure mode, encrypted session history and retained records can be reopened after restart. Restored sessions stay stopped; interrupted captures show a gap and require an explicit new capture. Retained counts and timestamps show the available range. Closing the window stops the alpha; tray mode is a later milestone. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
+In secure mode, encrypted session history and retained records can be reopened after restart. Restored sessions stay stopped; interrupted captures show a gap and require an explicit new capture. Retained counts and timestamps show the available range. Closing quits by default. Enable background capture in Settings to keep subscriptions running; use Quit QueueCumber to stop and exit. The tray shows up to 16 session entries, prioritizing active captures, and refreshes independently of the hidden renderer. On Linux or when tray creation fails, closing keeps an accessible minimized window. Desktop tray availability and placement depend on the OS/environment. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
 
 ## Verification status
 

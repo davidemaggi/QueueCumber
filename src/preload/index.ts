@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { DesktopApi } from '../shared/contracts'
 const api: DesktopApi = {
+  saveDesktopPreferences: (input) =>
+    ipcRenderer.invoke('qc:saveDesktopPreferences', input),
   getStatus: () => ipcRenderer.invoke('qc:getStatus'),
   getState: () => ipcRenderer.invoke('qc:getState'),
   saveConnection: (input) => ipcRenderer.invoke('qc:saveConnection', input),

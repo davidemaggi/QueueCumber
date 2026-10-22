@@ -125,5 +125,17 @@
   "retained": "retained (older messages may have expired)",
   "captureStarted": "Current capture started",
   "bindingsChanged": "Bindings changed during reconnect. The table shows the routes used by the current capture.",
-  "historyFailure": "Could not save capture history. Captures have stopped; check disk space and storage settings."
+  "historyFailure": "Could not save capture history. Captures have stopped; check disk space and storage settings.",
+  "trayOpen": "Open QueueCumber",
+  "trayQuit": "Quit QueueCumber",
+  "trayFailed": "Capture service unavailable",
+  "trayActive": "active captures",
+  "background": "Background capture",
+  "backgroundHint": "Keep captures running when closing the window. Quit QueueCumber stops captures and exits.",
+  "closeToTray": "Keep running when the window closes",
+  "backgroundLinux": "On Linux, closing keeps an accessible minimized window; tray visibility depends on your desktop.",
+  "backgroundUnavailable": "The tray is unavailable. The window stays accessible when minimized.",
+  "desktopPreferencesWarning": "Desktop preferences could not be read. Background close is off; review and save your preference.",
+  "closeBehaviorQuit": "Closing the window quits QueueCumber.",
+  "closeBehaviorBackground": "Closing the window keeps captures running. Use Quit QueueCumber to exit."
 }

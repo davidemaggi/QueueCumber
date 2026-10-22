@@ -1,4 +1,15 @@
-import { app, BrowserWindow, utilityProcess, safeStorage } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  utilityProcess,
+  safeStorage,
+  Tray,
+  Menu,
+  nativeImage,
+} from 'electron'
+import trayIconPath from '../../resources/tray.png?asset'
+import { DesktopPreferencesRepository } from './preferences'
+import { DesktopController } from './desktop'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -10,6 +21,7 @@ import {
   type ConnectionProfile,
 } from '../shared/connection'
 let window: BrowserWindow | undefined
+if (!app.requestSingleInstanceLock()) app.exit(0)
 app.whenReady().then(async () => {
   const service = utilityProcess.fork(join(__dirname, 'service.js'), [], {
     serviceName: 'QueueCumber capture',
@@ -90,6 +102,12 @@ app.whenReady().then(async () => {
     if (!p) throw Error('Connection not found')
     return p
   }
+  const preferencesRepository = new DesktopPreferencesRepository(
+    app.getPath('userData'),
+  )
+  const savedPreferences = await preferencesRepository.read()
+  let desktopPreferences = savedPreferences.preferences
+  let desktopWarning = savedPreferences.warning
   window = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -110,7 +128,40 @@ app.whenReady().then(async () => {
       await ready
       return f(...args)
     }
+  const desktop = new DesktopController({
+    app,
+    window,
+    platform: process.platform,
+    preferences: desktopPreferences,
+    createTray: () => {
+      const icon = nativeImage
+        .createFromPath(trayIconPath)
+        .resize({ width: 20, height: 20 })
+      if (icon.isEmpty()) throw Error('Tray icon unavailable')
+      if (process.platform === 'darwin') icon.setTemplateImage(true)
+      return new Tray(icon)
+    },
+    buildMenu: (items) => Menu.buildFromTemplate(items),
+    loadSessions: async () => {
+      await ready
+      return (await rpc('state')).sessions
+    },
+    shutdown: async () => {
+      try {
+        await rpc('shutdown')
+      } finally {
+        service.kill()
+        if (temporary) await rm(temporary, { recursive: true, force: true })
+      }
+    },
+  })
   registerOperations(window, {
+    saveDesktopPreferences: withReady(async (input) => {
+      await preferencesRepository.save(input)
+      desktopPreferences = input
+      desktopWarning = false
+      desktop.setPreferences(input)
+    }),
     getStatus: async () => {
       try {
         await ready
@@ -129,6 +180,12 @@ app.whenReady().then(async () => {
             provider: 'rabbitmq',
           })),
       storageMode,
+      desktop: {
+        preferences: desktopPreferences,
+        trayAvailable: desktop.trayAvailable,
+        warning: desktopWarning,
+        platform: process.platform,
+      },
     })),
     saveConnection: withReady(async (input) => {
       if (vault) return vault.save(input)
@@ -163,18 +220,4 @@ app.whenReady().then(async () => {
   if (process.env.ELECTRON_RENDERER_URL)
     await window.loadURL(process.env.ELECTRON_RENDERER_URL)
   else await window.loadFile(join(__dirname, '../renderer/index.html'))
-  let quitting = false
-  app.on('before-quit', (event) => {
-    if (quitting) return
-    event.preventDefault()
-    quitting = true
-    void rpc('shutdown')
-      .catch(() => {})
-      .finally(async () => {
-        service.kill()
-        if (temporary) await rm(temporary, { recursive: true, force: true })
-        app.quit()
-      })
-  })
 })
-app.on('window-all-closed', () => app.quit())
