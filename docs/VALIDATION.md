@@ -216,3 +216,13 @@ Actual runner inventory permissions, workflow event payloads/scheduling/cancella
 The maintainer chose to retain the local package-manager update to pnpm 12.15.0. Corepack 0.33.0 and its cached package-manager metadata still selected `bin/pnpm.cjs`, which pnpm 12 does not ship. Corepack was updated locally to 0.34.6 (compatible with the installed Node 22.18), the stale pnpm12 cache was preserved under an OS-temp backup, and the exact package.json-pinned version/hash was reinstalled with its correct `bin/pnpm.mjs` entry. No integrity checks were disabled, and Node was not upgraded.
 
 Verified pnpm version 12.15.0, frozen installation, types, ESLint and all 76 unit tests. pnpm12 added its package-manager dependency document to the lockfile; application dependency resolutions were unchanged. Development mode compiles main/preload and starts the renderer server on localhost:5173 plus Electron using `env -u ELECTRON_RUN_AS_NODE pnpm dev` in this agent environment, which exports that Node-only Electron flag. The development process is left running for the maintainer. The README documents Corepack/cache repair and the flag; no app runtime behavior changed. Broker/native/distribution suites were not rerun for this tooling repair, and pnpm12 remote CI/packaging remains unverified.
+
+## 1.0.1 signing preparation
+
+Source metadata is now 1.0.1 without a release name. The supplied legacy action informed the `codesign` runner label, certificate subject selection, SHA-256 and RFC 3161 timestamp settings. The existing optional follow-up retains the merged-main release boundary and independent unsigned output.
+
+Local verification passes: **85 unit tests**, **8 native desktop tests** on macOS with local RabbitMQ/Kafka test brokers, formatting, TypeScript, ESLint, source build and actionlint. PowerShell tests use synthetic files and mocked Authenticode results; they cover ZIP/executable mismatch rejection, not a real certificate signature. The follow-up CLI tests exercise draft lookup, source identity and release-ID propagation against a local HTTP fixture.
+
+One final review found two required corrections: an existing tag must match the expected commit even while the release is a draft, and uploads must target the verified numeric release ID rather than resolving the tag again. Both regression tests failed first and passed after correction; the full unit suite then passed. No second review was requested.
+
+No 1.0.1 push, remote workflow, distribution build or real signing run has been started. Runner availability/configuration, certificate service-account access, timestamps, actual signed app/installer/uninstaller acceptance and signed asset attachment remain pending. The maintainer must confirm runner startup before remote execution.

@@ -11,13 +11,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   prepare:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request_target' && github.event.workflow_run.head_branch == 'main'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       available: ${{ steps.signer.outputs.available }}
       commit: ${{ steps.signer.outputs.commit }}
       tag: ${{ steps.signer.outputs.tag }}
+      releaseId: ${{ steps.signer.outputs.releaseId }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -42,17 +43,18 @@ jobs:
   sign-windows:
     needs: prepare
     if: needs.prepare.outputs.available == 'true'
-    runs-on: [self-hosted, Windows, X64, queuecumber-signing]
+    runs-on: [self-hosted, Windows, X64, codesign]
     timeout-minutes: 30
     permissions:
       contents: write
     env:
-      WINDOWS_SIGNING_CERTIFICATE_SHA1: ${{ vars.WINDOWS_SIGNING_CERTIFICATE_SHA1 }}
-      WINDOWS_SIGNING_PUBLISHER: ${{ vars.WINDOWS_SIGNING_PUBLISHER }}
+      CODESIGN_CERT_SUBJECT: ${{ vars.CODESIGN_CERT_SUBJECT }}
+      CODESIGN_TIMESTAMP_URL: ${{ vars.CODESIGN_TIMESTAMP_URL }}
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
       EXPECTED_COMMIT: ${{ needs.prepare.outputs.commit }}
+      EXPECTED_RELEASE_ID: ${{ needs.prepare.outputs.releaseId }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -71,7 +73,7 @@ jobs:
         run: pnpm exec electron-builder --win --x64 --config electron-builder.self-hosted.mjs --publish never
       - name: Verify before attaching any signed assets
         shell: pwsh
-        run: ./scripts/verify-windows-signatures.ps1 -Directory release -Publisher $env:WINDOWS_SIGNING_PUBLISHER
+        run: ./scripts/verify-windows-signatures.ps1 -Directory release -Publisher $env:CODESIGN_CERT_SUBJECT
       - name: Attach verified signed variants to the existing release
         shell: pwsh
         run: |
@@ -80,9 +82,7 @@ jobs:
           node scripts/make-checksums.mjs signed-assets
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Rename-Item signed-assets/SHA256SUMS.txt SHA256SUMS-signed-windows-x64.txt
-          $resolved = gh api "repos/$env:GH_REPO/commits/$env:RELEASE_TAG" --jq .sha
-          if ($LASTEXITCODE -ne 0 -or $resolved -ne $env:EXPECTED_COMMIT) { throw 'Release tag no longer matches the signed commit' }
-          gh release upload $env:RELEASE_TAG (Get-ChildItem signed-assets -File).FullName
+          node scripts/verify-signing-release.mjs --upload signed-assets
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   watch-queue:
     needs: prepare

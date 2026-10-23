@@ -26,8 +26,8 @@ export async function findSigningRunner(list) {
           (r) =>
             r.status === 'online' &&
             r.busy === false &&
-            ['self-hosted', 'windows', 'x64', 'queuecumber-signing'].every(
-              (label) => r.labels.some((l) => l.name.toLowerCase() === label),
+            ['self-hosted', 'windows', 'x64', 'codesign'].every((label) =>
+              r.labels.some((l) => l.name.toLowerCase() === label),
             ),
         )
       )
@@ -72,6 +72,8 @@ export async function waitForSigningStart(
   )
 }
 
+// workflow_run reports the PR head branch; the trusted release workflow's
+// context and its exact main-ancestor commit establish what may be signed.
 export function validateReleaseRun(event, repository, eventName) {
   const run = event.workflow_run
   if (
@@ -79,8 +81,30 @@ export function validateReleaseRun(event, repository, eventName) {
     event.repository?.full_name !== repository ||
     run?.conclusion !== 'success' ||
     run.event !== 'pull_request_target' ||
-    run.head_branch !== 'main' ||
     run.path?.split('@')[0] !== '.github/workflows/release.yml'
   )
     throw Error('Signing requires the successful merged-main release workflow')
+}
+
+export function validateSigningRelease(release, context, taggedCommit) {
+  if (
+    !Number.isSafeInteger(release?.id) ||
+    release.id <= 0 ||
+    release.tag_name !== context.tag ||
+    (taggedCommit !== undefined && taggedCommit !== context.commit) ||
+    (release.draft === true
+      ? release.target_commitish !== context.commit
+      : release.draft !== false || taggedCommit !== context.commit)
+  )
+    throw Error('Release no longer matches the signed commit')
+}
+
+export async function findSigningRelease(list, tag) {
+  for (let page = 1; page <= 20; page++) {
+    const releases = await list(page)
+    const release = releases.find((r) => r.tag_name === tag)
+    if (release) return release
+    if (releases.length < 100) break
+  }
+  throw Error('Release for optional signing was not found')
 }

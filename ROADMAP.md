@@ -74,16 +74,18 @@ The maintainer confirmed manual installation checks and authorized publication o
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
 
-## 1.0.1 — optional signed Windows downloads (planned patch; no character name)
+## 1.0.1 — optional signed Windows downloads (prepared locally; no character name)
 
 - [x] Always build unsigned variants independently on GitHub-hosted runners.
 - [x] Isolated optional signing workflow with idle-runner preflight, queue watchdog, local certificate selection and signature checks.
 - [x] Distinct signed asset names/checksums on the same release; no unsigned overwrite or automatic publication.
-- [ ] Adapt optional signing provenance to observed merged-PR metadata and unpublished drafts: hosted runs report the PR head branch, and Git tags are created only on publication. Verify this before enabling 1.0.1 signing.
+- [x] Adapt provenance to observed merged-PR metadata and unpublished drafts; bind the exact release ID/target and reject changed sources before upload. Covered by local synthetic-API tests.
 - [ ] Provision the self-hosted signing runner and its repository settings; verify real signing/upload and runner-unavailable behavior remotely.
-- [ ] Bump to 1.0.1 and remove releaseName when preparing that release.
+- [x] Bump to 1.0.1 and remove releaseName.
+- [x] Reuse the codesign runner label, subject/RFC3161 settings and SHA-256 signing convention from the supplied action; verify ZIP content matches the signed executable.
+- [ ] Wait for maintainer runner-start confirmation before any remote execution, then verify actual signing and publication.
 
-The current source remains 1.0.0 Ackbar; the optional signer deliberately skips it. Unsigned release drafts are created regardless of signing availability. See [release policy](docs/RELEASING.md).
+The working source is 1.0.1 with no character name; 1.0.0 Ackbar remains the published release. No 1.0.1 remote run or real signing is claimed. Unsigned release drafts remain independent of signer availability. See [release policy](docs/RELEASING.md).
 
 ## After 1.0 — candidates, not commitments
 

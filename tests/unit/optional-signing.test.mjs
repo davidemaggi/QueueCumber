@@ -31,9 +31,9 @@ it('requires an online idle runner with all signing labels and fails closed on A
   const runner = {
     status: 'online',
     busy: false,
-    labels: ['self-hosted', 'Windows', 'X64', 'queuecumber-signing'].map(
-      (name) => ({ name }),
-    ),
+    labels: ['self-hosted', 'Windows', 'X64', 'codesign'].map((name) => ({
+      name,
+    })),
   }
   expect(
     await findSigningRunner(async () => ({
@@ -97,7 +97,7 @@ it('rejects unrelated or untrusted workflow completions before reading release a
     workflow_run: {
       conclusion: 'success',
       event: 'pull_request_target',
-      head_branch: 'main',
+      head_branch: 'development',
       path: '.github/workflows/release.yml@main',
     },
   }
@@ -107,7 +107,6 @@ it('rejects unrelated or untrusted workflow completions before reading release a
   for (const changes of [
     { event: 'pull_request' },
     { conclusion: 'failure' },
-    { head_branch: 'development' },
     { path: '.github/workflows/other.yml' },
   ])
     expect(() =>
@@ -130,21 +129,37 @@ it('keeps unsigned names distinct and refuses incomplete local signing identity'
     .default
   expect(unsigned.artifactName).toContain('-unsigned.')
   expect(unsigned.mac.notarize).toBe(false)
-  const oldThumbprint = process.env.WINDOWS_SIGNING_CERTIFICATE_SHA1,
-    oldPublisher = process.env.WINDOWS_SIGNING_PUBLISHER
+  const oldSubject = process.env.CODESIGN_CERT_SUBJECT,
+    oldTimestamp = process.env.CODESIGN_TIMESTAMP_URL
   try {
-    delete process.env.WINDOWS_SIGNING_CERTIFICATE_SHA1
-    expect(configure).toThrow('WINDOWS_SIGNING_CERTIFICATE_SHA1')
-    process.env.WINDOWS_SIGNING_CERTIFICATE_SHA1 = 'a'.repeat(40)
-    delete process.env.WINDOWS_SIGNING_PUBLISHER
-    expect(configure).toThrow('WINDOWS_SIGNING_PUBLISHER')
-    process.env.WINDOWS_SIGNING_PUBLISHER = 'Synthetic Publisher'
-    expect(configure().artifactName).toContain('-signed.')
-    expect(configure().forceCodeSigning).toBe(true)
+    delete process.env.CODESIGN_CERT_SUBJECT
+    delete process.env.CODESIGN_TIMESTAMP_URL
+    expect(configure).toThrow('CODESIGN_CERT_SUBJECT')
+    process.env.CODESIGN_CERT_SUBJECT = 'Synthetic Publisher'
+    expect(configure).toThrow('CODESIGN_TIMESTAMP_URL')
+    process.env.CODESIGN_TIMESTAMP_URL =
+      'https://timestamp.example.test/rfc3161'
+    const config = configure()
+    expect(config.artifactName).toContain('-signed.')
+    expect(config.forceCodeSigning).toBe(true)
+    expect(config.win.signtoolOptions).toEqual({
+      certificateSubjectName: 'Synthetic Publisher',
+      publisherName: 'Synthetic Publisher',
+      signingHashAlgorithms: ['sha256'],
+      rfc3161TimeStampServer: 'https://timestamp.example.test/rfc3161',
+    })
+    for (const bad of [
+      'file:///tmp/cert',
+      'https://user:secret@host',
+      'not a URL',
+    ]) {
+      process.env.CODESIGN_TIMESTAMP_URL = bad
+      expect(configure).toThrow('CODESIGN_TIMESTAMP_URL')
+    }
   } finally {
     for (const [key, value] of Object.entries({
-      WINDOWS_SIGNING_CERTIFICATE_SHA1: oldThumbprint,
-      WINDOWS_SIGNING_PUBLISHER: oldPublisher,
+      CODESIGN_CERT_SUBJECT: oldSubject,
+      CODESIGN_TIMESTAMP_URL: oldTimestamp,
     })) {
       if (value === undefined) delete process.env[key]
       else process.env[key] = value
@@ -196,4 +211,89 @@ it('does not cancel an uncertain signer when the jobs API remains unavailable', 
     ),
   ).rejects.toThrow()
   expect(cancelled).toBe(0)
+})
+
+it('binds unsigned drafts to the exact merge without requiring a Git tag, and checks published tags', async () => {
+  const { validateSigningRelease, findSigningRelease } =
+    await import('../../scripts/optional-signing.mjs')
+  const draft = {
+    id: 42,
+    tag_name: context.tag,
+    target_commitish: commit,
+    draft: true,
+  }
+  expect(() => validateSigningRelease(draft, context)).not.toThrow()
+  expect(() => validateSigningRelease(draft, context, 'b'.repeat(40))).toThrow()
+  expect(() => validateSigningRelease(draft, context, commit)).not.toThrow()
+  for (const changed of [
+    { target_commitish: 'main' },
+    { target_commitish: 'b'.repeat(40) },
+    { tag_name: 'v1.0.2' },
+    { id: null },
+  ])
+    expect(() =>
+      validateSigningRelease({ ...draft, ...changed }, context),
+    ).toThrow()
+  const published = { ...draft, draft: false }
+  expect(() => validateSigningRelease(published, context, commit)).not.toThrow()
+  expect(() =>
+    validateSigningRelease(published, context, 'b'.repeat(40)),
+  ).toThrow()
+  expect(() => validateSigningRelease(published, context)).toThrow()
+  let pages = 0
+  expect(
+    await findSigningRelease(
+      async () =>
+        ++pages === 1
+          ? Array.from({ length: 100 }, () => ({
+              ...draft,
+              tag_name: 'v0.1.0',
+            }))
+          : [draft],
+      context.tag,
+    ),
+  ).toEqual(draft)
+  await expect(
+    findSigningRelease(async () => [], context.tag),
+  ).rejects.toThrow()
+})
+
+it('pins signed asset upload to the verified numeric release ID and never falls back to a tag', async () => {
+  const { vi } = await import('vitest')
+  const { uploadReleaseAsset } = await import('../../scripts/signing-api.mjs')
+  const previous = {
+    token: process.env.GH_TOKEN,
+    repository: process.env.GITHUB_REPOSITORY,
+    tag: process.env.RELEASE_TAG,
+  }
+  const calls = []
+  try {
+    process.env.GH_TOKEN = 'synthetic-token'
+    process.env.GITHUB_REPOSITORY = 'synthetic/queuecumber'
+    process.env.RELEASE_TAG = 'v1.0.1'
+    vi.stubGlobal('fetch', async (url, options) => {
+      calls.push({ url, options })
+      return { ok: false, status: 404 }
+    })
+    await expect(
+      uploadReleaseAsset(42, 'signed.zip', new Uint8Array([1, 2])),
+    ).rejects.toThrow('404')
+    expect(calls).toHaveLength(1)
+    expect(calls[0].url).toBe(
+      'https://uploads.github.com/repos/synthetic/queuecumber/releases/42/assets?name=signed.zip',
+    )
+    expect(calls[0].options.method).toBe('POST')
+    expect(calls[0].options.body).toEqual(new Uint8Array([1, 2]))
+    expect(calls[0].url).not.toContain('v1.0.1')
+  } finally {
+    vi.unstubAllGlobals()
+    for (const [key, value] of Object.entries({
+      GH_TOKEN: previous.token,
+      GITHUB_REPOSITORY: previous.repository,
+      RELEASE_TAG: previous.tag,
+    })) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
 })

@@ -1,5 +1,7 @@
 import { it, expect } from 'vitest'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFile, execFileSync, spawnSync } from 'node:child_process'
+import { promisify } from 'node:util'
+import { createServer } from 'node:http'
 import {
   mkdtempSync,
   mkdirSync,
@@ -11,7 +13,7 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import process from 'node:process'
 
-it('accepts only a merged main PR and its immutable versioned commit', () => {
+it('accepts only a merged main PR and its immutable versioned commit', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'qc-release-'))
   const git = (...args) =>
     execFileSync('git', args, {
@@ -80,7 +82,7 @@ it('accepts only a merged main PR and its immutable versioned commit', () => {
       workflow_run: {
         conclusion: 'success',
         event: 'pull_request_target',
-        head_branch: 'main',
+        head_branch: 'development',
         path: '.github/workflows/release.yml@main',
       },
     }
@@ -105,6 +107,97 @@ it('accepts only a merged main PR and its immutable versioned commit', () => {
     expect(readFileSync(join(dir, 'sign-output'), 'utf8')).toContain(
       'available=false',
     )
+
+    const requested = []
+    const release = {
+      id: 42,
+      draft: true,
+      tag_name: 'v1.2.3+build-alpha',
+      target_commitish: sha,
+    }
+    let taggedCommit
+    const server = createServer((req, res) => {
+      requested.push(req.url)
+      res.setHeader('Content-Type', 'application/json')
+      if (req.url.includes('/actions/runners?'))
+        res.end(
+          JSON.stringify({
+            total_count: 1,
+            runners: [
+              {
+                status: 'online',
+                busy: false,
+                labels: ['self-hosted', 'Windows', 'X64', 'codesign'].map(
+                  (name) => ({ name }),
+                ),
+              },
+            ],
+          }),
+        )
+      else if (req.url.includes('/releases?'))
+        res.end(JSON.stringify([release]))
+      else if (req.url.includes('/commits/') && taggedCommit)
+        res.end(JSON.stringify({ sha: taggedCommit }))
+      else if (req.url.endsWith('/releases/42'))
+        res.end(JSON.stringify(release))
+      else {
+        res.statusCode = 404
+        res.end('{}')
+      }
+    })
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const signingEnv = {
+      ...process.env,
+      GITHUB_EVENT_NAME: 'workflow_run',
+      GITHUB_EVENT_PATH: join(dir, 'followup.json'),
+      GITHUB_REPOSITORY: 'synthetic/queuecumber',
+      GITHUB_OUTPUT: join(dir, 'enabled-output'),
+      GITHUB_API_URL: `http://127.0.0.1:${server.address().port}`,
+      GH_TOKEN: 'synthetic',
+      SIGNING_RUNNER_READ_TOKEN: 'synthetic',
+      WINDOWS_SIGNING_ENABLED: 'true',
+      EXPECTED_RELEASE_ID: '42',
+      EXPECTED_COMMIT: sha,
+      RELEASE_TAG: release.tag_name,
+    }
+    try {
+      await promisify(execFile)(
+        process.execPath,
+        [resolve('scripts/prepare-signing.mjs')],
+        { cwd: dir, env: signingEnv },
+      )
+      expect(readFileSync(join(dir, 'enabled-output'), 'utf8')).toContain(
+        'available=true',
+      )
+      expect(readFileSync(join(dir, 'enabled-output'), 'utf8')).toContain(
+        'releaseId=42',
+      )
+      await promisify(execFile)(
+        process.execPath,
+        [resolve('scripts/verify-signing-release.mjs')],
+        { cwd: dir, env: signingEnv },
+      )
+      expect(requested.some((url) => url.includes('/commits/'))).toBe(true)
+      taggedCommit = 'b'.repeat(40)
+      await expect(
+        promisify(execFile)(
+          process.execPath,
+          [resolve('scripts/verify-signing-release.mjs')],
+          { cwd: dir, env: signingEnv },
+        ),
+      ).rejects.toThrow()
+      taggedCommit = undefined
+      release.target_commitish = 'b'.repeat(40)
+      await expect(
+        promisify(execFile)(
+          process.execPath,
+          [resolve('scripts/verify-signing-release.mjs')],
+          { cwd: dir, env: signingEnv },
+        ),
+      ).rejects.toThrow()
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
 
     expect(readFileSync(join(dir, 'output'), 'utf8')).toContain(
       'tag=v1.2.3+build-alpha',
@@ -193,6 +286,16 @@ it.skipIf(spawnSync('pwsh', ['--version']).error)(
       mkdirSync(join(dir, 'win-unpacked'))
       writeFileSync(join(dir, 'win-unpacked', 'QueueCumber.exe'), 'synthetic')
       writeFileSync(join(dir, 'QueueCumber-1.2.3-x64-setup.exe'), 'synthetic')
+      execFileSync(
+        'pwsh',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          'Compress-Archive -LiteralPath (Join-Path $env:QC_DIR "win-unpacked/QueueCumber.exe") -DestinationPath (Join-Path $env:QC_DIR "QueueCumber-1.2.3-signed.zip")',
+        ],
+        { env: { ...process.env, QC_DIR: dir } },
+      )
       const script = `
   $ErrorActionPreference='Stop'
   $cert=[pscustomobject]@{}
@@ -217,6 +320,12 @@ it.skipIf(spawnSync('pwsh', ['--version']).error)(
           },
         )
       expect(run('Valid', 'yes', 'Synthetic Publisher').status).toBe(0)
+      writeFileSync(
+        join(dir, 'win-unpacked', 'QueueCumber.exe'),
+        'different executable',
+      )
+      expect(run('Valid', 'yes', 'Synthetic Publisher').status).not.toBe(0)
+      writeFileSync(join(dir, 'win-unpacked', 'QueueCumber.exe'), 'synthetic')
       expect(run('NotSigned', 'yes', 'Synthetic Publisher').status).not.toBe(0)
       expect(run('Valid', 'no', 'Synthetic Publisher').status).not.toBe(0)
       expect(run('Valid', 'yes', 'Different Publisher').status).not.toBe(0)
