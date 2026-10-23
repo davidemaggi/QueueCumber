@@ -8,3 +8,11 @@ The maintainer authorized proceeding with the first release on 2026-10-23. Keep 
 4. Inspect the generated draft and verify asset hashes and tag provenance. Record actual build outcomes without claiming clean-machine, OS-keystore or cloud acceptance. Follow the acceptance checklist before public publication; report any external gate that cannot be completed here.
 
 The repository's default branch initially contains only LICENSE and .gitignore. Check the initial workflow bootstrap explicitly; do not introduce a manual distribution trigger to work around it.
+
+## Execution record
+
+- PR #1 merged after hosted checks. Downloaded macOS verification caught skipped ad-hoc signing before release creation; the run was cancelled.
+- PR #2 enabled macOS ad-hoc signing and mandatory integrity verification. Its build exposed an empty certificate-link variable; no release was created.
+- PR #3 removed the empty links after hosted checks. Merge a785bcb produced successful release run 39917615830.
+- All seven downloaded package checksums passed. The extracted macOS archive passed codesign verification and a packaged stream-capture/JSON/stop smoke test with isolated session-only storage.
+- The unsigned Ackbar draft is ready. Manual installer/keystore/environment acceptance is pending with the maintainer; no public publication or package-manager submission is claimed.

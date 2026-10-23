@@ -1,6 +1,6 @@
 # Roadmap
 
-Implementation through 1.0.0 Ackbar is prepared for maintainer acceptance; cross-platform release validation is still pending. The package version does not mean a release has been published.
+The 1.0.0 Ackbar draft has been built through GitHub Actions; downloaded checksums and a local packaged macOS capture smoke test passed. Clean-machine and real-environment acceptance remain pending. The package version does not mean a release has been published.
 
 ## Foundation — complete
 
@@ -61,7 +61,7 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [x] Finite cache/disk workloads and eviction/omission measurements.
 - [ ] Representative long-running soak and RSS acceptance on release machines.
 - [ ] Tested Windows installers/archives, macOS DMG/archives and Linux packages/archives.
-- [x] Prepare GitHub Actions builds and draft GitHub Releases with checksums; unsigned Windows/macOS/Linux packaging.
+- [x] Execute GitHub Actions source checks and unsigned Windows/macOS/Linux packaging; create the first release draft and verify all seven downloaded package checksums.
 - [ ] Validate unsigned 1.0.0 downloads on clean machines, including expected OS warnings.
 - [x] Unsigned 1.0.0 packaging, explicit asset names, checksum generation and prepared Ackbar release notes.
 - [ ] Optional signed artifacts and platform signing/notarization acceptance when those channels are enabled.
@@ -78,6 +78,7 @@ Version 1.0 remains for inspection. Owned observation resources are permitted; a
 - [x] Always build unsigned variants independently on GitHub-hosted runners.
 - [x] Isolated optional signing workflow with idle-runner preflight, queue watchdog, local certificate selection and signature checks.
 - [x] Distinct signed asset names/checksums on the same release; no unsigned overwrite or automatic publication.
+- [ ] Adapt optional signing provenance to observed merged-PR metadata and unpublished drafts: hosted runs report the PR head branch, and Git tags are created only on publication. Verify this before enabling 1.0.1 signing.
 - [ ] Provision the self-hosted signing runner and its repository settings; verify real signing/upload and runner-unavailable behavior remotely.
 - [ ] Bump to 1.0.1 and remove releaseName when preparing that release.
 

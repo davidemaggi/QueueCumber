@@ -57,7 +57,7 @@ The name is **QueueCumber**. The voice is practical, friendly and lightly playfu
 
 ## Evidence on Hand
 
-The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements and confirmed temporary-queue capture. RabbitMQ and Kafka inspection through prepared 1.0.0 Ackbar source and synthetic test screenshots now exist; the maintainer will perform final platform/cloud/signing acceptance. No release, published benchmark, customer proof or finished logo exists yet. Use synthetic messages in demonstrations and label them accordingly.
+The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements and confirmed temporary-queue capture. RabbitMQ and Kafka inspection through prepared 1.0.0 Ackbar source and synthetic test screenshots now exist; the maintainer will perform final platform/cloud/signing acceptance. A verified unsigned 1.0.0 release draft now exists; no public release, published benchmark, customer proof or finished logo exists yet. Use synthetic messages in demonstrations and label them accordingly.
 
 ## Product Principles
 

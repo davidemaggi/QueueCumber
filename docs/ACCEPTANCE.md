@@ -6,16 +6,17 @@ Record each test's OS/version/architecture, app commit/artifact hash, broker/pro
 
 ## Before merging the release PR
 
-- [ ] Review normal Checks on the exact proposed source; ensure no private data or unrelated skills were accidentally included.
-- [ ] Confirm the maintainer-approved unsigned 1.0.0 scope; no Azure/Apple signing credentials are required.
+- [x] Review normal Checks on the exact proposed source; ensure no private data or unrelated skills were accidentally included.
+- [x] Confirm the maintainer-approved unsigned 1.0.0 scope; no Azure/Apple signing credentials are required.
 - [ ] For future 1.0.1+ signed Windows variants, configure the repository-visible self-hosted runner and settings described in RELEASING.md. Verify offline/busy/missing/inventory-error cases leave unsigned output unaffected, and runner disappearance cancels only the optional workflow observed queued. Check the jobs-API outage path: uncertainty must not cancel a potentially active signer; monitor any queued optional job manually.
 - [ ] Ensure this workflow exists on the default branch, protect main and version tags, and confirm the PR merge event is the only distribution trigger. The release workflow builds the immutable merge SHA, not a moving branch.
 - [ ] Review 1.0.0 Ackbar release notes, this supported-target policy and documented limits. Preserve a complete pre-upgrade backup. Package metadata alone does not publish a release.
 
 ## After merge: Actions and downloaded artifacts
 
-- [ ] All release jobs succeed for the merge SHA. Unsigned builds must succeed without signing settings. Optional signing failures must never create falsely signed assets or block unsigned downloads.
-- [ ] Draft tag resolves to the merge SHA; title is `v1.0.0 — Ackbar`; correct numeric versions/architectures appear in filenames and app metadata.
+- [x] All release jobs succeed for merge SHA a785bcbf0585392292d2d894805c82e81a790382 (run 39917615830). Unsigned builds must succeed without signing settings. Optional signing failures must never create falsely signed assets or block unsigned downloads.
+- [x] Draft target is the merge SHA; title is `v1.0.0 — Ackbar`; correct versions/architectures appear in asset names and the tested macOS app metadata.
+- [ ] After publication, confirm the Git tag resolves to that merge SHA. The unpublished draft reserves the tag name but does not create a Git ref.
 - [ ] Verify every downloaded asset against SHA256SUMS.txt. Confirm the release includes expected installer/archive variants and no test broker secrets or local maintainer files.
 - [ ] Windows x64: install NSIS and extract ZIP on a clean supported system. Record unsigned status for the unsigned build; when signed variants exist, verify app, installed uninstaller and installer Authenticode status/publisher; capture in the packaged utility process. Test upgrade, uninstall and retained-user-data policy.
 - [ ] macOS arm64: record the unsigned/ad-hoc build and expected Gatekeeper behavior; verify Developer ID/notarization only if a future trusted macOS-signed channel is implemented on a clean supported Mac, including launch while offline. Test Applications installation, packaged capture, upgrade and uninstall/data policy.

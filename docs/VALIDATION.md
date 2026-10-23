@@ -1,5 +1,13 @@
 # Local validation — QueueCumber
 
+## First release draft — 2026-10-23
+
+[Release build 39917615830](https://github.com/davidemaggi/QueueCumber/actions/runs/39917615830) succeeded for merge commit `a785bcbf0585392292d2d894805c82e81a790382`. The [1.0.0 Ackbar draft](https://github.com/davidemaggi/QueueCumber/releases) contains seven unsigned packages plus SHA256SUMS.txt: Windows x64 NSIS/ZIP, macOS arm64 DMG/ZIP and Linux x64 AppImage/DEB/tar.gz. All seven downloaded files passed `shasum -a 256 -c SHA256SUMS.txt`. The macOS ZIP passed codesign deep/strict verification after extraction. This is ad-hoc integrity, not Developer ID/notarization or publisher trust.
+
+The actual downloaded macOS application (version 1.0.0) launched its packaged utility service, replayed the local RabbitMQ stream, rendered JSON and stopped capture. This used isolated session-only data on the development Mac, not a clean installation or an OS-keystore persistence test. Hosted source Checks passed on Windows/macOS/Linux before every corrective merge. The optional signer was skipped for unsigned 1.0.0. Public publication and the manual acceptance checklist remain pending.
+
+GitHub's draft reserves tagName v1.0.0 and targets the exact merge SHA; the Git ref does not exist until publication. Also, the observed merged-PR workflow_run metadata uses the PR head branch. Both observations are recorded as required 1.0.1 signer follow-up work; do not enable that unverified path yet.
+
 ## Guided connections and local demo — 2026-10-23
 
 The new two-step RabbitMQ form and advanced URL mode were checked on macOS arm64 with pnpm 12.15.0. The unit suite passed 83 tests. All 32 real-broker integration tests passed against the local RabbitMQ/Kafka 4.2 fixtures, including reusable demo topology, future queue observation, RabbitMQ stream replay and both Kafka partitions. Type checking, ESLint, formatting, build and dependency audit passed; the audit reported no known vulnerabilities in this snapshot.
