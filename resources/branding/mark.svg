@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 80 80" width="512" height="512">
+  <title>QueueCumber</title>
+  <circle cx="46" cy="46" r="32" fill="#3F8A45"/>
+  <circle cx="46" cy="46" r="26" fill="#CFE6A8"/>
+  <circle cx="46" cy="46" r="16" fill="#2E6B34"/>
+  <g transform="rotate(45 46 46)">
+    <rect x="74" y="41" width="24" height="10" rx="5" fill="#3F8A45"/>
+    <rect x="80" y="41" width="2" height="10" fill="#CFE6A8"/>
+    <rect x="87" y="41" width="2" height="10" fill="#CFE6A8"/>
+    <circle cx="104" cy="46" r="3.6" fill="#E39B2D"/>
+  </g>
+</svg>

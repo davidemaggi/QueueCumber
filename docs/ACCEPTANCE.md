@@ -2,6 +2,8 @@
 
 Prepared source: **1.0.0 — Ackbar**. This checklist is intentionally open for the maintainer's final tests. Local implementation verification is in [VALIDATION.md](VALIDATION.md); checking code does not establish installer, hardware, keystore or cloud compatibility.
 
+On 2026-10-23 the maintainer confirmed the manual installation checks were complete and explicitly authorized publication, then requested the supplied icon/mark be included first. No exact OS-version matrix was supplied; do not infer additional platform/cloud certification from that confirmation. Rebuild the artwork update through merged-main Actions and recheck its packages before publishing; no further publication approval is required.
+
 Record each test's OS/version/architecture, app commit/artifact hash, broker/provider version, result and sanitized evidence. Mark failures explicitly. Do not paste secrets, connection strings or private messages. Keep private account/signing instructions in ignored `maintainer-local/`.
 
 ## Before merging the release PR

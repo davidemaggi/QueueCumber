@@ -1,10 +1,12 @@
 # QueueCumber
 
+<img src="resources/branding/icon.svg" width="80" height="80" alt="QueueCumber application icon" />
+
 **A little less queue confusion. A little more cucumber.**
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **1.0.0 — Ackbar: release draft ready.** [Review the draft and downloads](https://github.com/davidemaggi/QueueCumber/releases). GitHub Actions built all seven unsigned packages; their downloaded checksums pass. The packaged macOS app passed a local capture smoke test. Public publication awaits the maintainer’s [acceptance checks](docs/ACCEPTANCE.md).
+> **1.0.0 — Ackbar.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
 
 ## What you can do
 

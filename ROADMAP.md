@@ -55,6 +55,7 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [x] Complete approved RabbitMQ and Kafka inspection scope.
 - [x] Guided RabbitMQ connection setup, explicit capture guidance and a bounded local RabbitMQ/Kafka demo publisher.
 - [x] Keyboard message navigation, semantic selection states, locale completeness and light/dark/narrow UI hardening.
+- [x] Maintainer-supplied application icon and interface/tray mark, with native Windows/macOS/Linux icon resources and Retina tray export.
 - [ ] Manual screen-reader, high-contrast and platform accessibility acceptance.
 - [x] Local IPC, credential protection, capture encryption and import/export boundary review and regressions.
 - [ ] Actual OS-keystore and maintainer security acceptance.

@@ -1,5 +1,11 @@
 # Local validation — QueueCumber
 
+## Supplied artwork — 2026-10-23
+
+The supplied SVG icon and mark replace the provisional symbols. Committed exports include a 1024 px PNG, a Windows ICO with 16/24/32/48/64/128/256 px entries, a macOS ICNS and 20/40 px tray PNGs. The original geometry and colors are preserved. Runtime PNGs are explicitly included in the application archive because electron-vite's native asset imports keep paths under resources rather than copying them into out.
+
+All 83 unit tests and eight native Electron tests passed locally after the change, along with type checking, ESLint, formatting and build. Light English capture and dark Italian/narrow form renders show the supplied mark. Native background/tray creation tests passed; OS menu-bar placement is platform-dependent. The maintainer confirmed manual installation acceptance and requested publication with the artwork; the superseded draft must be rebuilt before publication.
+
 ## First release draft — 2026-10-23
 
 [Release build 39917615830](https://github.com/davidemaggi/QueueCumber/actions/runs/39917615830) succeeded for merge commit `a785bcbf0585392292d2d894805c82e81a790382`. The [1.0.0 Ackbar draft](https://github.com/davidemaggi/QueueCumber/releases) contains seven unsigned packages plus SHA256SUMS.txt: Windows x64 NSIS/ZIP, macOS arm64 DMG/ZIP and Linux x64 AppImage/DEB/tar.gz. All seven downloaded files passed `shasum -a 256 -c SHA256SUMS.txt`. The macOS ZIP passed codesign deep/strict verification after extraction. This is ad-hoc integrity, not Developer ID/notarization or publisher trust.

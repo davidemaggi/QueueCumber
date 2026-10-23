@@ -4,12 +4,16 @@ directories:
   output: release
 files:
   - out/**/*
+  - resources/*.png
   - package.json
 mac:
+  icon: resources/icon.icns
   target: [dmg, zip]
 win:
+  icon: resources/icon.ico
   target: [nsis, zip]
 nsis:
   artifactName: QueueCumber-${version}-${arch}-setup.${ext}
 linux:
+  icon: resources/icon.png
   target: [AppImage, deb, tar.gz]
