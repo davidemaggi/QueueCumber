@@ -134,6 +134,68 @@ test('exports encrypted connections, previews conflicts and imports copies throu
         window.queuecumber.getState().then((s) => s.profiles.length),
       ),
     ).toBe(2)
+    await page
+      .getByRole('button', { name: 'Delete connection', exact: true })
+      .click()
+    await expect(page.getByText(/Active captures will stop/)).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    expect(
+      await page.evaluate(() =>
+        window.queuecumber.getState().then((s) => s.profiles.length),
+      ),
+    ).toBe(2)
+    for (const [theme, width] of [
+      ['light', 1440],
+      ['dark', 860],
+    ] as const) {
+      await page.evaluate((value) => {
+        localStorage.setItem('qc.theme', value)
+      }, theme)
+      await page.reload()
+      await page
+        .getByRole('button', {
+          name: 'Updated imported connection',
+          exact: true,
+        })
+        .click()
+      await app.evaluate(
+        ({ BrowserWindow }, width) =>
+          BrowserWindow.getAllWindows()[0].setSize(width, 800),
+        width,
+      )
+      await page
+        .getByRole('button', { name: 'Delete connection', exact: true })
+        .click()
+      await page.screenshot({
+        path: join(qa, `delete-connection-${theme}.png`),
+      })
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true)
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    }
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await page.getByLabel('Language').selectOption('it')
+    await page.getByRole('button', { name: 'Ispeziona', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Elimina connessione', exact: true })
+      .click()
+    await page
+      .getByRole('button', { name: 'Rimuovi connessione salvata', exact: true })
+      .click()
+    await expect(
+      page.getByRole('button', {
+        name: 'Updated imported connection',
+        exact: true,
+      }),
+    ).toHaveCount(0)
+    expect(
+      await page.evaluate(() =>
+        window.queuecumber.getState().then((s) => s.profiles.length),
+      ),
+    ).toBe(1)
   } finally {
     await app.close()
     await rm(dir, { recursive: true, force: true })

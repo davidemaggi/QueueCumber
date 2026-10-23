@@ -251,5 +251,9 @@
   "messageOrder": "Message order",
   "newestFirst": "Newest first",
   "oldestFirst": "Oldest first",
-  "newer": "Newer messages"
+  "newer": "Newer messages",
+  "deleteConnection": "Delete connection",
+  "deleteConnectionConfirm": "Remove this saved connection and its credentials? Active captures will stop. Capture history will be kept. Broker resources will not be changed.",
+  "confirmDeleteConnection": "Remove saved connection",
+  "connectionRemoved": "This connection was removed. Saved captures remain available for inspection and export."
 }

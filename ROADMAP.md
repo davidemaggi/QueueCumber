@@ -95,6 +95,14 @@ Version 1.0 remains for inspection. Owned observation resources are permitted; a
 
 Release 1.0.1 targets 7b8ff2f. Optional signing run 39956622696 attempt 6 passed on WIN_MBA: 97 unit tests, packaging, valid timestamped app/installer signatures, publisher verification, ZIP equality and signed upload. The release has nine packages and two checksum manifests. The maintainer explicitly authorized publication on 2026-10-23; no unrecorded manual installation result is inferred. See [release policy](docs/RELEASING.md).
 
+## 1.0.2 — tray defaults and connection removal (preparing; no character name)
+
+- [x] Keep running on window close by default for installations without saved desktop preferences; preserve saved choices and disable background close on corrupt preferences.
+- [x] Add confirmed saved-connection removal: stop its captures, remove stored credentials and retain readable/exportable history without changing broker resources.
+- [x] Verify macOS tray/default close/explicit Quit and EN/IT deletion interactions in light/dark layouts, including an 860px window; verify real RabbitMQ capture removal preserves 52 synthetic messages and no original-queue consumer.
+- [ ] Verify these changes on actual Windows/Linux desktops.
+- [ ] Merge through a reviewed PR, build via GitHub Actions, verify downloaded assets and publish with the maintainer’s 2026-10-23 authorization.
+
 ## After 1.0 — candidates, not commitments
 
 Additional providers and payload decoders follow real requests. Extension points do not imply an executable plugin marketplace. Broker mutation features require a separate product decision.

@@ -20,8 +20,6 @@ test('background close preserves a reopenable app and explicit Quit exits', asyn
     const option = page.getByLabel('Keep running when the window closes', {
       exact: true,
     })
-    await expect(option).not.toBeChecked()
-    await option.click()
     await expect(option).toBeChecked()
     await expect
       .poll(() =>
@@ -80,7 +78,7 @@ test('background close preserves a reopenable app and explicit Quit exits', asyn
   }
 })
 
-test('closing the window without background opt-in exits the application', async () => {
+test('closing the window after explicit background opt-out exits the application', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'qc-close-'))
   const env = { ...process.env }
   delete env.ELECTRON_RUN_AS_NODE
@@ -93,6 +91,13 @@ test('closing the window without background opt-in exits the application', async
     await expect
       .poll(() => page.evaluate(() => window.queuecumber.getStatus()))
       .toEqual({ service: 'ready' })
+    await page.evaluate(() =>
+      window.queuecumber.saveDesktopPreferences({
+        schemaVersion: 1,
+        closeToTray: false,
+        locale: 'en',
+      }),
+    )
     const closed = app.waitForEvent('close')
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0].close(),

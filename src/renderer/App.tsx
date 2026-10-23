@@ -60,6 +60,7 @@ export default function App() {
     )
   const [screen, setScreen] = useState<'inspect' | 'settings'>('inspect'),
     [form, setForm] = useState(false),
+    [deletingConnection, setDeletingConnection] = useState(''),
     [editingProfile, setEditingProfile] = useState<ConnectionProfile | null>(
       null,
     ),
@@ -151,7 +152,10 @@ export default function App() {
   const [partitions, setPartitions] = useState<KafkaPartition[]>([]),
     [kafkaSelection, setKafkaSelection] = useState<KafkaSelection>([])
   const chosenProvider =
-    state?.profiles.find((p) => p.id === connection)?.provider ?? 'rabbitmq'
+    state?.profiles.find((p) => p.id === connection)?.provider ??
+    state?.sessions.find((s) => s.id === sessionId)?.provider ??
+    'rabbitmq'
+  const connectionExists = !!state?.profiles.some((p) => p.id === connection)
   const capabilities = PROVIDER_CAPABILITIES[chosenProvider]
   const desktopLocaleLoaded = useRef(false)
   const selection = useRef(0),
@@ -199,7 +203,7 @@ export default function App() {
     return () => media.removeEventListener('change', apply)
   }, [theme])
   useEffect(() => {
-    if (!connection) return
+    if (!connection || !connectionExists) return
     let cancelled = false
     const timer = setTimeout(() => {
       void api
@@ -224,7 +228,15 @@ export default function App() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [connection, query, resourcePage, resourceRevision, kind, messageFilter])
+  }, [
+    connection,
+    connectionExists,
+    query,
+    resourcePage,
+    resourceRevision,
+    kind,
+    messageFilter,
+  ])
   useEffect(() => {
     if (!sessionId) {
       setRows([])
@@ -478,6 +490,7 @@ export default function App() {
                 setNextCursor(null)
                 setKind('all')
                 setMessageFilter('all')
+                setDeletingConnection('')
                 setConnection(p.id)
                 setResource(null)
                 setRows([])
@@ -518,6 +531,8 @@ export default function App() {
                     setRows([])
                     setNextCursor(null)
                     setKind('all')
+                    setDeletingConnection('')
+                    setResources([])
                     setConnection(s.connectionId)
                     setResource(s.resource)
                     setStreamChoice(
@@ -766,7 +781,7 @@ export default function App() {
                   className="icon-button"
                   title={t('testConnection')}
                   aria-label={t('testConnection')}
-                  disabled={busy}
+                  disabled={busy || !connectionExists}
                   onClick={() =>
                     void run(async () => {
                       const result = await api.testConnection(connection)
@@ -787,7 +802,7 @@ export default function App() {
               </div>
               <button
                 className="text-button edit-connection"
-                disabled={busy}
+                disabled={busy || !connectionExists}
                 onClick={() => {
                   const token = selection.current
                   void run(async () => {
@@ -800,6 +815,62 @@ export default function App() {
               >
                 {t('editConnection')}
               </button>
+              <button
+                className="text-button edit-connection"
+                disabled={busy || !connectionExists}
+                onClick={() => setDeletingConnection(connection)}
+              >
+                {t('deleteConnection')}
+              </button>
+              {deletingConnection === connection ? (
+                <div
+                  className="confirmation"
+                  role="group"
+                  aria-label={t('deleteConnection')}
+                >
+                  <p>
+                    <strong>
+                      {state?.profiles.find((p) => p.id === connection)?.name}
+                    </strong>
+                  </p>
+                  <p>{t('deleteConnectionConfirm')}</p>
+                  <div className="actions">
+                    <button
+                      disabled={busy}
+                      onClick={() => setDeletingConnection('')}
+                    >
+                      {t('cancel')}
+                    </button>
+                    <button
+                      disabled={busy}
+                      onClick={() =>
+                        void run(async () => {
+                          const id = deletingConnection
+                          const token = selection.current
+                          await api.deleteConnection(id)
+                          setDeletingConnection('')
+                          if (token === selection.current) {
+                            selection.current++
+                            messageSelection.current++
+                            setConnection('')
+                            setResource(null)
+                            setSessionId('')
+                            setResources([])
+                            setRows([])
+                            setMessage(null)
+                          }
+                          await refresh()
+                        })
+                      }
+                    >
+                      {t('confirmDeleteConnection')}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {!connectionExists ? (
+                <p className="small muted">{t('connectionRemoved')}</p>
+              ) : null}
               <div className="resource-search">
                 <Search size={15} />
                 <input
@@ -1020,6 +1091,7 @@ export default function App() {
                       className={active ? '' : 'primary'}
                       disabled={
                         busy ||
+                        !connectionExists ||
                         (!active &&
                           resource.kind === 'topic' &&
                           !kafkaSelectionSchema.safeParse(kafkaSelection)

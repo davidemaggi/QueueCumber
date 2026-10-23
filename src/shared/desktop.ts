@@ -9,6 +9,6 @@ export const desktopPreferencesSchema = z
 export type DesktopPreferences = z.infer<typeof desktopPreferencesSchema>
 export const DEFAULT_DESKTOP_PREFERENCES: DesktopPreferences = Object.freeze({
   schemaVersion: 1,
-  closeToTray: false,
+  closeToTray: true,
   locale: 'en',
 })

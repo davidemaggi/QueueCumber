@@ -112,6 +112,9 @@ parent.on('message', async ({ data }) => {
         case 'deleteCapture':
           await sessions.deleteCapture(args[0])
           break
+        case 'stopConnection':
+          await sessions.stopConnection(args[0])
+          break
         case 'stop':
           value = await sessions.stopCapture(args[0])
           break

@@ -104,7 +104,9 @@ app.whenReady().then(async () => {
     }
   })()
   ready.catch(() => {})
+  const deletingConnections = new Set<string>()
   const getProfile = async (id: string) => {
+    if (deletingConnections.has(id)) throw Error('Connection is being removed')
     if (vault) return vault.get(id)
     const p = ephemeralProfiles.get(id)
     if (!p) throw Error('Connection not found')
@@ -285,6 +287,17 @@ app.whenReady().then(async () => {
         platform: process.platform,
       },
     })),
+    deleteConnection: withReady(async (id) => {
+      await getProfile(id)
+      deletingConnections.add(id)
+      try {
+        await rpc('stopConnection', id)
+        if (vault) await vault.remove(id)
+        else ephemeralProfiles.delete(id)
+      } finally {
+        deletingConnections.delete(id)
+      }
+    }),
     getConnection: withReady(async (id) =>
       structuredClone(await getProfile(id)),
     ),
@@ -292,6 +305,8 @@ app.whenReady().then(async () => {
       rpc('routingBindings', await getProfile(id)),
     ),
     saveConnection: withReady(async (input) => {
+      if (deletingConnections.has(input.id))
+        throw Error('Connection is being removed')
       if (vault) return vault.save(input)
       const p = validateConnection(input)
       const id = p.id ?? randomUUID()

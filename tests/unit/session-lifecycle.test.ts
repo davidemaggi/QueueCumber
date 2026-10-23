@@ -118,3 +118,44 @@ it('leaves a stopped capture restartable when changed limits are invalid', async
     await sessions.close()
   }
 })
+
+it('stops only the removed connection active captures and preserves failed history', async () => {
+  const { KafkaCapture } = await import('../../src/service/kafka-capture')
+  const sessions = manager([])
+  const start = vi
+    .spyOn(KafkaCapture.prototype, 'start')
+    .mockRejectedValueOnce(Error('Synthetic failure'))
+  try {
+    await expect(
+      sessions.startCapture(
+        profile,
+        { ...resource, name: 'failed' },
+        { allowPartial: false, kafkaPartitions: selection },
+      ),
+    ).rejects.toThrow()
+    start.mockRestore()
+    await sessions.startCapture(profile, resource, {
+      allowPartial: false,
+      kafkaPartitions: selection,
+    })
+    await sessions.startCapture({ ...profile, id: 'unrelated' }, resource, {
+      allowPartial: false,
+      kafkaPartitions: selection,
+    })
+    await sessions.stopConnection(profile.id)
+    const rows = sessions.list()
+    expect(rows.find((s) => s.resource.name === 'failed')?.state).toBe('failed')
+    expect(
+      rows.find(
+        (s) =>
+          s.connectionId === profile.id && s.resource.name === resource.name,
+      )?.state,
+    ).toBe('stopped')
+    expect(rows.find((s) => s.connectionId === 'unrelated')?.state).toBe(
+      'capturing',
+    )
+  } finally {
+    start.mockRestore()
+    await sessions.close()
+  }
+})

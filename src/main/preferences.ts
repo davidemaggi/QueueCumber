@@ -19,9 +19,10 @@ export class DesktopPreferencesRepository {
         warning: false,
       }
     } catch (error) {
+      const warning = (error as NodeJS.ErrnoException).code !== 'ENOENT'
       return {
-        preferences: { ...DEFAULT_DESKTOP_PREFERENCES },
-        warning: (error as NodeJS.ErrnoException).code !== 'ENOENT',
+        preferences: { ...DEFAULT_DESKTOP_PREFERENCES, closeToTray: !warning },
+        warning,
       }
     }
   }

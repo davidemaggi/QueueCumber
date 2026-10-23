@@ -192,6 +192,34 @@ test('saves a session-only connection, captures a real message and changes theme
         { allowPartial: true },
       )
     }, name)
+    await page.getByRole('button', { name: 'Ispeziona', exact: true }).click()
+    await page.getByRole('button', { name: 'Local test', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Elimina connessione', exact: true })
+      .click()
+    await page
+      .getByRole('button', { name: 'Rimuovi connessione salvata', exact: true })
+      .click()
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.queuecumber.getState().then((s) => ({
+            profiles: s.profiles.length,
+            state: s.sessions[0].state,
+            captured: s.sessions[0].captured,
+          })),
+        ),
+      )
+      .toEqual({ profiles: 0, state: 'stopped', captured: 52 })
+    await page.locator('.session-list button').first().click()
+    await expect(
+      page.getByText('Questa connessione è stata rimossa.', { exact: false }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Avvia acquisizione', exact: true }),
+    ).toBeDisabled()
+    await expect(page.locator('.message-row').first()).toBeVisible()
+    expect((await channel.checkQueue(name)).consumerCount).toBe(0)
   } finally {
     await app.close()
     const management = new RabbitMQ(profile)

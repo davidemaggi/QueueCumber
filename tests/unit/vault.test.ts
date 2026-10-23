@@ -156,3 +156,36 @@ it('imports conflict batches atomically without losing concurrent unrelated save
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+it('removes a saved connection durably without losing overlapping saves', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'qc-delete-vault-')),
+    key = randomBytes(32)
+  const protector = {
+    protect: async (s: string) => seal(key, Buffer.from(s)),
+    unprotect: async (b: Buffer) => open(key, b).toString(),
+  }
+  try {
+    const vault = new Vault(dir, protector)
+    await vault.initialize()
+    const input = {
+      name: 'Remove me',
+      protocolUrl: 'amqps://example.invalid',
+      managementUrl: 'https://example.invalid',
+      allowInsecure: false,
+    }
+    const profile = await vault.save(input)
+    await Promise.all([
+      vault.remove(profile.id),
+      vault.save({ ...input, name: 'Keep me' }),
+    ])
+    await expect(vault.get(profile.id)).rejects.toThrow('Connection not found')
+    const reopened = new Vault(dir, protector)
+    await reopened.initialize()
+    expect(reopened.list().map((p) => p.name)).toEqual(['Keep me'])
+    await expect(vault.remove(profile.id)).rejects.toThrow(
+      'Connection not found',
+    )
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
