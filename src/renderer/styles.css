@@ -207,10 +207,10 @@ small,
   padding: 0 4px;
   flex-shrink: 0;
 }
-.brand svg {
-  width: 27px;
-  height: 31px;
-  color: var(--accent);
+.brand img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
 }
 .brand strong {
   font-size: 17px;

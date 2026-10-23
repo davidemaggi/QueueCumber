@@ -43,7 +43,7 @@ components:
 
 ## Overview
 
-Taste's data-terminal direction supplies restrained selections, neutral surfaces and tabular figures for long developer sessions. Cucumber green identifies the product and active state. The implemented inspection workspace is the visual reference; there is no final logo yet.
+Taste's data-terminal direction supplies restrained selections, neutral surfaces and tabular figures for long developer sessions. Cucumber green identifies the product and active state. The implemented inspection workspace is the visual reference. The maintainer's SVG icon and mark live in `resources/branding/`: use the square icon for application packages and the transparent mark in the sidebar and colored tray, preserving the artwork in both themes.
 
 ## Colors
 

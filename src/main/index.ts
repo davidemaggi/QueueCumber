@@ -10,6 +10,8 @@ import {
   dialog,
 } from 'electron'
 import trayIconPath from '../../resources/tray.png?asset'
+import trayRetinaPath from '../../resources/tray@2x.png?asset'
+import appIconPath from '../../resources/icon.png?asset'
 import { DesktopPreferencesRepository } from './preferences'
 import { DesktopController } from './desktop'
 import { join } from 'node:path'
@@ -115,6 +117,7 @@ app.whenReady().then(async () => {
   let desktopPreferences = savedPreferences.preferences
   let desktopWarning = savedPreferences.warning
   window = new BrowserWindow({
+    icon: appIconPath,
     width: 1440,
     height: 900,
     minWidth: 860,
@@ -128,6 +131,7 @@ app.whenReady().then(async () => {
       nodeIntegration: false,
     },
   })
+  app.dock?.setIcon(appIconPath)
   const withReady =
     (f: (...args: any[]) => unknown) =>
     async (...args: any[]) => {
@@ -140,11 +144,13 @@ app.whenReady().then(async () => {
     platform: process.platform,
     preferences: desktopPreferences,
     createTray: () => {
-      const icon = nativeImage
-        .createFromPath(trayIconPath)
-        .resize({ width: 20, height: 20 })
+      const icon = nativeImage.createFromPath(trayIconPath)
+      icon.addRepresentation({
+        scaleFactor: 2,
+        buffer: nativeImage.createFromPath(trayRetinaPath).toPNG(),
+      })
       if (icon.isEmpty()) throw Error('Tray icon unavailable')
-      if (process.platform === 'darwin') icon.setTemplateImage(true)
+      // Template mode would flatten the supplied mark's colored rings.
       return new Tray(icon)
     },
     buildMenu: (items) => Menu.buildFromTemplate(items),

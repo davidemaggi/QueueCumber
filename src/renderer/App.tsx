@@ -1,4 +1,5 @@
 import { KafkaPartitions } from './components/KafkaPartitions'
+import brandMark from '../../resources/branding/mark.svg'
 import {
   kafkaSelectionSchema,
   type KafkaPartition,
@@ -311,24 +312,7 @@ export default function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <svg aria-hidden="true" viewBox="0 0 32 32">
-            <ellipse
-              cx="16"
-              cy="16"
-              rx="10"
-              ry="13"
-              transform="rotate(30 16 16)"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M12 10l2 2m5-2l-1 3m-6 4l3 1m5-1l-1 3m-5 3l2 1"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <img src={brandMark} alt="" width={32} height={32} />
           <strong>QueueCumber</strong>
         </div>
         <nav className="main-nav" aria-label={t('workspace')}>

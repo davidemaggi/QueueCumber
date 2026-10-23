@@ -53,11 +53,11 @@ A local desktop inspector with a common workflow across brokers and explicit han
 
 ## Brand Commitments
 
-The name is **QueueCumber**. The voice is practical, friendly and lightly playful: a developer's tool made by a developer. Avoid grand claims and forced jokes, especially in errors and security flows. The future logo and color family draw from a cucumber. No finished logo exists; an explicitly temporary mark is acceptable.
+The name is **QueueCumber**. The voice is practical, friendly and lightly playful: a developer's tool made by a developer. Avoid grand claims and forced jokes, especially in errors and security flows. The maintainer supplied a square application icon and transparent mark, kept as SVG sources in `resources/branding/`. Use the icon for application packages and the mark for the interface and tray; preserve their cucumber greens and orange detail.
 
 ## Evidence on Hand
 
-The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements and confirmed temporary-queue capture. RabbitMQ and Kafka inspection through prepared 1.0.0 Ackbar source and synthetic test screenshots now exist; the maintainer will perform final platform/cloud/signing acceptance. No release, published benchmark, customer proof or finished logo exists yet. Use synthetic messages in demonstrations and label them accordingly.
+The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements, artwork and temporary-queue capture contract. RabbitMQ and Kafka inspection through prepared 1.0.0 Ackbar source and synthetic test screenshots now exist. The maintainer confirmed manual installation checks and authorized publication with the supplied artwork on 2026-10-23. The unsigned draft must be rebuilt with that artwork before publication. No published benchmark or customer proof exists. Use synthetic messages in demonstrations and label them accordingly.
 
 ## Product Principles
 

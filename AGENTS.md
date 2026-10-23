@@ -20,7 +20,7 @@ Architecture was approved on 2026-10-22. The MVP implementation plan at `docs/su
 
 - For new screens, use `.agents/skills/design-taste-frontend/SKILL.md` and its app-screen reference. QueueCumber is an operational desktop tool: prioritize scanning, useful density and precise states.
 - For UI review/improvement, use `.agents/skills/impeccable/SKILL.md`. Run its context launcher once per session as directed. PRODUCT exists: repeat init only when product context needs updating. Keep workflow preferences outside PRODUCT.
-- Establish visual direction during the approved UI stage. Preserve cucumber-inspired branding; no final logo exists.
+- Use the supplied artwork in `resources/branding/`; read its README when changing icons or the mark. Preserve the SVG sources and regenerate native exports with the documented script.
 - Localize strings from the start, use English fallback and verify a second locale. Support light/dark/system themes, keyboard operation, visible focus, accessible names and status beyond color alone.
 - Inspect rendered screens at supported window sizes in both themes, including empty/loading/error/disconnected states and dense message lists. Report what was actually inspected.
 

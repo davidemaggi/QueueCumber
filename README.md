@@ -1,10 +1,12 @@
 # QueueCumber
 
+<img src="resources/branding/icon.svg" width="80" height="80" alt="QueueCumber application icon" />
+
 **A little less queue confusion. A little more cucumber.**
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **1.0.0 — Ackbar, prepared for acceptance.** The implementation is ready for the maintainer’s final platform, broker and signing checks. No downloadable release has been published yet. See the [acceptance checklist](docs/ACCEPTANCE.md).
+> **1.0.0 — Ackbar.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
 
 ## What you can do
 
@@ -102,7 +104,7 @@ If Corepack reports a missing `bin/pnpm.cjs`, update Corepack and refresh its do
 
 Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
-Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Actual hosted builds and clean-machine checks remain pending. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
+Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Hosted unsigned builds succeeded for all three targets; clean-machine acceptance remains pending. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
 
 ## Kafka
 
@@ -142,6 +144,6 @@ In secure mode, encrypted session history and retained records can be reopened a
 
 ## Verification status
 
-Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 and Apache Kafka 4.2.0 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. GitHub Actions is prepared for Windows/macOS/Linux; those remote runs have not been executed here. Optional self-hosted Windows signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
+Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 and Apache Kafka 4.2.0 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. Hosted Windows/macOS/Linux source checks and unsigned packaging passed for the first draft; all seven downloaded packages match their checksums. The packaged macOS archive also passed a local session-only capture smoke test. Optional self-hosted Windows signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
 
 Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt). Other dependencies keep their own licenses.
