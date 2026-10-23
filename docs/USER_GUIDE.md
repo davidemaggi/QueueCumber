@@ -2,11 +2,9 @@
 
 ## Install and start
 
-Before a published GitHub Release exists, run the source with the README's development commands. Do not trust an install command that points to a package that does not exist yet.
+Download a package for your OS/architecture from [GitHub Releases](https://github.com/davidemaggi/QueueCumber/releases/latest); Node.js, pnpm and Docker are not required for the packaged app. Follow the [installation steps in the README](../README.md#install), including checksum verification. Current packages target Windows x64, macOS arm64 and Linux x64; Intel Macs, Windows ARM and Linux ARM have no release packages. These are built architectures, not a claim that every OS version has been certified; see the acceptance record.
 
-Once available, download the asset matching your OS/architecture from this repository's GitHub Releases and verify it against the same release's SHA256SUMS.txt. Planned first targets are Windows x64 (NSIS installer or ZIP), macOS arm64 (DMG or ZIP) and Linux x64 (AppImage, DEB or tar.gz). These are build targets; actual platform certification lives in the acceptance record. Intel Macs, Windows ARM and Linux ARM have no prepared distribution target.
-
-- Windows: choose the explicitly labeled unsigned 1.0.0 download, or a verified signed variant when available from 1.0.1. Record expected OS warnings on unsigned builds; verify Authenticode/publisher on signed variants. Run the installer or extract the complete ZIP; keep its supporting files together.
+- Windows: 1.0.1 includes signed installer/ZIP downloads, verified for valid timestamped app/installer signatures and the publisher Open Source Developer Davide Maggi. Check signed files against SHA256SUMS-signed-windows-x64.txt; use SHA256SUMS.txt for unsigned downloads. Run the installer or extract the complete ZIP and launch QueueCumber.exe; keep its supporting files together.
 - macOS: the current unsigned channel uses ad-hoc signing without Developer ID/notarization. Review the unsigned release status and OS warnings before choosing to run it. Open the DMG and drag QueueCumber to Applications, or extract the ZIP and move the app there. Do not treat an ad-hoc signature as publisher verification or disable Gatekeeper system-wide.
 - Linux: use the DEB through your package manager, make the AppImage executable and open it, or extract the whole tar.gz and run its executable. AppImage/FUSE support depends on the distribution. Retain Chromium's sandbox; do not use `--no-sandbox` as a workaround. Linux tray/keyring availability depends on the desktop.
 
