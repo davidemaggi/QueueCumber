@@ -9,8 +9,12 @@ English and Italian labels are included. Configuration and dump schemas are unch
 
 ## Downloads and verification
 
-Release preparation uses GitHub Actions builds from the exact merged-main commit. Unsigned Windows x64, macOS arm64 and Linux x64 assets have explicit unsigned names and `SHA256SUMS.txt`. macOS uses ad-hoc integrity signing without Developer ID or notarization. A separate optional self-hosted workflow may attach verified signed Windows installer/ZIP assets with `SHA256SUMS-signed-windows-x64.txt`.
+Windows x64 includes signed installer and ZIP downloads, verified on WIN_MBA with valid timestamped Authenticode signatures and publisher `Open Source Developer Davide Maggi`. The ZIP carries the same verified application executable. Verify these downloads with `SHA256SUMS-signed-windows-x64.txt`.
 
-Local verification before release preparation: 99 unit tests and four native Electron tests on macOS, including default background close, reopen, explicit Quit, opt-out, English/Italian deletion, light/dark layouts and a real RabbitMQ capture retaining 52 synthetic messages after profile deletion. Detailed clean-machine installation/upgrade/uninstaller acceptance remains separate from automated checks.
+Unsigned Windows x64, macOS arm64 and Linux x64 packages remain available with explicit unsigned names and `SHA256SUMS.txt`. macOS uses ad-hoc integrity signing without Developer ID or notarization. All nine downloaded package hashes matched their manifests before publication.
+
+Built from merged-main commit `8367103c10d24ca2b147d4cd592f48e99fff828d` through GitHub Actions. Checks passed 99 unit tests on each platform, 33 broker integration tests and eight desktop tests on Linux, plus four desktop tests on each of Windows and macOS. The downloaded macOS application also passed local integrity, version, service, tray-close/reopen, connection-deletion and explicit-Quit checks with session-only synthetic data. Windows signing passed the same 99 unit tests before packaging.
+
+The maintainer authorized the complete 1.0.2 release and publication on 2026-10-23. Detailed clean-machine installation/upgrade/uninstaller acceptance remains separate from automated checks.
 
 [Full changelog](https://github.com/davidemaggi/QueueCumber/compare/v1.0.1...v1.0.2)
