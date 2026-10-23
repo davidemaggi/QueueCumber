@@ -49,3 +49,16 @@ it('grants draft visibility only to the trusted signing preflight job', async ()
     /permissions:\s*\n\s+contents: read/,
   )
 })
+
+it('bootstraps Node before installing pnpm on a bare self-hosted signer', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const workflow = await readFile(
+    '.github/workflows/release-signed.yml',
+    'utf8',
+  )
+  const signer = workflow.split('  sign-windows:')[1].split('  watch-queue:')[0]
+  expect(signer.indexOf('uses: actions/setup-node@')).toBeLessThan(
+    signer.indexOf('uses: pnpm/action-setup@'),
+  )
+  expect(signer).toContain('package-manager-cache: false')
+})
