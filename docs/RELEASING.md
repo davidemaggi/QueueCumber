@@ -2,6 +2,8 @@
 
 All distribution artifacts are built through GitHub Actions after a reviewed pull request merges into main. Ordinary development/PR checks do not package releases. GitHub Releases is the first download channel; package-manager submissions follow verified assets. Source metadata alone does not publish a release.
 
+Merges changing only root Markdown files (including README, ROADMAP and AGENTS) or files under `docs/` skip the entire release workflow through its `paths-ignore` filter. They need no version bump. The optional signer consequently has no completed release run to follow. Mixed changes, application code, dependencies, artwork and workflow/build configuration still trigger normal release validation and require an available version. Ordinary CI remains enabled for documentation changes. See [GitHub path-filter semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
+
 ## Always-available unsigned path
 
 `.github/workflows/release.yml` accepts only a merged `pull_request_target.closed` event into main. It validates repository, exact merge SHA, checkout, main ancestry, SemVer/name and tag conflicts before packaging. Direct pushes, tag pushes, open/unmerged PRs and manual dispatch cannot trigger distribution. Every package uses the validated SHA.
