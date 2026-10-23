@@ -10,6 +10,8 @@ GitHub-hosted runners build Windows x64 NSIS/ZIP, macOS arm64 DMG/ZIP and Linux 
 
 The validated macOS packaging step explicitly enables electron-builder signing for the merged-PR event so it applies the configured ad-hoc identity (`-`), then verifies bundle integrity before uploading. Without this setting electron-builder skips signing for the PR event and leaves a renamed Electron bundle with an invalid resource seal. This does not enable a trusted signing identity or require any certificate secret.
 
+Leave certificate-link variables unset in this unsigned workflow. An empty `CSC_LINK` is treated as a certificate file path by electron-builder, rather than as a disabled certificate. Actions secrets are not injected into the environment unless explicitly referenced; this workflow references none.
+
 After all unsigned targets succeed, the workflow creates the version tag at the merge SHA and a **draft** release with unsigned assets and `SHA256SUMS.txt`. Existing releases/assets are never overwritten. The workflow also saves a small release-context artifact (commit/tag/version), retained seven days, for the optional follow-up. Keep main/tags protected and normal Checks required. The workflow must exist on the default branch for its trigger to work.
 
 The maintainer has explicitly authorized **1.0.0 Ackbar as unsigned**. Signing begins with the planned **1.0.1**, which has no release name under the patch naming rule. Do not bump the package until preparing that release's code. Actual build/install compatibility still needs acceptance; no remote run is claimed here.

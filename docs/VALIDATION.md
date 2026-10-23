@@ -14,6 +14,8 @@ A subsequent Windows PR job exceeded the 15-second test timeout during the 200-w
 
 The first release PR passed hosted Checks on Windows, macOS and Linux and merged as `08675f4`. The first distribution run was cancelled before creating a release/tag after verification of the downloaded macOS ZIP failed: electron-builder skipped ad-hoc signing because the trigger was a merged PR. The corrected workflow enables the configured ad-hoc identity for the validated macOS merge build and adds a mandatory codesign integrity check before artifact upload. Do not use artifacts from the cancelled run.
 
+The next macOS build correctly entered signing but rejected the workflow's empty `CSC_LINK` as a directory rather than a certificate file. Certificate-link variables were removed from the unsigned workflow; the explicit ad-hoc identity and disabled identity discovery remain. The failed run created no release/tag.
+
 Checked on 2026-10-22 on macOS arm64 with Node 22.18, Electron 45 and a disposable RabbitMQ 4.2 management container. This is local alpha evidence, not a cross-platform release claim.
 
 The original MVP baseline passed 22 unit tests, 13 real-broker integration tests and two native Electron end-to-end tests. Later milestone results appear below. Type checking, ESLint, formatting and the production build passed. The unsigned macOS application bundle started its capture utility successfully. Desktop tests use isolated session-only storage; they do not certify OS-keystore persistence.
