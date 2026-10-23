@@ -1,6 +1,6 @@
 # Roadmap
 
-**[1.0.0 Ackbar](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0) was published on 2026-10-23**, with the supplied artwork and unsigned Windows/macOS/Linux packages built through GitHub Actions. All seven downloaded checksums and the packaged macOS capture/icon smoke checks passed. The maintainer confirmed manual installation acceptance; unchecked detailed platform/cloud validation below remains follow-up work, not claimed certification.
+**[1.0.1](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.1) was published on 2026-10-23**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages built through GitHub Actions. All nine downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
 
 ## Foundation — complete
 
@@ -74,22 +74,26 @@ The maintainer confirmed manual installation checks and authorized publication o
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
 
-## 1.0.1 — inspection improvements and optional signed Windows downloads (prepared locally; no character name)
+## 1.0.1 — inspection improvements and optional signed Windows downloads (published; no character name)
 
 - [x] Always build unsigned variants independently on GitHub-hosted runners.
 - [x] Isolated optional signing workflow with idle-runner preflight, queue watchdog, local certificate selection and signature checks.
 - [x] Distinct signed asset names/checksums on the same release; no unsigned overwrite or automatic publication.
 - [x] Adapt provenance to observed merged-PR metadata and unpublished drafts; bind the exact release ID/target and reject changed sources before upload. Covered by local synthetic-API tests.
-- [ ] Provision the self-hosted signing runner and its repository settings; verify real signing/upload and runner-unavailable behavior remotely.
+- [x] Provision the self-hosted signing runner/settings and verify real signing/upload remotely.
+- [ ] Complete the remaining offline/busy/inventory-error and watchdog race acceptance matrix; offline queued retries were cancelled manually.
 - [x] Bump to 1.0.1 and remove releaseName.
 - [x] Reuse the codesign runner label, subject/RFC3161 settings and SHA-256 signing convention from the supplied action; verify ZIP content matches the signed executable.
 - [x] Reuse captures across Start/Stop, retaining history and unchanged stream/Kafka positions.
 - [x] Guided host/port setup, preserved edit values, full-name tooltips and a resizable resource pane.
 - [x] Resource/message-count filters, distinct routing-key inventory, selected bindings and manual direct/topic routes.
 - [x] Newest/oldest-first paging across retained capture history.
-- [ ] Wait for maintainer runner-start confirmation before any remote execution, then verify actual signing and publication.
+- [x] Maintainer confirmed runner startup/configuration and authorized remote signing trials.
+- [x] Merge release through PRs, build unsigned packages and verify all seven downloaded checksums.
+- [x] Resolve runner account/PATH prerequisites; verify real signatures/uploads and publish with maintainer authorization.
+- [ ] Record clean-machine signed installation, upgrade and installed-uninstaller acceptance.
 
-The working source is 1.0.1 with no character name; 1.0.0 Ackbar remains the published release. No 1.0.1 remote run or real signing is claimed. Unsigned release drafts remain independent of signer availability. See [release policy](docs/RELEASING.md).
+Release 1.0.1 targets 7b8ff2f. Optional signing run 39956622696 attempt 6 passed on WIN_MBA: 97 unit tests, packaging, valid timestamped app/installer signatures, publisher verification, ZIP equality and signed upload. The release has nine packages and two checksum manifests. The maintainer explicitly authorized publication on 2026-10-23; no unrecorded manual installation result is inferred. See [release policy](docs/RELEASING.md).
 
 ## After 1.0 — candidates, not commitments
 
@@ -101,6 +105,6 @@ Follow SemVer 2.0.0. From 1.0, major/minor releases (patch zero) also carry a St
 
 The public contract includes documented configuration schemas, dump formats and supported user-facing behavior. Version schemas independently and document migrations. Never silently discard connection data during upgrades.
 
-All artifacts intended for distribution are built through GitHub Actions only after a pull request merges into `main`. Development/PR compilation tests do not package release artifacts. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. 1.0.0 is unsigned by maintainer decision. From 1.0.1, optional verified Windows signing uses a self-hosted runner; no runner means unsigned output only. Actual self-hosted signing and remote Actions remain unverified.
+All artifacts intended for distribution are built through GitHub Actions only after a pull request merges into `main`. Development/PR compilation tests do not package release artifacts. GitHub Releases provide installers/ZIP/DMG/TAR downloads before package-manager integrations are ready. 1.0.0 is unsigned by maintainer decision. From 1.0.1, optional verified Windows signing uses a self-hosted runner; no runner means unsigned output only. Remote unsigned packaging, actual Windows signing and signed upload are verified for 1.0.1; remaining manual platform checks stay explicit.
 
 Update status when scope or release expectations change. Mark tasks complete only with implementation and verification evidence.

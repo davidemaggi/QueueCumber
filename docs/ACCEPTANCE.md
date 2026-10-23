@@ -1,4 +1,6 @@
-# Ackbar acceptance checklist
+# Release acceptance checklist
+
+Release **[1.0.1](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.1)** was published on 2026-10-23 with explicit maintainer authorization. Its merged source, hosted checks, seven unsigned packages and two Windows signed packages are verified in VALIDATION.md. Windows app/installer signatures are valid, timestamped and publisher-matched; ZIP equality and all nine downloaded checksums passed. Detailed clean-machine install/upgrade/installed-uninstaller results remain unrecorded. The historical checklist below records 1.0.0 acceptance and outstanding broader checks; it does not silently mark them passed for 1.0.1.
 
 Published release: **[1.0.0 — Ackbar](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0)**, 2026-10-23. The maintainer confirmed manual installation acceptance; detailed unchecked entries remain unrecorded validation, rather than automatic claims of platform certification. Local implementation verification is in [VALIDATION.md](VALIDATION.md); checking code does not establish installer, hardware, keystore or cloud compatibility.
 

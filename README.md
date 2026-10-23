@@ -1,106 +1,169 @@
-# QueueCumber
+<div align="center">
 
-<img src="resources/branding/icon.svg" width="80" height="80" alt="QueueCumber application icon" />
+<img src="resources/branding/icon.svg" width="128" height="128" alt="QueueCumber application icon" />
+
+# QueueCumber
 
 **A little less queue confusion. A little more cucumber.**
 
-A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
+See what's flowing through RabbitMQ and Kafka, without juggling terminals or borrowing an application's consumer.
 
-> **1.0.0 — Ackbar is out.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/davidemaggi/QueueCumber?label=release)](https://github.com/davidemaggi/QueueCumber/releases/latest)
+[![Checks](https://github.com/davidemaggi/QueueCumber/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/davidemaggi/QueueCumber/actions/workflows/ci.yml)
 
-## What you can do
+</div>
 
-- Save encrypted RabbitMQ and Kafka connection profiles, or use session-only storage when OS protection is unavailable.
-- Test RabbitMQ AMQP/management independently; discover Kafka topics/partitions without a management endpoint.
-- Read selected Kafka partitions from independent beginning/live/64-bit offsets, with no consumer-group joins or commits.
-- Mirror supported queue bindings into a private observation queue and inspect incoming messages.
-- Read RabbitMQ streams from the first retained message, live end or a specific offset, with local resume after reconnects.
-- Read structured headers, formatted JSON and every retained original byte through bounded chunk navigation.
-- Configure global and session capture budgets, disk retention and optional admission-rate limits.
-- Switch between English/Italian and light/dark/system themes.
-- Opt into background capture on window close; inspect session status and reopen/quit from the tray.
-- Export retained messages as JSONL, a folder or ZIP; cancel exports and delete local capture history.
-- Move password-encrypted connection profiles between installations, preview conflicts and choose copies, skipping or replacement.
+---
 
-Start with the [field guide](docs/USER_GUIDE.md), [RabbitMQ permission recipe](docs/RABBITMQ.md) or [Kafka guide](docs/KAFKA.md). The [roadmap](ROADMAP.md) separates implemented work from final acceptance gates.
+> 🥒 **QueueCumber 1.0.1 is out.** [Grab a download](https://github.com/davidemaggi/QueueCumber/releases/latest), [read what changed](docs/RELEASE_NOTES_1.0.1.md), or [tell me what breaks](https://github.com/davidemaggi/QueueCumber/issues). Windows now has signed installer and ZIP downloads.
 
-## Inspect the traffic. Leave application queues alone.
+## Why
 
-For RabbitMQ queue inspection, QueueCumber will copy supported routing bindings onto its own temporary queue. It observes newly routed messages without consuming from the selected application queue. It cannot show messages already waiting there, and not every exchange can be mirrored this way.
+The producer says it sent the event. The consumer says it never arrived. Somewhere there's a routing key, a payload and probably a very long afternoon.
 
-This needs permission to create temporary queues and bindings. Version 1.0 offers no publishing, purging or editing of application resources. See the [capture contract](docs/PROJECT_PLAN.md#rabbitmq-capture-contract) for the precise boundaries.
+QueueCumber gives you a desktop window into that traffic:
 
-## Try a capture with local demo traffic
+- **Bring your own broker.** Save RabbitMQ and Kafka connections, test them, and browse queues, streams, topics and routing keys. Guided RabbitMQ setup asks for hosts, ports and credentials; full connection URLs work too.
+- **Pick what to watch.** Mirror selected RabbitMQ bindings into a temporary observation queue, add a direct/topic route manually, or read a stream or Kafka partition from the beginning, live end or an explicit offset.
+- **Make messages readable.** Structured headers, pretty JSON, original bytes and newest/oldest-first history. Stop and restart a capture without creating another copy.
+- **Keep long sessions manageable.** Bounded memory cache, encrypted disk history, configurable retention and optional rate limits. Background capture and tray status are opt-in.
+- **Take it with you.** Export retained messages as JSONL, a folder or ZIP. Move connection profiles between installations with password-encrypted imports and exports.
+- **Make yourself at home.** English or Italian, light or dark, with keyboard navigation and a resizable resource list.
 
-After installing dependencies, start Docker and run this in a separate terminal:
+## Install
+
+Download a package from [GitHub Releases](https://github.com/davidemaggi/QueueCumber/releases/latest). **You don't need Node.js, pnpm or Docker to run the packaged app.**
+
+| System | Recommended 1.0.1 download | How to install |
+| --- | --- | --- |
+| Windows x64 | [Signed installer](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-win-x64-signed-setup.exe) | Run the installer, then open QueueCumber. |
+| macOS, Apple silicon | [DMG](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-mac-arm64-unsigned.dmg) | Open the DMG and drag QueueCumber into Applications. |
+| Debian / Ubuntu, x64 | [DEB](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-linux-amd64-unsigned.deb) | Install with your package manager; see below. |
+| Other Linux desktops, x64 | [AppImage](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-linux-x86_64-unsigned.AppImage) | Make it executable, then run it; see below. |
+
+Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
+
+Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Homebrew, WinGet and Chocolatey are planned; there are no registry install commands yet. Updates are manual for now.
+
+### Windows signatures
+
+Choose the files containing **`-signed`**. Their application and installer signatures were verified with a timestamp and publisher **Open Source Developer Davide Maggi**; the ZIP contains the same verified application executable. Unsigned variants are explicitly named `-unsigned`.
+
+Windows may still show a reputation warning for a signed app. Check the file's **Properties → Digital Signatures** and [verify the download](#check-your-download) before deciding to run it. Signing isn't a promise that SmartScreen will stay quiet.
+
+### Opening the app on macOS
+
+The macOS build has an ad-hoc integrity signature, but no Apple Developer ID or notarization. If macOS blocks it because the developer can't be verified, first check the download and its source. If you choose to open it, try launching it once, then use **System Settings → Privacy & Security → Open Anyway** and confirm. See [Apple's instructions](https://support.apple.com/en-us/102445).
+
+### Linux packages
+
+Run these commands from the directory containing your download.
+
+Debian / Ubuntu:
+
+```sh
+sudo apt install ./QueueCumber-1.0.1-linux-amd64-unsigned.deb
+```
+
+AppImage:
+
+```sh
+chmod +x QueueCumber-1.0.1-linux-x86_64-unsigned.AppImage
+./QueueCumber-1.0.1-linux-x86_64-unsigned.AppImage
+```
+
+AppImage needs a compatible desktop and FUSE support. If that isn't available, use the DEB or tar.gz:
+
+```sh
+tar -xzf QueueCumber-1.0.1-linux-x64-unsigned.tar.gz
+./QueueCumber-1.0.1-linux-x64-unsigned/queuecumber
+```
+
+Runtime libraries, tray support, keyrings and Chromium sandbox requirements depend on your distribution. See the [field guide](docs/USER_GUIDE.md) for troubleshooting; keep the sandbox enabled.
+
+### Check your download
+
+Each release includes two SHA-256 manifests: **`SHA256SUMS-signed-windows-x64.txt`** for the signed Windows files, and **`SHA256SUMS.txt`** for all unsigned files. Download the appropriate manifest alongside your package.
+
+On Windows, hash the downloaded file and compare the value with its exact filename in the signed manifest:
+
+```powershell
+Get-FileHash .\QueueCumber-1.0.1-win-x64-signed-setup.exe -Algorithm SHA256
+Get-Content .\SHA256SUMS-signed-windows-x64.txt
+```
+
+On macOS, compare the DMG's hash with its line in `SHA256SUMS.txt`:
+
+```sh
+shasum -a 256 QueueCumber-1.0.1-mac-arm64-unsigned.dmg
+cat SHA256SUMS.txt
+```
+
+On Linux, check the unsigned packages you've downloaded:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS.txt
+```
+
+Stop if a hash differs. Checksums detect a mismatched download; they don't replace publisher-signature verification.
+
+## Your first capture
+
+1. Open **Add connection**, choose RabbitMQ or Kafka, and enter your broker details. For RabbitMQ, supply both AMQP and management hosts/ports, the virtual host, then username and password. Use TLS for remote brokers.
+2. Save and test the connection. Search the resource list or filter by type and known message count.
+3. Select a destination. For a queue, review the bindings to mirror; for a stream or Kafka topic, choose starting positions and partitions where applicable. Click **Start capture**.
+4. Select a message to inspect its headers and body. **Stop** keeps the history; **Start** reuses it. Enable background capture in Settings if you want closing the window to keep it running.
+
+RabbitMQ queue inspection sees **newly routed messages**, not messages already waiting in the application queue. It creates its own temporary queue and bindings, which requires broker permissions. The implicit default-exchange route can't be mirrored. Streams read their logs; Kafka reads partitions without joining a consumer group or committing offsets. QueueCumber 1.x offers no publishing, purging or editing of application resources.
+
+The [RabbitMQ permission recipe](docs/RABBITMQ.md), [Kafka guide](docs/KAFKA.md) and [field guide](docs/USER_GUIDE.md) cover authentication, reconnects and the less cucumber-shaped edge cases.
+
+### No broker handy? Try demo traffic
+
+For this optional source-checkout demo, you need the [development setup](#build-it-yourself) and Docker. Run this in a separate terminal:
 
 ```sh
 pnpm demo
 ```
 
-It starts the local test brokers, creates sample destinations and publishes synthetic JSON once per second. No real account needed. Add a RabbitMQ connection using the default **Guided setup**:
+It starts disposable local RabbitMQ/Kafka brokers, creates sample destinations and publishes synthetic JSON once per second. Add a RabbitMQ connection with these values:
 
 | Field | Demo value |
 | --- | --- |
-| AMQP host | `127.0.0.1` |
-| AMQP port | `25672` |
-| Management host | `127.0.0.1` |
-| Management port | `25673` |
+| AMQP host / port | `127.0.0.1` / `25672` |
+| Management host / port | `127.0.0.1` / `25673` |
 | Virtual host | `/` |
-| Username | `cucumber` |
-| Password | `local-test-only` |
+| Username / password | `cucumber` / `local-test-only` |
 
-Turn off both TLS checkboxes and allow unencrypted transport for this loopback fixture, choose **Next: credentials**, enter the username/password and save. The saved connection is selected automatically. Search for **demo.events**, select the stream, choose **Beginning (first retained message)** and **Start capture**. Click a message to inspect its headers and JSON.
+Turn off both TLS checkboxes and allow unencrypted transport for this loopback fixture. Choose **Next: credentials**, save, select the **demo.events** stream, choose **Beginning (first retained message)** and start capture.
 
-To try a queue instead, select **demo.orders**, review the `demo.routes` → `orders.*` binding, leave the wanted route checked and start capture. Keep the publisher running: queue observation sees new traffic, not the queue's backlog. `demo.audit` receives all `demo.routes` keys; the publisher alternates `orders.created` and `orders.updated`.
+For a queue, select **demo.orders**, keep the `demo.routes` → `orders.*` binding checked and start capture while the publisher runs. **demo.audit** receives every key from that exchange. Kafka's two-partition **demo.events** topic is available at `localhost:29092`, with TLS off, explicit plain-transport consent and no SASL.
 
-Kafka is available at `localhost:29092`, with TLS off, explicit unencrypted-transport consent and no SASL. Select the two-partition **demo.events** topic and choose each partition's beginning to replay samples.
+Ctrl+C stops the publisher. `pnpm demo:seed` adds five sample events; `pnpm demo:stop` stops the disposable brokers, also used by integration tests.
 
-Ctrl+C stops the publisher but leaves the brokers running. `pnpm demo:seed` adds five sample events without continuing live traffic. `pnpm demo:stop` stops the `queuecumber-test` Compose project, which is also used by integration tests. Demo queues and logs have finite retention; this is disposable local data.
+## Your data stays local
 
-## Local by design
+QueueCumber connects from your computer and needs no QueueCumber server. Private profiles and captured content are encrypted at rest with an OS-protected key. If secure OS storage isn't available, session-only mode keeps profiles in memory and uses a temporary encrypted capture directory.
 
-The app connects from your computer; it needs no QueueCumber server. Private connection records use authenticated encryption with an OS-protected key. Captured sensitive content is encrypted in a local SQLite database. If secure OS storage is unavailable, profiles remain in memory and captures use a temporary encrypted session directory.
+Connection transfers use password-based scrypt and AES-256-GCM encryption. Secrets are excluded by default; include them explicitly or fill them in after import. Imports don't connect automatically. Use configuration export when moving machines: copying an OS-bound vault isn't a portable backup.
 
-Connection transfers encrypt the entire file with scrypt and AES-256-GCM. Secrets are excluded by default; include them explicitly or re-enter full endpoints and credentials with **Edit connection** after importing. Capture budgets, appearance and OS keys stay machine-local. Imports never connect automatically.
+Message dumps are **plaintext**, including headers and payloads. Choose their destination accordingly. A forced exit in session-only mode can leave partial plaintext exports; see [data formats and recovery](docs/DATA_FORMATS.md). Report security issues privately to [me@davidemaggi.dev](mailto:me@davidemaggi.dev); see [SECURITY.md](SECURITY.md).
 
-Message dumps contain **plaintext private data**, including headers and payloads. Choose their destination accordingly. Cancel and Quit clean partial files; forced termination in session-only mode can leave `.queuecumber-export-*` files beside the selected destination. Secure mode uses an encrypted recovery journal to clean interrupted exports on the next launch. See [data formats and recovery](docs/DATA_FORMATS.md).
+## Limits worth knowing
 
-Prepared source is not a security certification. Desktop tests deliberately use session-only storage; real key-store behavior still needs checks on every target OS.
+Defaults are a 64 MiB cache, 2 GiB disk quota, seven-day retention and 16 MiB retained payloads. Configure these budgets and optional rate limits in Settings. The cache budget isn't a cap on Electron's total memory usage; oversized broker deliveries may allocate memory before omission.
 
-## Follow along
+There can be four concurrent captures and 100 retained histories. Starting another history at that limit removes the oldest stopped/failed one. ZIP exports are capped at 10,000 messages; JSONL and folder exports support larger captures. Retention can remove records during export, and observation interruptions can leave gaps. See the [field guide](docs/USER_GUIDE.md) and [validation record](docs/VALIDATION.md) for the details.
 
-| Document | What's inside |
-| --- | --- |
-| [Field guide](docs/USER_GUIDE.md) | Installation, keyboard use, permissions and troubleshooting |
-| [Acceptance checklist](docs/ACCEPTANCE.md) | Maintainer tests before public release |
-| [Security](SECURITY.md) | Trust boundaries and private vulnerability reporting |
-| [Roadmap](ROADMAP.md) | Milestones and release gates |
-| [Project proposal](docs/PROJECT_PLAN.md) | Architecture, trade-offs and verification |
-| [Product context](PRODUCT.md) | Confirmed requirements and open decisions |
-| [Agent conventions](AGENTS.md) | How AI-assisted work is designed and checked |
+## Build it yourself
 
-Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Version 1.0.0 downloads will be unsigned. From 1.0.1, optional self-hosted Windows signing adds separately labeled signed downloads when its runner is available; unsigned releases remain independent. Install commands will appear when those packages actually exist.
-
-## Next patch: 1.0.1
-
-The local patch also improves inspection: Start/Stop reuses capture history, guided connections take host/port, editing preserves saved values, resource names have tooltips and a resizable pane, and kind/message-count filters help find destinations. Browse distinct routing keys with their exchange/queue context, select individual bindings or add a direct/topic route manually. Messages can be paged newest or oldest first.
-
-Optional Windows signing is being prepared for the maintainer's `codesign` runner, using `CODESIGN_CERT_SUBJECT` and `CODESIGN_TIMESTAMP_URL`. The patch has no character name. Unsigned downloads remain available independently; signed variants appear only after real signature verification. Version 1.0.1 has not been built or published remotely yet. See [runner setup and release checks](docs/RELEASING.md#optional-signed-windows-path-from-101).
-
-## Contributing
-
-For now, the most useful contributions are broker edge cases and reproducible usage scenarios. Share sanitized examples, never real credentials or private messages. Start with the local development commands below.
-
-## License
-
-[MIT](LICENSE), copyright 2026 Davide Maggi.
-
-## Local development
-
-Use Node.js 22.18+ and the pinned **pnpm 12.15.0**. If using Corepack with Node 22.18, Corepack 0.34.6 supports this pnpm entry point (newer Corepack releases can require newer Node versions):
+Use Node.js **22.18+** and the pinned **pnpm 12.15.0**. With Node 22.18, Corepack **0.34.6** supports this pnpm entry point:
 
 ```sh
+git clone https://github.com/davidemaggi/QueueCumber.git
+cd QueueCumber
+git switch development
 npm install --global corepack@0.34.6
 corepack enable pnpm
 corepack install
@@ -108,25 +171,16 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-If Corepack reports a missing `bin/pnpm.cjs`, update Corepack and refresh its downloaded package-manager cache with `corepack cache clean`, then `corepack install`; the old cache can retain the obsolete entry point. Cache cleanup requires package managers to be downloaded again. Keep `ELECTRON_RUN_AS_NODE` unset when launching the desktop app. On macOS/Linux, use `unset ELECTRON_RUN_AS_NODE` if your IDE exports it; on PowerShell, use `Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue`.
+If Corepack reports a missing `bin/pnpm.cjs`, update Corepack, run `corepack cache clean` and `corepack install`, then retry. This refreshes downloaded package managers. Keep `ELECTRON_RUN_AS_NODE` unset when launching the desktop app; some IDEs export it.
 
-Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
+```sh
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+```
 
-Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Hosted unsigned builds succeeded for all three targets; the maintainer confirmed manual installation acceptance before publication. Exact OS-version and real-environment certification is not implied. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
-
-## Kafka
-
-Choose Kafka in the connection form, supply bootstrap brokers, verified TLS/custom CA and optional SASL PLAIN or SCRAM credentials. Select explicit partitions and independent starting positions. Offsets stay local as exact decimal strings; keys, repeated binary headers and tombstones survive capture and export. Reads include uncommitted transactional records. See [Kafka behavior and tested support matrix](docs/KAFKA.md) for permissions, retention, reconnects and limitations. Real hosted accounts are not yet certified.
-
-## RabbitMQ permissions and test brokers
-
-Guided setup accepts an AMQP endpoint, separate management base URL and virtual host, then asks for username/password. **Connection URL (advanced)** still accepts a full AMQP URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication uses the same username/password as AMQP. Cloud-specific IAM and client-certificate authentication are outside the tested authentication matrix.
-
-The account needs management API visibility for the vhost and relevant queues/exchanges, configure/read permission for `queuecumber.*` observation queues, and binding permissions for the source exchanges. RabbitMQ binding operations require write permission on the destination queue and read permission on the source exchange. Validate these regex permissions with your administrator; monitoring-only accounts cannot create observation resources.
-
-Stream inspection additionally needs read permission on the selected stream. It reads the stream log directly after checking its type; acknowledgements provide stream flow control and do not delete its messages. No application consumer-group position is written. Classic and quorum application queues always use observation copies.
-
-For disposable integration tests:
+For broker integration and desktop tests, start the synthetic fixtures first:
 
 ```sh
 docker compose -p queuecumber-test -f compose.test.yml up -d --wait
@@ -136,22 +190,28 @@ pnpm test:e2e
 docker compose -p queuecumber-test -f compose.test.yml down
 ```
 
-This fixture uses synthetic credentials and binds only loopback ports 25672/25673 (RabbitMQ) and 29092/29093/29094 (Kafka plain/TLS/SASL). Kafka startup provisions synthetic SCRAM credentials automatically. The TLS fixtures under `tests/fixtures/tls/` are public test-only keys/certificates; never deploy or trust them outside tests.
+Fixtures bind loopback ports only and contain public test-only credentials and certificates. Never deploy them as real infrastructure.
 
-## Current limits
+All distribution builds run through GitHub Actions after a PR merges into `main`. Hosted runners build unsigned packages; an available self-hosted runner adds verified signed Windows variants. See [release tooling](docs/RELEASING.md). Source checks and package hashes are verified; detailed clean-machine, cloud-provider and OS-keystore results remain explicit in [acceptance](docs/ACCEPTANCE.md) and [validation](docs/VALIDATION.md).
 
-Capture cache defaults to 64 MiB, disk quota to 2 GiB, retention to seven days and retained payloads to 16 MiB. The UI preview accepts 256 KiB by default, with a separate 64 KiB per-detail IPC ceiling. Optional message-rate admission drops are counted. Budgets stay finite; a session can narrow the global settings. Four concurrent captures and 100 retained session entries are the current safety limits. Starting a capture at the history limit removes the oldest stopped/failed session and its retained data.
+## Contributing and what's next
 
-The RAM setting is a cache budget, not a cap on Electron's total RSS. Broker clients may allocate oversized deliveries before the app can omit them. Disk storage reserves headroom for SQLite pages/journaling and may evict before reaching the displayed quota. Saving limits stops active captures and asks for confirmation when effects require it.
+Broker edge cases, reproducible bugs and useful ideas are welcome. Open an [issue](https://github.com/davidemaggi/QueueCumber/issues) with sanitized examples, branch off `development`, and keep the relevant checks green. Leave real credentials and private messages out of reports.
 
-Exports read one retained record at a time, with one active export job. The start snapshot fixes the upper record ID; it does not pin records against retention. The final manifest reports records removed during export. ZIP is capped at 10,000 messages to bound archive metadata; JSONL and folder dumps handle larger captures. These are local captures, never a dump of an application's queued backlog.
+Homebrew, WinGet and Chocolatey distribution and remaining platform acceptance are tracked in the [roadmap](ROADMAP.md). Product decisions live in [PRODUCT.md](PRODUCT.md), architecture in the [project plan](docs/PROJECT_PLAN.md), and AI workflow conventions in [AGENTS.md](AGENTS.md).
 
-Stream offsets accept exact JavaScript integers from zero through 9,007,199,254,740,991. A retained-prefix check can clamp an unavailable old position, with a visible notice. Future offsets may wait for more data on RabbitMQ 4.2 and remain marked unverified until a delivery confirms the position. Gaps count interruptions/discontinuities, not an exact number of lost messages.
+## Versions
 
-In secure mode, encrypted session history and retained records can be reopened after restart. Restored sessions stay stopped; interrupted captures show a gap and require an explicit new capture. Retained counts and timestamps show the available range. Closing quits by default. Enable background capture in Settings to keep subscriptions running; use Quit QueueCumber to stop and exit. The tray shows up to 16 session entries, prioritizing active captures, and refreshes independently of the hidden renderer. On Linux or when tray creation fails, closing keeps an accessible minimized window. Desktop tray availability and placement depend on the OS/environment. Reconnects recreate the ephemeral queue and expose gaps rather than promise replay. Broker overflow can produce gaps that cannot be counted precisely.
+[SemVer](https://semver.org/), with Star Wars character names for major/minor releases: major 1 uses A, major 2 uses B, and so on. **1.0.0 is Ackbar.** Patch releases such as 1.0.1 don't get a character name.
 
-## Verification status
+## License
 
-Local checks cover macOS desktop startup and the full RabbitMQ workflow, with RabbitMQ 4.2 and Apache Kafka 4.2.0 in Docker. Unit/integration tests exercise encryption, tampering, restart recovery, complete raw-byte paging, mixed-size saturation, scoped budgets, routing types, partial setup cleanup, TLS validation, permission denial, pagination and reconnects. See [local validation notes](docs/VALIDATION.md) for measured memory behavior and review outcomes. Hosted Windows/macOS/Linux source checks and unsigned packaging passed for the first draft; all seven downloaded packages match their checksums. The packaged macOS archive also passed a local session-only capture smoke test. Optional self-hosted Windows signing, real cloud environments and real OS-keystore behavior across all platforms are still pending.
+[MIT](LICENSE), copyright 2026 Davide Maggi. Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt); other dependencies retain their own licenses.
 
-Public Sans is bundled under the [SIL Open Font License](src/renderer/public/licenses/PublicSans-OFL.txt). Other dependencies keep their own licenses.
+---
+
+<div align="center">
+
+_A fresh look at your queues._ 🥒
+
+</div>
