@@ -12,6 +12,8 @@ The first hosted Windows run exposed missing Git line-ending attributes: checkou
 
 A subsequent Windows PR job exceeded the 15-second test timeout during the 200-write encrypted SQLite eviction workload; the parallel push job passed it. This test exercises FULL-synchronous disk writes rather than a throughput guarantee. Its timeout is now scoped to 60 seconds, with all encryption, cache, disk and eviction assertions unchanged; the rest of the suite retains its existing timeout.
 
+The first release PR passed hosted Checks on Windows, macOS and Linux and merged as `08675f4`. The first distribution run was cancelled before creating a release/tag after verification of the downloaded macOS ZIP failed: electron-builder skipped ad-hoc signing because the trigger was a merged PR. The corrected workflow enables the configured ad-hoc identity for the validated macOS merge build and adds a mandatory codesign integrity check before artifact upload. Do not use artifacts from the cancelled run.
+
 Checked on 2026-10-22 on macOS arm64 with Node 22.18, Electron 45 and a disposable RabbitMQ 4.2 management container. This is local alpha evidence, not a cross-platform release claim.
 
 The original MVP baseline passed 22 unit tests, 13 real-broker integration tests and two native Electron end-to-end tests. Later milestone results appear below. Type checking, ESLint, formatting and the production build passed. The unsigned macOS application bundle started its capture utility successfully. Desktop tests use isolated session-only storage; they do not certify OS-keystore persistence.

@@ -72,7 +72,14 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - name: Package unsigned distribution
+        env:
+          # The source is a validated main merge, not an unmerged PR head.
+          # electron-builder otherwise skips macOS ad-hoc signing for this event.
+          CSC_FOR_PULL_REQUEST: ${{ matrix.platform == 'mac' && 'true' || 'false' }}
         run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --config electron-builder.unsigned.mjs --publish never
+      - name: Verify macOS ad-hoc bundle integrity
+        if: matrix.platform == 'mac'
+        run: codesign --verify --deep --strict release/mac-arm64/QueueCumber.app
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: packages-${{ matrix.platform }}-${{ matrix.arch }}-unsigned
