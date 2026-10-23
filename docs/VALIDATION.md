@@ -8,6 +8,8 @@ All eight native Electron tests passed. Native verification covers saving separa
 
 The demo publisher is a developer-only fixture with fixed loopback targets and synthetic credentials, outside the shipped app. Queue/log retention is bounded. These checks do not certify OS-backed persistence, clean-machine installation, cloud environments or Windows/Linux desktop behavior; the acceptance checklist remains the record for those checks.
 
+The first hosted Windows run exposed missing Git line-ending attributes: checkout converted source to CRLF and Prettier rejected 103 files. The repository now specifies LF for automatically detected text files, preserving binary assets. Hosted verification on the corrected commit is recorded through the release PR checks.
+
 Checked on 2026-10-22 on macOS arm64 with Node 22.18, Electron 45 and a disposable RabbitMQ 4.2 management container. This is local alpha evidence, not a cross-platform release claim.
 
 The original MVP baseline passed 22 unit tests, 13 real-broker integration tests and two native Electron end-to-end tests. Later milestone results appear below. Type checking, ESLint, formatting and the production build passed. The unsigned macOS application bundle started its capture utility successfully. Desktop tests use isolated session-only storage; they do not certify OS-keystore persistence.
