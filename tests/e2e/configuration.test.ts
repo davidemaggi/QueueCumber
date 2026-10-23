@@ -104,6 +104,7 @@ test('exports encrypted connections, previews conflicts and imports copies throu
     await page
       .getByRole('button', { name: 'Edit connection', exact: true })
       .click()
+    await page.getByLabel('Connection setup').selectOption('url')
     await expect(page.getByLabel('AMQP URL', { exact: true })).toHaveValue('')
     await page
       .getByLabel('Connection name', { exact: true })

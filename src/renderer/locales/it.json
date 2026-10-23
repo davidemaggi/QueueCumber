@@ -39,7 +39,7 @@
   "stopCapture": "Ferma acquisizione",
   "messages": "Messaggi",
   "noMessages": "In attesa di nuovo traffico.",
-  "noCapture": "Avvia un’acquisizione per vedere i messaggi in arrivo.",
+  "noCapture": "Scegli una risorsa per controllare la copertura e avviare l’acquisizione.",
   "messageDetail": "Dettaglio messaggio",
   "chooseMessage": "Seleziona un messaggio per ispezionarne contenuto e proprietà.",
   "payload": "Contenuto",
@@ -215,5 +215,16 @@
   "kafkaTopologyChanged": "Le partizioni sono cambiate. Questa acquisizione mantiene la selezione originale; avviane una nuova per includere le nuove partizioni.",
   "kafkaHint": "Legge partizioni con offset locali, senza consumer group né commit sul broker. Include record transazionali non confermati.",
   "kafkaTombstone": "Tombstone (valore nullo)",
-  "kafkaRetention": "Retention e compattazione del broker determinano gli offset disponibili. La ripresa usa posizioni locali; le interruzioni non contano esattamente i messaggi persi."
+  "kafkaRetention": "Retention e compattazione del broker determinano gli offset disponibili. La ripresa usa posizioni locali; le interruzioni non contano esattamente i messaggi persi.",
+  "connectionSetup": "Configurazione connessione",
+  "guidedSetup": "Configurazione guidata",
+  "connectionUrlSetup": "URL di connessione (avanzato)",
+  "guidedEndpoints": "Inserisci gli endpoint senza credenziali e scegli il virtual host.",
+  "guidedCredentials": "Ora aggiungi le credenziali. L’URL di connessione viene composto e codificato automaticamente.",
+  "amqpEndpoint": "Endpoint AMQP",
+  "virtualHost": "Virtual host",
+  "nextCredentials": "Avanti: credenziali",
+  "backToEndpoints": "Torna agli endpoint",
+  "connectionFieldsInvalid": "Controlla i campi e il consenso al trasporto non cifrato. L’endpoint AMQP guidato deve contenere solo schema, host e porta; inserisci credenziali e vhost separatamente.",
+  "captureGuide": "Seleziona a sinistra una coda, uno stream o un topic. Controlla le rotte o gli offset iniziali, poi scegli Avvia acquisizione. Per messaggi di prova, segui la guida demo locale nel README."
 }

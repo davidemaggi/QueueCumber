@@ -5,6 +5,7 @@ Prepared release notes for maintainer review. No public release is implied by th
 A little less queue confusion. Ackbar brings RabbitMQ and Kafka inspection to one local desktop app.
 
 - Encrypted connection profiles, independent endpoint tests and password-protected configuration transfer.
+- Guided RabbitMQ setup with separate endpoints and credentials, plus local RabbitMQ/Kafka demo traffic for a first capture.
 - RabbitMQ observation queues that mirror supported routes without consuming application queues, plus stream positioning.
 - Kafka topic/partition discovery and independent 64-bit local offsets, with TLS/SASL support and no consumer-group commits.
 - Bounded encrypted captures, visible gaps/omissions/retention, structured headers and original bytes alongside JSON previews.

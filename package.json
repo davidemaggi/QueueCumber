@@ -20,7 +20,10 @@
     "package": "pnpm build && electron-builder --dir",
     "format": "prettier --write src tests scripts electron-builder.unsigned.mjs electron-builder.self-hosted.mjs",
     "format:check": "prettier --check src tests scripts electron-builder.unsigned.mjs electron-builder.self-hosted.mjs",
-    "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.unsigned.mjs --publish never"
+    "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.unsigned.mjs --publish never",
+    "demo": "node scripts/demo.mjs",
+    "demo:seed": "node scripts/demo.mjs --seed-only",
+    "demo:stop": "docker compose -p queuecumber-test -f compose.test.yml down"
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.3.0",

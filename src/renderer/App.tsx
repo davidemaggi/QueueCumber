@@ -598,7 +598,19 @@ export default function App() {
             onClose={() => setForm(false)}
             onSave={async (input) => {
               await run(async () => {
-                await api.saveConnection(input)
+                const saved = await api.saveConnection(input)
+                selection.current++
+                messageSelection.current++
+                setConnection(saved.id)
+                setKind('all')
+                setResource(null)
+                setSessionId('')
+                setRows([])
+                setMessage(null)
+                setResources([])
+                setQuery('')
+                setResourcePage(1)
+                setResourceRevision((value) => value + 1)
                 await refresh()
                 setForm(false)
               })
@@ -758,6 +770,7 @@ export default function App() {
               ) : null}
             </section>
             <div className="capture-workspace">
+              {!resource ? <p className="notice">{t('captureGuide')}</p> : null}
               <section
                 className={
                   'capture-heading' +

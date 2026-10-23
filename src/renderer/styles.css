@@ -1061,3 +1061,7 @@ pre {
     overflow: auto;
   }
 }
+
+.connection-endpoint {
+  overflow-wrap: anywhere;
+}

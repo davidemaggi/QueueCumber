@@ -28,6 +28,32 @@ For RabbitMQ queue inspection, QueueCumber will copy supported routing bindings 
 
 This needs permission to create temporary queues and bindings. Version 1.0 offers no publishing, purging or editing of application resources. See the [capture contract](docs/PROJECT_PLAN.md#rabbitmq-capture-contract) for the precise boundaries.
 
+## Try a capture with local demo traffic
+
+After installing dependencies, start Docker and run this in a separate terminal:
+
+```sh
+pnpm demo
+```
+
+It starts the local test brokers, creates sample destinations and publishes synthetic JSON once per second. No real account needed. Add a RabbitMQ connection using the default **Guided setup**:
+
+| Field | Demo value |
+| --- | --- |
+| AMQP endpoint | `amqp://127.0.0.1:25672` |
+| Management URL | `http://127.0.0.1:25673` |
+| Virtual host | `/` |
+| Username | `cucumber` |
+| Password | `local-test-only` |
+
+Allow unencrypted transport for this loopback fixture, choose **Next: credentials**, enter the username/password and save. The saved connection is selected automatically. Search for **demo.events**, select the stream, choose **Beginning (first retained message)** and **Start capture**. Click a message to inspect its headers and JSON.
+
+To try a queue instead, select **demo.orders**, review the `demo.routes` → `orders.*` binding, accept **Capture supported routes only** and start capture. Keep the publisher running: queue observation sees new traffic, not the queue's backlog. `demo.audit` receives all `demo.routes` keys; the publisher alternates `orders.created` and `orders.updated`.
+
+Kafka is available at `localhost:29092`, with TLS off, explicit unencrypted-transport consent and no SASL. Select the two-partition **demo.events** topic and choose each partition's beginning to replay samples.
+
+Ctrl+C stops the publisher but leaves the brokers running. `pnpm demo:seed` adds five sample events without continuing live traffic. `pnpm demo:stop` stops the `queuecumber-test` Compose project, which is also used by integration tests. Demo queues and logs have finite retention; this is disposable local data.
+
 ## Local by design
 
 The app connects from your computer; it needs no QueueCumber server. Private connection records use authenticated encryption with an OS-protected key. Captured sensitive content is encrypted in a local SQLite database. If secure OS storage is unavailable, profiles remain in memory and captures use a temporary encrypted session directory.
@@ -84,7 +110,7 @@ Choose Kafka in the connection form, supply bootstrap brokers, verified TLS/cust
 
 ## RabbitMQ permissions and test brokers
 
-Supply an AMQP URL and a separate management base URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication currently uses the username/password from the AMQP URL. Cloud-specific IAM and client-certificate authentication are outside the tested authentication matrix.
+Guided setup accepts an AMQP endpoint, separate management base URL and virtual host, then asks for username/password. **Connection URL (advanced)** still accepts a full AMQP URL. Prefer `amqps://` and HTTPS; plain transport requires explicit consent. A custom PEM CA is supported. Management authentication uses the same username/password as AMQP. Cloud-specific IAM and client-certificate authentication are outside the tested authentication matrix.
 
 The account needs management API visibility for the vhost and relevant queues/exchanges, configure/read permission for `queuecumber.*` observation queues, and binding permissions for the source exchanges. RabbitMQ binding operations require write permission on the destination queue and read permission on the source exchange. Validate these regex permissions with your administrator; monitoring-only accounts cannot create observation resources.
 

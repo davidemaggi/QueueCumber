@@ -39,7 +39,7 @@
   "stopCapture": "Stop capture",
   "messages": "Messages",
   "noMessages": "Waiting for new traffic.",
-  "noCapture": "Start a capture to see incoming messages here.",
+  "noCapture": "Choose a resource above to review coverage and start capture.",
   "messageDetail": "Message detail",
   "chooseMessage": "Select a message to inspect its payload and properties.",
   "payload": "Payload",
@@ -215,5 +215,16 @@
   "kafkaTopologyChanged": "Partition set changed. This capture keeps its original selection; start a new capture to include new partitions.",
   "kafkaHint": "Read partitions with local offsets, without joining or committing to consumer groups. Includes uncommitted transactional records.",
   "kafkaTombstone": "Tombstone (null value)",
-  "kafkaRetention": "Broker retention and compaction control available offsets. Reconnect resumes locally; gaps are not exact lost-message counts."
+  "kafkaRetention": "Broker retention and compaction control available offsets. Reconnect resumes locally; gaps are not exact lost-message counts.",
+  "connectionSetup": "Connection setup",
+  "guidedSetup": "Guided setup",
+  "connectionUrlSetup": "Connection URL (advanced)",
+  "guidedEndpoints": "First, enter endpoints without credentials and choose the virtual host.",
+  "guidedCredentials": "Now add credentials. The connection URL is assembled and encoded for you.",
+  "amqpEndpoint": "AMQP endpoint",
+  "virtualHost": "Virtual host",
+  "nextCredentials": "Next: credentials",
+  "backToEndpoints": "Back to endpoints",
+  "connectionFieldsInvalid": "Check the fields and transport consent. Guided AMQP endpoints must contain only scheme, host and port; enter credentials and vhost separately.",
+  "captureGuide": "Select a queue, stream or topic on the left. Review its routes or starting offsets, then choose Start capture. For sample traffic, follow the local demo guide in the README."
 }

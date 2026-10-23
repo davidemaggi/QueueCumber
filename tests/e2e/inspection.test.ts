@@ -27,6 +27,7 @@ test('saves a session-only connection, captures a real message and changes theme
       .first()
       .click()
     await page.getByLabel('Connection name').fill('Local test')
+    await page.getByLabel('Connection setup').selectOption('url')
     await page.getByLabel('AMQP URL').fill(profile.protocolUrl)
     await page.getByLabel('Management URL').fill(profile.managementUrl)
     await page.getByLabel('Allow unencrypted transport').check()

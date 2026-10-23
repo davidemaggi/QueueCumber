@@ -1,5 +1,13 @@
 # Local validation — QueueCumber
 
+## Guided connections and local demo — 2026-10-23
+
+The new two-step RabbitMQ form and advanced URL mode were checked on macOS arm64 with pnpm 12.15.0. The unit suite passed 83 tests. All 32 real-broker integration tests passed against the local RabbitMQ/Kafka 4.2 fixtures, including reusable demo topology, future queue observation, RabbitMQ stream replay and both Kafka partitions. Type checking, ESLint, formatting, build and dependency audit passed; the audit reported no known vulnerabilities in this snapshot.
+
+All eight native Electron tests passed. Native verification covers saving separate credentials, automatic selection/discovery, stream positioning and capture of seeded JSON. Actual light English, dark Italian and 1000 px narrow form screenshots were inspected. Stored credentials remain absent from the edit form. An independent final review found one virtual-host normalization bug: guided input `.` or `..` could silently target `/`. A new test reproduced it, then passed after explicit rejection; the full unit suite remained green. No other actionable review findings were reported.
+
+The demo publisher is a developer-only fixture with fixed loopback targets and synthetic credentials, outside the shipped app. Queue/log retention is bounded. These checks do not certify OS-backed persistence, clean-machine installation, cloud environments or Windows/Linux desktop behavior; the acceptance checklist remains the record for those checks.
+
 Checked on 2026-10-22 on macOS arm64 with Node 22.18, Electron 45 and a disposable RabbitMQ 4.2 management container. This is local alpha evidence, not a cross-platform release claim.
 
 The original MVP baseline passed 22 unit tests, 13 real-broker integration tests and two native Electron end-to-end tests. Later milestone results appear below. Type checking, ESLint, formatting and the production build passed. The unsigned macOS application bundle started its capture utility successfully. Desktop tests use isolated session-only storage; they do not certify OS-keystore persistence.

@@ -14,15 +14,21 @@ Homebrew, WinGet and Chocolatey will follow verified release assets and registry
 
 ## First connection
 
-Choose Add connection, select RabbitMQ or Kafka, and supply the endpoints. Use verified TLS for remote brokers. Custom PEM CAs are supported; never turn off certificate validation. Plain transport requires explicit consent. Save, select the connection, then test it. Stored secrets are not prefilled when editing: re-enter the complete settings.
+Choose Add connection, select RabbitMQ or Kafka, and supply the endpoints. RabbitMQ defaults to a two-step guided form: enter a credential-free AMQP endpoint (for example `amqps://broker:5671`), management base URL and virtual host, then choose **Next: credentials** and enter username/password. Back preserves the draft. **Connection URL (advanced)** accepts a full AMQP URL instead. Kafka has separate bootstrap brokers and optional SASL credentials.
+
+Use verified TLS for remote brokers. Custom PEM CAs are supported; never turn off certificate validation. Plain transport requires explicit consent. Saving manually selects the connection and loads its resources; it does not start a capture. Test its endpoints using the connection controls. Stored secrets are not prefilled when editing: re-enter the complete settings. Imports remain disconnected until explicitly selected.
 
 Secure mode encrypts profiles and retained history with an OS-protected key. Session-only mode keeps profiles in memory and encrypted captures in a temporary directory. It is intentional when no secure backend is available. Check your OS keyring is unlocked before expecting persistence; a corrupt/locked existing vault requires recovery, not deletion.
 
-For RabbitMQ, AMQP and management URLs are separate. The management URL is the base before `/api`; use the AMQP user's credentials for both. The vhost comes from the AMQP path (`%2F` for `/`). See the [permission recipe](RABBITMQ.md). For Kafka, all bootstrap and metadata-advertised broker addresses must be reachable; see [authentication and permissions](KAFKA.md).
+For RabbitMQ, AMQP and management URLs are separate. The management URL is the base before `/api`; both use the same credentials. Guided setup encodes credentials and the virtual host for you. In advanced mode the vhost comes from the AMQP path (`%2F` for `/`). See the [permission recipe](RABBITMQ.md). For Kafka, all bootstrap and metadata-advertised broker addresses must be reachable; see [authentication and permissions](KAFKA.md).
+
+Dot-only virtual host names (`.` and `..`) are unsupported by guided setup because URL parsing normalizes them; the form rejects them instead of selecting the default virtual host.
 
 ## Capture and inspect
 
-Search broker resources, select a queue/stream/topic and review the capture scope. RabbitMQ queue capture copies supported bindings onto a temporary queue: it sees future routed traffic, never the selected queue's existing backlog. Default-exchange and unknown/distribution exchanges cannot be mirrored; accepting partial coverage can miss routes.
+Search broker resources on the left, select a queue/stream/topic, review its routes or starting positions, then choose **Start capture**. Selecting alone does not subscribe. For ready-made destinations and traffic, follow the README's [local demo](../README.md#try-a-capture-with-local-demo-traffic).
+
+RabbitMQ queue capture copies supported bindings onto a temporary queue: it sees future routed traffic, never the selected queue's existing backlog. Default-exchange and unknown/distribution exchanges cannot be mirrored; accepting partial coverage can miss routes.
 
 Streams offer beginning, live end or numeric offset. Kafka offers independent positions for up to 128 selected partitions, with exact decimal offsets and no group commits. Kafka reads include uncommitted transactional data. Retention and topology can invalidate positions; notices describe clamps and required restarts.
 
