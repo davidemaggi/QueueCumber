@@ -2,6 +2,7 @@ import { test, expect, _electron as electron } from '@playwright/test'
 import { mkdtemp, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { version } from '../../package.json'
 test('sandboxed desktop exposes only the narrow ready bridge', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'queuecumber-e2e-'))
   const env = { ...process.env }
@@ -29,7 +30,7 @@ test('sandboxed desktop exposes only the narrow ready bridge', async () => {
     expect(preferences.sandbox).toBe(true)
     expect(preferences.contextIsolation).toBe(true)
     expect(preferences.nodeIntegration).toBe(false)
-    await expect(page.locator('.sidebar-bottom')).toContainText('1.0.1')
+    await expect(page.locator('.sidebar-bottom')).toContainText(version)
     expect(
       await page.evaluate(() => window.open('https://example.test')),
     ).toBeNull()
