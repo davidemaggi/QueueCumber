@@ -1,0 +1,10 @@
+# Demo traffic and guided connections
+
+The maintainer requests usable demo destinations/traffic and connection setup without handwritten credential-bearing URLs. Implement inline in the existing approved architecture, preserving app read-only boundaries, saved-profile formats and security. Current unreleased metadata stays 1.0.0; no push/tag/publication.
+
+- [x] Add a default two-step RabbitMQ form (endpoint/management/vhost, then username/password), with explicit advanced URL mode, correct percent encoding, safe errors and no stored-secret prefill. Kafka retains its existing separate broker/auth fields. Cover special characters, invalid endpoint/userinfo, back navigation and advanced mode with RED→GREEN unit tests.
+- [x] Add a fixed local demo command using owned Compose fixtures and synthetic credentials only. Seed bounded RabbitMQ queues/stream with explicit topic bindings and a two-partition Kafka topic, then generate live JSON/header messages until Ctrl+C. No arbitrary broker target option or app publishing capability. Provide a separate explicit broker-stop command.
+- [x] Clarify save→select resource→review coverage/offset→Start capture guidance. Auto-select the saved connection without auto-connecting/capturing imported profiles; discard stale selection state. Localize English/Italian and retain light/dark styles.
+- [x] Prove fixture topology/idempotent restart/real capture and guided UI through native tests, update old advanced-mode callers, inspect actual light/dark/narrow renders. Update README/guide/roadmap/validation; run relevant checks and one independent final review with one required-fix pass.
+
+Boundaries: demo code is a developer fixture outside the app, not a broker administration feature. Only synthetic localhost fixture destinations receive messages. Editing connections still requires re-entering credentials. Observation sees future queue traffic; stream/Kafka beginning can replay seeded data. Manual clipboard entry/copy is not needed for stored credentials.

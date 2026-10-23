@@ -1,0 +1,124 @@
+name: Build release draft
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.event.pull_request.merge_commit_sha }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.tag.outputs.commit }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+      tag: ${{ steps.tag.outputs.tag }}
+      title: ${{ steps.tag.outputs.title }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+      - id: tag
+        env:
+          RELEASE_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+          RELEASE_CONTEXT: release-context.json
+        run: node scripts/validate-release.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-context
+          path: release-context.json
+          if-no-files-found: error
+          retention-days: 7
+  packages:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            arch: x64
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      CSC_LINK: ''
+      WIN_CSC_LINK: ''
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate.outputs.commit }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Package unsigned distribution
+        run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --config electron-builder.unsigned.mjs --publish never
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: packages-${{ matrix.platform }}-${{ matrix.arch }}-unsigned
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            release/*unsigned-setup.exe
+            release/*unsigned.zip
+            release/*unsigned.dmg
+            release/*unsigned.AppImage
+            release/*unsigned.deb
+            release/*unsigned.tar.gz
+  draft:
+    needs: [validate, packages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: packages-*
+          path: release-assets
+          merge-multiple: true
+      - run: node scripts/make-checksums.mjs release-assets
+      - name: Create draft only; never overwrite or publish an existing release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_TITLE: ${{ needs.validate.outputs.title }}
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+          EXPECTED_COMMIT: ${{ needs.validate.outputs.commit }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then echo "Release already exists; bump the version"; exit 1; fi
+          if gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            resolved="$(gh api "repos/${GH_REPO}/commits/${RELEASE_TAG}" --jq .sha)"
+            if [[ "$resolved" != "$EXPECTED_COMMIT" ]]; then echo "Release tag belongs to another commit"; exit 1; fi
+          fi
+          flags=()
+          if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Unsigned Windows x64, macOS arm64 and Linux x64 downloads. macOS uses ad-hoc signing only, without Developer ID or notarization. From 1.0.1, verified Windows signed variants may be added by the separate optional self-hosted workflow. Their absence means no signed variant was provided. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*

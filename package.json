@@ -1,0 +1,70 @@
+{
+  "name": "queuecumber",
+  "version": "1.0.0",
+  "description": "A local desktop inspector for messaging systems.",
+  "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "Davide Maggi",
+    "email": "me@davidemaggi.dev"
+  },
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "package": "pnpm build && electron-builder --dir",
+    "format": "prettier --write src tests scripts electron-builder.unsigned.mjs electron-builder.self-hosted.mjs",
+    "format:check": "prettier --check src tests scripts electron-builder.unsigned.mjs electron-builder.self-hosted.mjs",
+    "package:windows": "pnpm build && electron-builder --win --x64 --config electron-builder.unsigned.mjs --publish never",
+    "demo": "node scripts/demo.mjs",
+    "demo:seed": "node scripts/demo.mjs --seed-only",
+    "demo:stop": "docker compose -p queuecumber-test -f compose.test.yml down"
+  },
+  "dependencies": {
+    "@fontsource/public-sans": "^5.3.0",
+    "@platformatic/kafka": "2.14.0",
+    "amqplib": "^2.2.0",
+    "lucide-react": "^1.61.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "yazl": "3.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
+    "eslint": "^10.13.0",
+    "jsdom": "^30.1.3",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "yauzl": "^3.4.0"
+  },
+  "packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "homepage": "https://github.com/davidemaggi/QueueCumber",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davidemaggi/QueueCumber.git"
+  },
+  "releaseName": "Ackbar"
+}

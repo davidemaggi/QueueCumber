@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-22T00:00:00Z",
+  "title": "Design System: QueueCumber",
+  "extensions": {
+    "motion": [
+      {
+        "name": "arrival",
+        "value": "200ms ease-out",
+        "purpose": "First-run and connection form, reduced-motion aware."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stacked-inspection",
+        "value": "1150px"
+      }
+    ],
+    "shadows": []
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "description": "Primary button as implemented in the inspection workspace.",
+      "html": "<button class=\"ds-primary\">Start capture</button>",
+      "css": ".ds-primary{font:13px Public Sans,sans-serif;padding:6px 11px;min-height:32px;border:1px solid var(--primary,#222820);border-radius:6px;background:var(--primary,#222820);color:var(--on-primary,#fff);cursor:pointer}.ds-primary:hover{opacity:.85}.ds-primary:focus-visible{outline:2px solid var(--accent,#3c6b2e);outline-offset:3px}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "description": "Secondary button as implemented in the inspection workspace.",
+      "html": "<button class=\"ds-secondary\">Stop capture</button>",
+      "css": ".ds-secondary{font:13px Public Sans,sans-serif;padding:6px 11px;min-height:32px;border:1px solid var(--border,#dedfda);border-radius:6px;background:transparent;color:var(--ink,#202420)}.ds-secondary:hover{background:var(--raised,#ededeb)}.ds-secondary:focus-visible{outline:2px solid var(--accent,#3c6b2e);outline-offset:3px}"
+    },
+    {
+      "name": "Text input",
+      "kind": "input",
+      "description": "Text input as implemented in the inspection workspace.",
+      "html": "<label class=\"ds-field\">Connection name<input placeholder=\"Staging RabbitMQ\"></label>",
+      "css": ".ds-field{font:13px Public Sans,sans-serif;color:var(--ink,#202420);display:grid;gap:8px}.ds-field input{font:inherit;padding:9px 10px;background:var(--surface,#fff);border:1px solid var(--control,#9b9f97);border-radius:6px;color:inherit}.ds-field input:focus-visible{outline:2px solid var(--accent,#3c6b2e);outline-offset:3px}"
+    },
+    {
+      "name": "Workspace navigation",
+      "kind": "nav",
+      "description": "Workspace navigation as implemented in the inspection workspace.",
+      "html": "<nav class=\"ds-nav\"><button aria-current=\"page\">Inspect</button><button>Settings</button></nav>",
+      "css": ".ds-nav{display:flex;gap:16px}.ds-nav button{font:13px Public Sans,sans-serif;border:0;border-bottom:1px solid transparent;background:transparent;color:var(--muted,#62675f);padding:6px 0}.ds-nav [aria-current]{color:var(--ink,#202420);border-bottom-color:var(--accent,#3c6b2e)}.ds-nav button:hover{background:var(--raised,#ededeb)}.ds-nav button:focus-visible{outline:2px solid var(--accent,#3c6b2e);outline-offset:3px}"
+    },
+    {
+      "name": "Message row",
+      "kind": "custom",
+      "description": "Message row as implemented in the inspection workspace.",
+      "html": "<button class=\"ds-message\"><time>12:00:00</time><span>order.created</span><small>54 B</small></button>",
+      "css": ".ds-message{display:flex;align-items:center;gap:12px;width:100%;height:46px;font:12px ui-monospace,monospace;color:var(--ink,#202420);background:var(--surface,#fff);border:0;border-bottom:1px solid var(--border,#dedfda);text-align:left}.ds-message time,.ds-message small{color:var(--muted,#62675f)}.ds-message small{margin-left:auto}.ds-message:hover{background:var(--raised,#ededeb)}.ds-message:focus-visible{outline:2px solid var(--accent,#3c6b2e);outline-offset:-3px}"
+    }
+  ],
+  "narrative": {
+    "overview": "A quiet workspace for inspecting message traffic.",
+    "keyCharacteristics": [
+      "Neutral surfaces",
+      "Cucumber selection accent",
+      "Bounded message views"
+    ],
+    "dos": [
+      "Keep broker data and counts factual."
+    ],
+    "donts": [
+      "Do not fabricate traffic or release claims."
+    ]
+  }
+}

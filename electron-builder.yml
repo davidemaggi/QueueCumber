@@ -1,0 +1,15 @@
+appId: dev.queuecumber.desktop
+productName: QueueCumber
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+mac:
+  target: [dmg, zip]
+win:
+  target: [nsis, zip]
+nsis:
+  artifactName: QueueCumber-${version}-${arch}-setup.${ext}
+linux:
+  target: [AppImage, deb, tar.gz]
