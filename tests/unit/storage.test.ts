@@ -58,7 +58,8 @@ it('stores encrypted raw bytes, bounds cache and evicts retained history', async
     store.close()
     await rm(dir, { recursive: true, force: true })
   }
-})
+  // Includes 200 FULL-synchronous SQLite writes; hosted Windows disk latency varies.
+}, 60000)
 it('persists across restart and refuses tampered encrypted content', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'qc-recovery-')),
     key = randomBytes(32)
