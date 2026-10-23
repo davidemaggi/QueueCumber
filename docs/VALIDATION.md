@@ -1,10 +1,18 @@
 # Local validation — QueueCumber
 
+## Published 1.0.0 Ackbar — 2026-10-23
+
+[Release v1.0.0 — Ackbar](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0) is public and stable (not draft/prerelease). Git tag v1.0.0 resolves to the artwork merge commit `bdc7063386baf58b052ad0ea1ad6798882911569`. [Actions run 39928358358](https://github.com/davidemaggi/QueueCumber/actions/runs/39928358358) successfully built all three platforms and assembled the draft; normal Checks passed on the PR and final main merge.
+
+All seven final downloaded package hashes passed the manifest check. The published SHA256SUMS.txt was fetched without authentication and matches the verified manifest. Anonymous public API verification confirms eight assets and versioned download URLs. The macOS ZIP passed deep/strict codesign verification; its ICNS is byte-identical to the supplied-source export. The actual packaged app loaded the 1024 px application icon and tray resources, exposed the 20-point/40-pixel Retina image, replayed the RabbitMQ demo stream, rendered JSON and stopped capture in isolated session-only storage.
+
+The maintainer reported manual installation checks complete and explicitly authorized publication. No additional exact OS versions, cloud or OS-keystore results are inferred. The superseded pre-artwork draft was preserved with all eight attachments under v1.0.0-superseded-before-artwork and remains unpublished. Automatic approval review rejected deleting that draft; the non-destructive rename preserved the data instead.
+
 ## Supplied artwork — 2026-10-23
 
 The supplied SVG icon and mark replace the provisional symbols. Committed exports include a 1024 px PNG, a Windows ICO with 16/24/32/48/64/128/256 px entries, a macOS ICNS and 20/40 px tray PNGs. The original geometry and colors are preserved. Runtime PNGs are explicitly included in the application archive because electron-vite's native asset imports keep paths under resources rather than copying them into out.
 
-All 83 unit tests and eight native Electron tests passed locally after the change, along with type checking, ESLint, formatting and build. Light English capture and dark Italian/narrow form renders show the supplied mark. Native background/tray creation tests passed; OS menu-bar placement is platform-dependent. The maintainer confirmed manual installation acceptance and requested publication with the artwork; the superseded draft must be rebuilt before publication.
+All 83 unit tests and eight native Electron tests passed locally after the change, along with type checking, ESLint, formatting and build. Light English capture and dark Italian/narrow form renders show the supplied mark. Native background/tray creation tests passed; OS menu-bar placement is platform-dependent. The maintainer confirmed manual installation acceptance and requested publication with the artwork; the artwork was rebuilt and verified before the authorized public publication.
 
 ## First release draft — 2026-10-23
 

@@ -6,7 +6,7 @@
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **1.0.0 — Ackbar.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
+> **1.0.0 — Ackbar is out.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
 
 ## What you can do
 
@@ -104,7 +104,7 @@ If Corepack reports a missing `bin/pnpm.cjs`, update Corepack and refresh its do
 
 Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
-Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Hosted unsigned builds succeeded for all three targets; clean-machine acceptance remains pending. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
+Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Hosted unsigned builds succeeded for all three targets; the maintainer confirmed manual installation acceptance before publication. Exact OS-version and real-environment certification is not implied. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
 
 ## Kafka
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-The 1.0.0 Ackbar draft has been built through GitHub Actions; downloaded checksums and a local packaged macOS capture smoke test passed. Clean-machine and real-environment acceptance remain pending. The package version does not mean a release has been published.
+**[1.0.0 Ackbar](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0) was published on 2026-10-23**, with the supplied artwork and unsigned Windows/macOS/Linux packages built through GitHub Actions. All seven downloaded checksums and the packaged macOS capture/icon smoke checks passed. The maintainer confirmed manual installation acceptance; unchecked detailed platform/cloud validation below remains follow-up work, not claimed certification.
 
 ## Foundation — complete
 
@@ -70,7 +70,7 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
 - [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
 
-The maintainer will perform [final acceptance](docs/ACCEPTANCE.md) after implementation, as requested. These external checks remain required before public release; source version 1.0.0 is not evidence they passed. Package-manager submissions follow actual verified release assets.
+The maintainer confirmed manual installation checks and authorized publication on 2026-10-23. The [acceptance record](docs/ACCEPTANCE.md) separates that confirmation and observed build/download results from detailed OS, cloud, keystore and long-session checks that were not independently recorded. Package-manager submissions follow verified release assets and registry acceptance; no package-manager channel is published yet.
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
 
