@@ -40,11 +40,13 @@ Streams offer beginning, live end or numeric offset. Kafka offers independent po
 
 Select a message to see pretty JSON/text or bounded raw bytes. Headers remain structured and data stays inert. In the Messages list, use **Up/Down**, **Home/End** to select the current page's records; **Tab** leaves the list. Older pages use the paging buttons. Payload/header view buttons announce their pressed state. Raw bytes page in 64 KiB chunks. Counts, omissions, gaps and retained ranges are distinct: a capture is not guaranteed lossless.
 
+To remove a saved connection, select it and choose **Delete connection** below **Edit connection**, then confirm. Its active captures stop and its saved credentials are removed. Capture history remains available in the sidebar for inspection and export; restarting requires a saved connection. Broker resources are not changed.
+
 ## Budgets and background mode
 
 Settings sets finite cache, disk, retention, payload and optional admission-rate limits. The form describes units and asks for confirmation before eviction/stopping captures; changes can stop active subscriptions. Per-session limits only narrow global budgets. Cache size is not total RSS. Start with defaults and tune to the machine and traffic; no fixed traffic estimate is required.
 
-Closing quits by default. Enable background close in Settings to continue capture, then use the tray to reopen or Quit. On Linux or tray failure, close minimizes to preserve a visible route. Capture does not continue through machine sleep, explicit Quit, process death or OS shutdown. Restored histories open stopped; start a new capture explicitly. Reconnect within a live session resumes local stream/Kafka progress where possible and exposes observation gaps.
+Closing keeps QueueCumber running by default. Use the tray to reopen or choose Quit to stop captures and exit. Settings can disable background close; existing saved preferences remain respected. On Linux or tray failure, close minimizes to preserve a visible route. Capture does not continue through machine sleep, explicit Quit, process death or OS shutdown. Restored histories open stopped; start a new capture explicitly. Reconnect within a live session resumes local stream/Kafka progress where possible and exposes observation gaps.
 
 ## Move profiles and save messages
 

@@ -27,7 +27,7 @@ QueueCumber gives you a desktop window into that traffic:
 - **Bring your own broker.** Save RabbitMQ and Kafka connections, test them, and browse queues, streams, topics and routing keys. Guided RabbitMQ setup asks for hosts, ports and credentials; full connection URLs work too.
 - **Pick what to watch.** Mirror selected RabbitMQ bindings into a temporary observation queue, add a direct/topic route manually, or read a stream or Kafka partition from the beginning, live end or an explicit offset.
 - **Make messages readable.** Structured headers, pretty JSON, original bytes and newest/oldest-first history. Stop and restart a capture without creating another copy.
-- **Keep long sessions manageable.** Bounded memory cache, encrypted disk history, configurable retention and optional rate limits. Background capture and tray status are opt-in.
+- **Keep long sessions manageable.** Bounded memory cache, encrypted disk history, configurable retention and optional rate limits. Closing the window keeps captures running by default; use Quit to exit.
 - **Take it with you.** Export retained messages as JSONL, a folder or ZIP. Move connection profiles between installations with password-encrypted imports and exports.
 - **Make yourself at home.** English or Italian, light or dark, with keyboard navigation and a resizable resource list.
 
@@ -113,7 +113,7 @@ Stop if a hash differs. Checksums detect a mismatched download; they don't repla
 1. Open **Add connection**, choose RabbitMQ or Kafka, and enter your broker details. For RabbitMQ, supply both AMQP and management hosts/ports, the virtual host, then username and password. Use TLS for remote brokers.
 2. Save and test the connection. Search the resource list or filter by type and known message count.
 3. Select a destination. For a queue, review the bindings to mirror; for a stream or Kafka topic, choose starting positions and partitions where applicable. Click **Start capture**.
-4. Select a message to inspect its headers and body. **Stop** keeps the history; **Start** reuses it. Enable background capture in Settings if you want closing the window to keep it running.
+4. Select a message to inspect its headers and body. **Stop** keeps the history; **Start** reuses it. Closing the window keeps it running by default; use **Quit QueueCumber** to exit. Existing saved close preferences remain respected.
 
 RabbitMQ queue inspection sees **newly routed messages**, not messages already waiting in the application queue. It creates its own temporary queue and bindings, which requires broker permissions. The implicit default-exchange route can't be mirrored. Streams read their logs; Kafka reads partitions without joining a consumer group or committing offsets. QueueCumber 1.x offers no publishing, purging or editing of application resources.
 

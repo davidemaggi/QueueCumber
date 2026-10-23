@@ -251,5 +251,9 @@
   "messageOrder": "Ordine messaggi",
   "newestFirst": "Prima i più recenti",
   "oldestFirst": "Prima i più vecchi",
-  "newer": "Messaggi più recenti"
+  "newer": "Messaggi più recenti",
+  "deleteConnection": "Elimina connessione",
+  "deleteConnectionConfirm": "Rimuovere questa connessione salvata e le sue credenziali? Le acquisizioni attive verranno fermate. La cronologia verrà conservata. Le risorse del broker non verranno modificate.",
+  "confirmDeleteConnection": "Rimuovi connessione salvata",
+  "connectionRemoved": "Questa connessione è stata rimossa. Le acquisizioni salvate restano consultabili ed esportabili."
 }

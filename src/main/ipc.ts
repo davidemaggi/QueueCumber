@@ -41,6 +41,7 @@ export const operationSchemas = {
   getStatus: z.tuple([]),
   getState: z.tuple([]),
   getConnection: z.tuple([id]),
+  deleteConnection: z.tuple([id]),
   listRoutingBindings: z.tuple([id]),
   saveConnection: z.tuple([connectionSchema]),
   testConnection: z.tuple([id]),

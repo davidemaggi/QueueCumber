@@ -26,7 +26,7 @@ A local desktop inspector with a common workflow across brokers and explicit han
 
 ## Operating Context
 
-- Connect to self-hosted and cloud-hosted broker endpoints; save and independently test multiple connection profiles.
+- Connect to self-hosted and cloud-hosted broker endpoints; save and independently test multiple connection profiles. Deleting a saved profile stops its active captures and removes saved credentials while preserving capture history; broker resources remain unchanged.
 - Browse and search queues, streams, exchanges and routing bindings where applicable.
 - Selecting a resource shows its routes/starting positions; an explicit Start capture action starts an ephemeral inspection session.
 - Offer guided RabbitMQ setup with separate hosts/ports, TLS settings, virtual host and credentials, alongside advanced connection URLs. Editing preserves saved values. Provide disposable local demo destinations and synthetic traffic for trying capture.
@@ -34,7 +34,7 @@ A local desktop inspector with a common workflow across brokers and explicit han
 - Reuse capture history across Start/Stop; browse distinct binding routing keys and select individual bindings or enter a direct/topic route manually. Resource panes support full-name tooltips, resizing and kind/message-count filters; captured messages support either arrival order.
 - Choose beginning, live end or a specific offset when stream positioning is supported.
 - Inspect structured headers and recognized formatted content, beginning with JSON; preserve original message bytes.
-- Continue subscriptions after closing the window, with session status available through the system tray where supported.
+- Keep running after closing the window by default, respecting existing saved preferences and offering a configurable opt-out; explicit Quit stops capture. Continue subscriptions after closing the window, with session status available through the system tray where supported.
 - Export captures locally, including folders and ZIP files. Transfer configuration between installations, supporting password protection.
 - Retry disconnected sessions and make connection state visible.
 

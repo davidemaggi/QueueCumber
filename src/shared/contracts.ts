@@ -62,6 +62,7 @@ export interface DesktopApi {
   saveDesktopPreferences(input: DesktopPreferences): Promise<void>
   getStatus(): Promise<AppStatus>
   getState(): Promise<State>
+  deleteConnection(id: string): Promise<void>
   getConnection(id: string): Promise<ConnectionProfile>
   listRoutingBindings(id: string): Promise<Binding[]>
   saveConnection(input: ConnectionInput): Promise<ConnectionSummary>

@@ -7,19 +7,20 @@ import {
   desktopPreferencesSchema,
   DEFAULT_DESKTOP_PREFERENCES,
 } from '../../src/shared/desktop'
-it('persists opt-in background behavior atomically and fails safely on corrupt preferences', async () => {
+it('defaults to background close, persists opt-out and disables background on corrupt preferences', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'qc-preferences-'))
   try {
     const repository = new DesktopPreferencesRepository(dir)
     expect((await repository.read()).preferences).toEqual(
       DEFAULT_DESKTOP_PREFERENCES,
     )
+    expect((await repository.read()).preferences.closeToTray).toBe(true)
     await repository.save({
       ...DEFAULT_DESKTOP_PREFERENCES,
-      closeToTray: true,
+      closeToTray: false,
       locale: 'it',
     })
-    expect((await repository.read()).preferences.closeToTray).toBe(true)
+    expect((await repository.read()).preferences.closeToTray).toBe(false)
     await writeFile(join(dir, 'desktop.json'), '{bad')
     const recovered = await repository.read()
     expect(recovered.preferences.closeToTray).toBe(false)
@@ -75,7 +76,7 @@ function fixture(platform: NodeJS.Platform = 'darwin', trayWorks = true) {
   })
   return { application, window, tray, shutdown, controller, menu: () => menu }
 }
-it('hides only on opt-in and keeps an accessible minimized fallback without a usable tray', async () => {
+it('hides in background mode and keeps an accessible minimized fallback without a usable tray', async () => {
   for (const [platform, trayWorks, hidden] of [
     ['darwin', true, true],
     ['win32', true, true],
@@ -91,9 +92,12 @@ it('hides only on opt-in and keeps an accessible minimized fallback without a us
     await f.controller.dispose()
   }
 })
-it('default close exits normally, while explicit Quit shuts down once and bypasses hiding', async () => {
+it('explicit opt-out closes normally, while explicit Quit shuts down once and bypasses hiding', async () => {
   const f = fixture()
-  f.controller.setPreferences({ ...DEFAULT_DESKTOP_PREFERENCES })
+  f.controller.setPreferences({
+    ...DEFAULT_DESKTOP_PREFERENCES,
+    closeToTray: false,
+  })
   const close = { preventDefault: vi.fn() }
   f.window.emit('close', close)
   expect(close.preventDefault).not.toHaveBeenCalled()

@@ -16,6 +16,7 @@ const api: DesktopApi = {
     ipcRenderer.invoke('qc:saveDesktopPreferences', input),
   getStatus: () => ipcRenderer.invoke('qc:getStatus'),
   getState: () => ipcRenderer.invoke('qc:getState'),
+  deleteConnection: (id) => ipcRenderer.invoke('qc:deleteConnection', id),
   getConnection: (id) => ipcRenderer.invoke('qc:getConnection', id),
   listRoutingBindings: (id) => ipcRenderer.invoke('qc:listRoutingBindings', id),
   saveConnection: (input) => ipcRenderer.invoke('qc:saveConnection', input),

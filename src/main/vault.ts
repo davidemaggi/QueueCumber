@@ -76,6 +76,15 @@ export class Vault {
     this.writeChain = result.catch(() => {})
     return result
   }
+  remove(id: string): Promise<void> {
+    const result = this.writeChain.then(async () => {
+      if (!this.profiles.some((p) => p.id === id))
+        throw Error('Connection not found')
+      await this.writeProfiles(this.profiles.filter((p) => p.id !== id))
+    })
+    this.writeChain = result.catch(() => {})
+    return result
+  }
   all(): ConnectionProfile[] {
     return this.profiles.map((p) => ({ ...p }))
   }

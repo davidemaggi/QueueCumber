@@ -578,6 +578,15 @@ export class SessionManager {
     s.connection = undefined
     this.persist()
   }
+  async stopConnection(connectionId: string): Promise<void> {
+    for (const { summary } of this.sessions.values()) {
+      if (
+        summary.connectionId === connectionId &&
+        !['stopped', 'failed'].includes(summary.state)
+      )
+        await this.stopCapture(summary.id)
+    }
+  }
   async deleteCapture(id: string): Promise<void> {
     if (!this.sessions.has(id)) throw Error('Session not found')
     await this.stopCapture(id)
