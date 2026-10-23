@@ -315,8 +315,10 @@ END;`)
     sessionId: string,
     cursor: number | null,
     limit: number,
+    order: 'asc' | 'desc' = 'desc',
   ): { records: MessageSummary[]; nextCursor: number | null } {
     if (
+      !['asc', 'desc'].includes(order) ||
       !Number.isSafeInteger(limit) ||
       limit < 1 ||
       limit > 50 ||
@@ -327,9 +329,15 @@ END;`)
     this.prune(0)
     const rows = this.db
       .prepare(
-        'SELECT id FROM captures WHERE session=? AND id<? ORDER BY id DESC LIMIT ?',
+        order === 'asc'
+          ? 'SELECT id FROM captures WHERE session=? AND id>? ORDER BY id ASC LIMIT ?'
+          : 'SELECT id FROM captures WHERE session=? AND id<? ORDER BY id DESC LIMIT ?',
       )
-      .all(sessionId, cursor ?? Number.MAX_SAFE_INTEGER, limit + 1) as {
+      .all(
+        sessionId,
+        cursor ?? (order === 'asc' ? 0 : Number.MAX_SAFE_INTEGER),
+        limit + 1,
+      ) as {
       id: number
     }[]
     const selected = rows.slice(0, limit)

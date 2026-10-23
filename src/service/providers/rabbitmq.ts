@@ -1,3 +1,4 @@
+import type { ResourceFilter } from '../../shared/resource-filter'
 import { PROVIDER_CAPABILITIES } from '../../shared/providers'
 import amqp from 'amqplib'
 import http from 'node:http'
@@ -121,7 +122,33 @@ export class RabbitMQ implements Provider {
     ])
     return { protocol, management }
   }
-  async listResources(query: string, page: number): Promise<ResourcePage> {
+  async listResources(
+    query: string,
+    page: number,
+    filter?: ResourceFilter,
+  ): Promise<ResourcePage> {
+    // Skip empty source pages, with a finite scan budget per request.
+    for (let scanned = 0; scanned < 10; scanned++, page++) {
+      const result = await this.resourcePage(query, page)
+      const resources = result.resources.filter(
+        (r) =>
+          (!filter || filter.kind === 'all' || r.kind === filter.kind) &&
+          (!filter ||
+            filter.messages === 'all' ||
+            (r.messages !== undefined &&
+              (filter.messages === 'empty'
+                ? r.messages === 0
+                : r.messages > 0))),
+      )
+      if (resources.length || !result.hasMore || scanned === 9)
+        return { ...result, resources }
+    }
+    throw Error('Resource scan exhausted')
+  }
+  private async resourcePage(
+    query: string,
+    page: number,
+  ): Promise<ResourcePage> {
     const params = new URLSearchParams({
       page: String(page),
       page_size: '100',
@@ -145,7 +172,7 @@ export class RabbitMQ implements Provider {
         vhost: this.vhost,
         kind: q.type === 'stream' ? 'stream' : 'queue',
         type: q.type,
-        messages: q.messages ?? 0,
+        messages: q.messages,
       })),
       ...exchanges.items.map((e: any) => ({
         name: e.name,
@@ -159,6 +186,40 @@ export class RabbitMQ implements Provider {
       page,
       hasMore: page < Math.max(queues.page_count, exchanges.page_count),
     }
+  }
+  async routingBindings(): Promise<Binding[]> {
+    const rows = await this.request(
+      `bindings/${encodeURIComponent(this.vhost)}`,
+    )
+    const queues = await this.request(
+      `queues/${encodeURIComponent(this.vhost)}`,
+    )
+    if (!Array.isArray(queues) || queues.length > 10000)
+      throw Error('Too many queues for routing discovery')
+    const kinds = new Map(
+      queues
+        .filter(
+          (q: any) =>
+            !/^queuecumber\.[a-f0-9-]{36}\.[a-f0-9-]{36}$/.test(q.name),
+        )
+        .map((q: any) => [q.name, q.type === 'stream' ? 'stream' : 'queue']),
+    )
+    if (!Array.isArray(rows) || rows.length > 10000)
+      throw Error('Too many routing bindings; narrow broker permissions')
+    return rows
+      .filter(
+        (b: any) => b.destination_type === 'queue' && kinds.has(b.destination),
+      )
+      .map((b: any) => ({
+        source: b.source,
+        vhost: this.vhost,
+        destinationKind: kinds.get(b.destination) as 'queue' | 'stream',
+        destination: b.destination,
+        routing_key: b.routing_key,
+        arguments: b.arguments ?? {},
+        type: 'unknown',
+        supported: false,
+      }))
   }
   async bindings(queue: string): Promise<Binding[]> {
     const bindings = await this.request(

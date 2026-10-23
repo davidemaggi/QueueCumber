@@ -137,7 +137,7 @@ it('keeps a late capture start attached to its original queue', async () => {
   await waitFor(() =>
     expect(screen.getByRole('heading', { name: 'queue-b' })).toBeTruthy(),
   )
-  expect(document.querySelector('.session-state')?.textContent).toBe('—')
+  expect(document.querySelector('.session-state')?.textContent).toBe('stopped')
 })
 it('discards a message response after changing connection', async () => {
   let resolve!: (m: MessageDetail) => void
@@ -264,10 +264,14 @@ it('resets provider-specific filters when switching connections in either direct
   render(<App />)
   fireEvent.click(await screen.findByRole('button', { name: 'Connection B' }))
   await screen.findByRole('button', { name: 'topic topic-a' })
-  fireEvent.click(screen.getByRole('button', { name: 'Topics' }))
+  fireEvent.change(screen.getByLabelText('Resource type'), {
+    target: { value: 'topic' },
+  })
   fireEvent.click(screen.getByRole('button', { name: 'Connection A' }))
   await screen.findByRole('button', { name: 'queue queue-a' })
-  fireEvent.click(screen.getByRole('button', { name: 'Queues' }))
+  fireEvent.change(screen.getByLabelText('Resource type'), {
+    target: { value: 'queue' },
+  })
   fireEvent.click(screen.getByRole('button', { name: 'Connection B' }))
   await screen.findByRole('button', { name: 'topic topic-a' })
 })

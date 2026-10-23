@@ -71,12 +71,25 @@ parent.on('message', async ({ data }) => {
           value = await providerFor(args[0]).test()
           break
         case 'resources':
-          value = await providerFor(args[0]).listResources(args[1], args[2])
+          value =
+            args[0].provider === 'kafka'
+              ? await providerFor(args[0]).listResources(args[1], args[2])
+              : await new RabbitMQ(args[0]).listResources(
+                  args[1],
+                  args[2],
+                  args[3],
+                )
           break
         case 'partitions': {
           const p = providerFor(args[0])
           if (!(p instanceof KafkaProvider)) throw Error('Choose Kafka')
           value = await p.partitions(args[1].name)
+          break
+        }
+        case 'routingBindings': {
+          const p = providerFor(args[0])
+          if (!(p instanceof RabbitMQ)) throw Error('Choose RabbitMQ')
+          value = await p.routingBindings()
           break
         }
         case 'bindings':
@@ -103,7 +116,7 @@ parent.on('message', async ({ data }) => {
           value = await sessions.stopCapture(args[0])
           break
         case 'page':
-          value = store.readPage(args[0], args[1], 30)
+          value = store.readPage(args[0], args[1], 30, args[2])
           break
         case 'chunk': {
           const chunk = store.readChunk(args[0], args[1])

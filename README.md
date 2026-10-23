@@ -6,7 +6,7 @@
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **1.0.0 — Ackbar.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
+> **1.0.0 — Ackbar is out.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
 
 ## What you can do
 
@@ -42,15 +42,17 @@ It starts the local test brokers, creates sample destinations and publishes synt
 
 | Field | Demo value |
 | --- | --- |
-| AMQP endpoint | `amqp://127.0.0.1:25672` |
-| Management URL | `http://127.0.0.1:25673` |
+| AMQP host | `127.0.0.1` |
+| AMQP port | `25672` |
+| Management host | `127.0.0.1` |
+| Management port | `25673` |
 | Virtual host | `/` |
 | Username | `cucumber` |
 | Password | `local-test-only` |
 
-Allow unencrypted transport for this loopback fixture, choose **Next: credentials**, enter the username/password and save. The saved connection is selected automatically. Search for **demo.events**, select the stream, choose **Beginning (first retained message)** and **Start capture**. Click a message to inspect its headers and JSON.
+Turn off both TLS checkboxes and allow unencrypted transport for this loopback fixture, choose **Next: credentials**, enter the username/password and save. The saved connection is selected automatically. Search for **demo.events**, select the stream, choose **Beginning (first retained message)** and **Start capture**. Click a message to inspect its headers and JSON.
 
-To try a queue instead, select **demo.orders**, review the `demo.routes` → `orders.*` binding, accept **Capture supported routes only** and start capture. Keep the publisher running: queue observation sees new traffic, not the queue's backlog. `demo.audit` receives all `demo.routes` keys; the publisher alternates `orders.created` and `orders.updated`.
+To try a queue instead, select **demo.orders**, review the `demo.routes` → `orders.*` binding, leave the wanted route checked and start capture. Keep the publisher running: queue observation sees new traffic, not the queue's backlog. `demo.audit` receives all `demo.routes` keys; the publisher alternates `orders.created` and `orders.updated`.
 
 Kafka is available at `localhost:29092`, with TLS off, explicit unencrypted-transport consent and no SASL. Select the two-partition **demo.events** topic and choose each partition's beginning to replay samples.
 
@@ -80,6 +82,12 @@ Prepared source is not a security certification. Desktop tests deliberately use 
 
 Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Version 1.0.0 downloads will be unsigned. From 1.0.1, optional self-hosted Windows signing adds separately labeled signed downloads when its runner is available; unsigned releases remain independent. Install commands will appear when those packages actually exist.
 
+## Next patch: 1.0.1
+
+The local patch also improves inspection: Start/Stop reuses capture history, guided connections take host/port, editing preserves saved values, resource names have tooltips and a resizable pane, and kind/message-count filters help find destinations. Browse distinct routing keys with their exchange/queue context, select individual bindings or add a direct/topic route manually. Messages can be paged newest or oldest first.
+
+Optional Windows signing is being prepared for the maintainer's `codesign` runner, using `CODESIGN_CERT_SUBJECT` and `CODESIGN_TIMESTAMP_URL`. The patch has no character name. Unsigned downloads remain available independently; signed variants appear only after real signature verification. Version 1.0.1 has not been built or published remotely yet. See [runner setup and release checks](docs/RELEASING.md#optional-signed-windows-path-from-101).
+
 ## Contributing
 
 For now, the most useful contributions are broker edge cases and reproducible usage scenarios. Share sanitized examples, never real credentials or private messages. Start with the local development commands below.
@@ -104,7 +112,7 @@ If Corepack reports a missing `bin/pnpm.cjs`, update Corepack and refresh its do
 
 Check with `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build`. Desktop smoke tests use `pnpm test:e2e` after a build.
 
-Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Hosted unsigned builds succeeded for all three targets; clean-machine acceptance remains pending. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
+Local packaging is for development only. The [release workflow](docs/RELEASING.md) builds artifacts in GitHub Actions only after a pull request merges into `main` and creates a GitHub Release draft. Hosted unsigned builds succeeded for all three targets; the maintainer confirmed manual installation acceptance before publication. Exact OS-version and real-environment certification is not implied. Unsigned packaging needs no signing account; optional Windows self-hosted signing and its queue watchdog are described in the release guide.
 
 ## Kafka
 

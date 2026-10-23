@@ -1,6 +1,6 @@
 # Ackbar acceptance checklist
 
-Prepared source: **1.0.0 — Ackbar**. This checklist is intentionally open for the maintainer's final tests. Local implementation verification is in [VALIDATION.md](VALIDATION.md); checking code does not establish installer, hardware, keystore or cloud compatibility.
+Published release: **[1.0.0 — Ackbar](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0)**, 2026-10-23. The maintainer confirmed manual installation acceptance; detailed unchecked entries remain unrecorded validation, rather than automatic claims of platform certification. Local implementation verification is in [VALIDATION.md](VALIDATION.md); checking code does not establish installer, hardware, keystore or cloud compatibility.
 
 On 2026-10-23 the maintainer confirmed the manual installation checks were complete and explicitly authorized publication, then requested the supplied icon/mark be included first. No exact OS-version matrix was supplied; do not infer additional platform/cloud certification from that confirmation. Rebuild the artwork update through merged-main Actions and recheck its packages before publishing; no further publication approval is required.
 
@@ -16,10 +16,10 @@ Record each test's OS/version/architecture, app commit/artifact hash, broker/pro
 
 ## After merge: Actions and downloaded artifacts
 
-- [x] All release jobs succeed for merge SHA a785bcbf0585392292d2d894805c82e81a790382 (run 39917615830). Unsigned builds must succeed without signing settings. Optional signing failures must never create falsely signed assets or block unsigned downloads.
+- [x] All release jobs succeed for artwork merge SHA bdc7063386baf58b052ad0ea1ad6798882911569 (run 39928358358). Unsigned builds must succeed without signing settings. Optional signing failures must never create falsely signed assets or block unsigned downloads.
 - [x] Draft target is the merge SHA; title is `v1.0.0 — Ackbar`; correct versions/architectures appear in asset names and the tested macOS app metadata.
-- [ ] After publication, confirm the Git tag resolves to that merge SHA. The unpublished draft reserves the tag name but does not create a Git ref.
-- [ ] Verify every downloaded asset against SHA256SUMS.txt. Confirm the release includes expected installer/archive variants and no test broker secrets or local maintainer files.
+- [x] After publication, confirm the Git tag resolves to that merge SHA. Public v1.0.0 resolves to bdc7063386baf58b052ad0ea1ad6798882911569.
+- [x] Verify every downloaded asset against SHA256SUMS.txt (all seven final packages passed). Confirm the release includes expected installer/archive variants and no test broker secrets or local maintainer files.
 - [ ] Windows x64: install NSIS and extract ZIP on a clean supported system. Record unsigned status for the unsigned build; when signed variants exist, verify app, installed uninstaller and installer Authenticode status/publisher; capture in the packaged utility process. Test upgrade, uninstall and retained-user-data policy.
 - [ ] macOS arm64: record the unsigned/ad-hoc build and expected Gatekeeper behavior; verify Developer ID/notarization only if a future trusted macOS-signed channel is implemented on a clean supported Mac, including launch while offline. Test Applications installation, packaged capture, upgrade and uninstall/data policy.
 - [ ] Linux x64: test DEB, AppImage and tar.gz on the supported distributions/desktops you intend to list. Check runtime libraries, sandbox, FUSE where needed, upgrade/uninstall and paths. Do not disable Chromium sandboxing to pass.
@@ -55,11 +55,11 @@ Record each test's OS/version/architecture, app commit/artifact hash, broker/pro
 
 ## Publication and package managers
 
-- [ ] Resolve failed gates or explicitly adjust/document supported scope before publishing. The maintainer explicitly permits unsigned 1.0.0; lack of optional signed variants is not a blocking gate. Review the draft manually; publishing is a separate maintainer action.
-- [ ] Publish the approved GitHub Release, then verify download links/checksums from a fresh client.
+- [x] Resolve failed gates or explicitly adjust/document supported scope before publishing. Maintainer acceptance and publication authorization were confirmed on 2026-10-23; no exact OS-version/cloud certification was added. The maintainer explicitly permits unsigned 1.0.0; lack of optional signed variants is not a blocking gate. Review the draft manually; publishing is a separate maintainer action.
+- [x] Publish the approved GitHub Release, then verify public download links/checksums from a fresh client (anonymous manifest and release API checks passed).
 - [ ] Prepare Homebrew cask using the actual published DMG URL/hash/version and verified architecture. Test install/uninstall/audit before submitting.
 - [ ] Prepare WinGet manifest using actual signed installer URL/hash, installer type/scope and publisher; validate/install before submission.
 - [ ] Prepare Chocolatey package using actual published installer URL/hash and silent arguments verified against the built NSIS installer. Test install/upgrade/uninstall before submitting.
 - [ ] Add package-manager instructions to README only after acceptance by that registry. No fabricated URLs, hashes or install commands.
 
-Passing these gates is the maintainer's release decision. Keep the release draft unpublished until that decision; do not infer it from a local code commit.
+Passing these gates is the maintainer's release decision. The maintainer made that decision explicitly for 1.0.0; future releases require their own acceptance decision, rather than inference from a code commit.

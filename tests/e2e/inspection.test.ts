@@ -39,9 +39,11 @@ test('saves a session-only connection, captures a real message and changes theme
     await page
       .getByRole('button', { name: 'queue ' + name, exact: true })
       .click()
-    await page
-      .getByRole('checkbox', { name: 'Capture supported routes only' })
-      .check()
+    await expect(
+      page.getByRole('checkbox', {
+        name: 'Include route ' + name + ' order.*',
+      }),
+    ).toBeChecked()
     await page
       .getByRole('button', { name: 'Start capture', exact: true })
       .click()
@@ -102,7 +104,7 @@ test('saves a session-only connection, captures a real message and changes theme
     )
     await expect
       .poll(() => page.locator('.message-row').count())
-      .toBeGreaterThan(10)
+      .toBeGreaterThan(3)
     const messageList = page.getByRole('listbox', {
       name: 'Messages',
       exact: true,

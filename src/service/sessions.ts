@@ -1,3 +1,4 @@
+import { bindingKey } from '../shared/routes'
 import { KafkaCapture } from './kafka-capture'
 import {
   kafkaSelectionSchema,
@@ -12,6 +13,7 @@ import { RabbitMQ, failureCode } from './providers/rabbitmq'
 import type { ResourceRef, Binding } from './providers/provider'
 import type { CaptureStorage } from './storage'
 export type SessionSummary = {
+  options?: CaptureOptions
   provider?: 'rabbitmq' | 'kafka'
   kafkaPositions?: KafkaPosition[]
   kafkaTopologyChanged?: boolean
@@ -33,6 +35,9 @@ export type SessionSummary = {
   potentialOverflow: boolean
 }
 export type CaptureOptions = {
+  captureId?: string
+  bindingKeys?: string[]
+  manualRoutes?: { source: string; routingKey: string }[]
   kafkaPartitions?: KafkaSelection
   allowPartial: boolean
   streamStart?: 'first' | 'next' | number
@@ -80,7 +85,7 @@ export class SessionManager {
             (range?.count ?? 0) - summary.omitted,
           ),
         },
-        options: { allowPartial: false },
+        options: summary.options ?? { allowPartial: false },
         generation: 0,
         attempt: 0,
         rateStart: Date.now(),
@@ -123,13 +128,35 @@ export class SessionManager {
       )
     )
       throw Error('Choose a valid stream start position')
+    const matching = [...this.sessions.values()]
+      .reverse()
+      .filter(
+        (s) =>
+          s.summary.connectionId === profile.id &&
+          s.summary.resource.name === resource.name &&
+          s.summary.resource.vhost === resource.vhost &&
+          s.summary.resource.kind === resource.kind,
+      )
+    const previous = options.captureId
+      ? matching.find((s) => s.summary.id === options.captureId)
+      : matching[0]
+    if (options.captureId && !previous)
+      throw Error('Capture does not match resource')
+    const active = matching.find(
+      (s) => !['stopped', 'failed'].includes(s.summary.state),
+    )
+    if (active) return structuredClone(active.summary)
+    const resolvedLimits = resolveSessionSettings(
+      this.settings(),
+      options.limits ?? {},
+    )
     if (
       [...this.sessions.values()].filter(
         (s) => !['stopped', 'failed'].includes(s.summary.state),
       ).length >= 4
     )
       throw Error('Capture session limit reached')
-    if (this.sessions.size >= 100) {
+    if (!previous && this.sessions.size >= 100) {
       const oldest = [...this.sessions.values()].find((s) =>
         ['stopped', 'failed'].includes(s.summary.state),
       )
@@ -138,7 +165,7 @@ export class SessionManager {
         this.sessions.delete(oldest.summary.id)
       }
     }
-    const s: Session = {
+    const s: Session = previous ?? {
       summary: {
         provider: profile.provider ?? 'rabbitmq',
         id: randomUUID(),
@@ -165,12 +192,45 @@ export class SessionManager {
       rateStart: Date.now(),
       rateCount: 0,
     }
-    this.store.setSessionLimits?.(
-      s.summary.id,
-      resolveSessionSettings(this.settings(), options.limits ?? {}),
-    )
+    if (previous) {
+      if (
+        isKafka &&
+        JSON.stringify(
+          s.options.kafkaPartitions ??
+            s.summary.kafkaPositions?.map((p) => ({
+              partition: p.partition,
+              from: p.start,
+            })),
+        ) !== JSON.stringify(options.kafkaPartitions)
+      ) {
+        s.summary.kafkaPositions = undefined
+        s.summary.kafkaTopologyChanged = undefined
+      }
+      if (
+        resource.kind === 'stream' &&
+        s.summary.streamStart !== options.streamStart
+      ) {
+        s.summary.lastOffset = undefined
+        s.summary.streamStart = options.streamStart
+        s.summary.offsetNotice =
+          typeof options.streamStart === 'number'
+            ? 'OFFSET_UNVERIFIED'
+            : undefined
+      }
+      s.summary.gaps++
+      s.summary.state = 'connecting'
+      s.summary.error = undefined
+      s.attempt = 0
+      s.rateStart = Date.now()
+      s.rateCount = 0
+    }
+    s.profile = profile
+    s.options = options
+    s.summary.options = structuredClone(options)
+    this.store.setSessionLimits?.(s.summary.id, resolvedLimits)
     this.sessions.set(s.summary.id, s)
     try {
+      await s.kafka?.stop()
       if (profile.provider === 'kafka') {
         s.kafka = new KafkaCapture(
           profile,
@@ -240,10 +300,41 @@ export class SessionManager {
       throw Object.assign(Error('Resource type changed'), {
         code: 'UNSUPPORTED_ROUTE',
       })
-    const snapshot = isStream
+    let snapshot = isStream
       ? []
       : await broker.bindings(s.summary.resource.name)
     if (!isStream) {
+      if (s.options.bindingKeys) {
+        if (
+          s.options.bindingKeys.some(
+            (key) => !snapshot.some((b) => bindingKey(b) === key),
+          )
+        )
+          throw Object.assign(Error('Selected binding no longer exists'), {
+            code: 'UNSUPPORTED_ROUTE',
+          })
+        snapshot = snapshot.filter((b) =>
+          s.options.bindingKeys!.includes(bindingKey(b)),
+        )
+      }
+      for (const route of s.options.manualRoutes ?? []) {
+        const exchange = await broker.request(
+          `exchanges/${encodeURIComponent(broker.vhost)}/${encodeURIComponent(route.source)}`,
+        )
+        if (!['direct', 'topic'].includes(exchange.type))
+          throw Object.assign(
+            Error('Manual routes require a direct or topic exchange'),
+            { code: 'UNSUPPORTED_ROUTE' },
+          )
+        snapshot.push({
+          source: route.source,
+          destination: s.summary.resource.name,
+          routing_key: route.routingKey,
+          arguments: {},
+          type: exchange.type,
+          supported: true,
+        })
+      }
       if (Buffer.byteLength(JSON.stringify(snapshot)) > 65536)
         throw Object.assign(Error('Binding snapshot too large'), {
           code: 'UNSUPPORTED_ROUTE',

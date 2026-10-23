@@ -16,10 +16,12 @@ const api: DesktopApi = {
     ipcRenderer.invoke('qc:saveDesktopPreferences', input),
   getStatus: () => ipcRenderer.invoke('qc:getStatus'),
   getState: () => ipcRenderer.invoke('qc:getState'),
+  getConnection: (id) => ipcRenderer.invoke('qc:getConnection', id),
+  listRoutingBindings: (id) => ipcRenderer.invoke('qc:listRoutingBindings', id),
   saveConnection: (input) => ipcRenderer.invoke('qc:saveConnection', input),
   testConnection: (id) => ipcRenderer.invoke('qc:testConnection', id),
-  listResources: (id, query, page) =>
-    ipcRenderer.invoke('qc:listResources', id, query, page),
+  listResources: (id, query, page, filter) =>
+    ipcRenderer.invoke('qc:listResources', id, query, page, filter),
   getPartitions: (id, resource) =>
     ipcRenderer.invoke('qc:getPartitions', id, resource),
   getBindings: (id, resource) =>
@@ -27,8 +29,8 @@ const api: DesktopApi = {
   startCapture: (id, resource, options) =>
     ipcRenderer.invoke('qc:startCapture', id, resource, options),
   stopCapture: (id) => ipcRenderer.invoke('qc:stopCapture', id),
-  readMessages: (id, cursor) =>
-    ipcRenderer.invoke('qc:readMessages', id, cursor),
+  readMessages: (id, cursor, order) =>
+    ipcRenderer.invoke('qc:readMessages', id, cursor, order),
   readMessage: (id) => ipcRenderer.invoke('qc:readMessage', id),
   readPayloadChunk: (id, offset) =>
     ipcRenderer.invoke('qc:readPayloadChunk', id, offset),

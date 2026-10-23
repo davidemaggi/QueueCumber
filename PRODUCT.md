@@ -29,8 +29,9 @@ A local desktop inspector with a common workflow across brokers and explicit han
 - Connect to self-hosted and cloud-hosted broker endpoints; save and independently test multiple connection profiles.
 - Browse and search queues, streams, exchanges and routing bindings where applicable.
 - Selecting a resource shows its routes/starting positions; an explicit Start capture action starts an ephemeral inspection session.
-- Offer guided RabbitMQ setup with separate endpoints, virtual host and credentials, alongside advanced connection URLs. Provide disposable local demo destinations and synthetic traffic for trying capture.
+- Offer guided RabbitMQ setup with separate hosts/ports, TLS settings, virtual host and credentials, alongside advanced connection URLs. Editing preserves saved values. Provide disposable local demo destinations and synthetic traffic for trying capture.
 - For a RabbitMQ queue, inspect its bindings and create an owned temporary queue bound to the same exchanges, keys and binding arguments. Capture newly routed copies without consuming the original queue's backlog.
+- Reuse capture history across Start/Stop; browse distinct binding routing keys and select individual bindings or enter a direct/topic route manually. Resource panes support full-name tooltips, resizing and kind/message-count filters; captured messages support either arrival order.
 - Choose beginning, live end or a specific offset when stream positioning is supported.
 - Inspect structured headers and recognized formatted content, beginning with JSON; preserve original message bytes.
 - Continue subscriptions after closing the window, with session status available through the system tray where supported.
@@ -57,7 +58,7 @@ The name is **QueueCumber**. The voice is practical, friendly and lightly playfu
 
 ## Evidence on Hand
 
-The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements, artwork and temporary-queue capture contract. RabbitMQ and Kafka inspection through prepared 1.0.0 Ackbar source and synthetic test screenshots now exist. The maintainer confirmed manual installation checks and authorized publication with the supplied artwork on 2026-10-23. The unsigned draft must be rebuilt with that artwork before publication. No published benchmark or customer proof exists. Use synthetic messages in demonstrations and label them accordingly.
+The initial repository contains an MIT license and installed AI skills. The maintainer supplied the requirements, artwork and temporary-queue capture contract. RabbitMQ and Kafka inspection through prepared 1.0.0 Ackbar source and synthetic test screenshots now exist. The maintainer confirmed manual installation checks and authorized publication with the supplied artwork on 2026-10-23. The supplied artwork was included in merged-main Actions build 39928358358; unsigned 1.0.0 Ackbar was published on 2026-10-23 after downloaded checksum and packaged macOS checks. No published benchmark or customer proof exists. Use synthetic messages in demonstrations and label them accordingly.
 
 ## Product Principles
 

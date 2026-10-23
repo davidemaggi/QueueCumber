@@ -1,10 +1,18 @@
 # Local validation — QueueCumber
 
+## Published 1.0.0 Ackbar — 2026-10-23
+
+[Release v1.0.0 — Ackbar](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0) is public and stable (not draft/prerelease). Git tag v1.0.0 resolves to the artwork merge commit `bdc7063386baf58b052ad0ea1ad6798882911569`. [Actions run 39928358358](https://github.com/davidemaggi/QueueCumber/actions/runs/39928358358) successfully built all three platforms and assembled the draft; normal Checks passed on the PR and final main merge.
+
+All seven final downloaded package hashes passed the manifest check. The published SHA256SUMS.txt was fetched without authentication and matches the verified manifest. Anonymous public API verification confirms eight assets and versioned download URLs. The macOS ZIP passed deep/strict codesign verification; its ICNS is byte-identical to the supplied-source export. The actual packaged app loaded the 1024 px application icon and tray resources, exposed the 20-point/40-pixel Retina image, replayed the RabbitMQ demo stream, rendered JSON and stopped capture in isolated session-only storage.
+
+The maintainer reported manual installation checks complete and explicitly authorized publication. No additional exact OS versions, cloud or OS-keystore results are inferred. The superseded pre-artwork draft was preserved with all eight attachments under v1.0.0-superseded-before-artwork and remains unpublished. Automatic approval review rejected deleting that draft; the non-destructive rename preserved the data instead.
+
 ## Supplied artwork — 2026-10-23
 
 The supplied SVG icon and mark replace the provisional symbols. Committed exports include a 1024 px PNG, a Windows ICO with 16/24/32/48/64/128/256 px entries, a macOS ICNS and 20/40 px tray PNGs. The original geometry and colors are preserved. Runtime PNGs are explicitly included in the application archive because electron-vite's native asset imports keep paths under resources rather than copying them into out.
 
-All 83 unit tests and eight native Electron tests passed locally after the change, along with type checking, ESLint, formatting and build. Light English capture and dark Italian/narrow form renders show the supplied mark. Native background/tray creation tests passed; OS menu-bar placement is platform-dependent. The maintainer confirmed manual installation acceptance and requested publication with the artwork; the superseded draft must be rebuilt before publication.
+All 83 unit tests and eight native Electron tests passed locally after the change, along with type checking, ESLint, formatting and build. Light English capture and dark Italian/narrow form renders show the supplied mark. Native background/tray creation tests passed; OS menu-bar placement is platform-dependent. The maintainer confirmed manual installation acceptance and requested publication with the artwork; the artwork was rebuilt and verified before the authorized public publication.
 
 ## First release draft — 2026-10-23
 
@@ -208,3 +216,23 @@ Actual runner inventory permissions, workflow event payloads/scheduling/cancella
 The maintainer chose to retain the local package-manager update to pnpm 12.15.0. Corepack 0.33.0 and its cached package-manager metadata still selected `bin/pnpm.cjs`, which pnpm 12 does not ship. Corepack was updated locally to 0.34.6 (compatible with the installed Node 22.18), the stale pnpm12 cache was preserved under an OS-temp backup, and the exact package.json-pinned version/hash was reinstalled with its correct `bin/pnpm.mjs` entry. No integrity checks were disabled, and Node was not upgraded.
 
 Verified pnpm version 12.15.0, frozen installation, types, ESLint and all 76 unit tests. pnpm12 added its package-manager dependency document to the lockfile; application dependency resolutions were unchanged. Development mode compiles main/preload and starts the renderer server on localhost:5173 plus Electron using `env -u ELECTRON_RUN_AS_NODE pnpm dev` in this agent environment, which exports that Node-only Electron flag. The development process is left running for the maintainer. The README documents Corepack/cache repair and the flag; no app runtime behavior changed. Broker/native/distribution suites were not rerun for this tooling repair, and pnpm12 remote CI/packaging remains unverified.
+
+## 1.0.1 signing preparation
+
+Source metadata is now 1.0.1 without a release name. The supplied legacy action informed the `codesign` runner label, certificate subject selection, SHA-256 and RFC 3161 timestamp settings. The existing optional follow-up retains the merged-main release boundary and independent unsigned output.
+
+Local verification passes: **85 unit tests**, **8 native desktop tests** on macOS with local RabbitMQ/Kafka test brokers, formatting, TypeScript, ESLint, source build and actionlint. PowerShell tests use synthetic files and mocked Authenticode results; they cover ZIP/executable mismatch rejection, not a real certificate signature. The follow-up CLI tests exercise draft lookup, source identity and release-ID propagation against a local HTTP fixture.
+
+One final review found two required corrections: an existing tag must match the expected commit even while the release is a draft, and uploads must target the verified numeric release ID rather than resolving the tag again. Both regression tests failed first and passed after correction; the full unit suite then passed. No second review was requested.
+
+No 1.0.1 push, remote workflow, distribution build or real signing run has been started. Runner availability/configuration, certificate service-account access, timestamps, actual signed app/installer/uninstaller acceptance and signed asset attachment remain pending. The maintainer must confirm runner startup before remote execution.
+
+## 1.0.1 inspection feedback and runner readiness
+
+The maintainer added inspection feedback before the signing trial: capture reuse, host/port setup, preserved edit values, resource resizing/tooltips/filtering, routing-key discovery/selection/manual routes and either message paging order. Capture options are persisted inside the existing encrypted session catalog. No database schema migration or broker application-resource mutation was introduced.
+
+Local checks after the feedback fixes pass **94 unit tests** and **8 native desktop tests**. The full broker suite also passed **33 integration tests** after the final restart corrections. Inspected synthetic light/dark, English/Italian and 1000-pixel desktop captures. The resource divider supports pointer and keyboard resizing; routing-key display is paged and grouping is memoized. Count filters skip up to ten empty broker pages per request; routing discovery has explicit finite response/count limits. This is not a large-production-broker benchmark.
+
+One final review found three P2 restart defects: legacy duplicate histories could create multiple live subscriptions, first-restart Kafka edits could be ignored by migrated histories, and invalid limits could leave a stopped capture apparently connecting. Three focused regressions failed before correction and passed after checking all matching active sessions, deriving legacy selections from saved starts and validating limits before mutation. The full unit/native checks followed those corrections; no second review was requested.
+
+The maintainer then confirmed runner/configuration readiness and authorized the real signing flow. Repository inventory showed WIN_MBA online/idle; its required codesign label was added while retaining the default labels. No secret values were retrieved. Real remote build/signature/upload evidence follows the PR/main merge, separately from these local checks.

@@ -29,9 +29,7 @@ test('sandboxed desktop exposes only the narrow ready bridge', async () => {
     expect(preferences.sandbox).toBe(true)
     expect(preferences.contextIsolation).toBe(true)
     expect(preferences.nodeIntegration).toBe(false)
-    await expect(page.locator('.sidebar-bottom')).toContainText(
-      '1.0.0 · Ackbar',
-    )
+    await expect(page.locator('.sidebar-bottom')).toContainText('1.0.1')
     expect(
       await page.evaluate(() => window.open('https://example.test')),
     ).toBeNull()

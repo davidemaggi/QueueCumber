@@ -1,6 +1,6 @@
 {
   "name": "queuecumber",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A local desktop inspector for messaging systems.",
   "private": true,
   "license": "MIT",
@@ -65,6 +65,5 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/davidemaggi/QueueCumber.git"
-  },
-  "releaseName": "Ackbar"
+  }
 }

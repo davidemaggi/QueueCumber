@@ -13,6 +13,8 @@ export type ResourcePage = {
 }
 export type EndpointStatus = { ok: boolean; code?: string }
 export type Binding = {
+  vhost?: string
+  destinationKind?: 'queue' | 'stream'
   source: string
   destination: string
   routing_key: string

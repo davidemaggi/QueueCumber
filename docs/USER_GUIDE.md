@@ -14,19 +14,27 @@ Homebrew, WinGet and Chocolatey will follow verified release assets and registry
 
 ## First connection
 
-Choose Add connection, select RabbitMQ or Kafka, and supply the endpoints. RabbitMQ defaults to a two-step guided form: enter a credential-free AMQP endpoint (for example `amqps://broker:5671`), management base URL and virtual host, then choose **Next: credentials** and enter username/password. Back preserves the draft. **Connection URL (advanced)** accepts a full AMQP URL instead. Kafka has separate bootstrap brokers and optional SASL credentials.
+Choose Add connection, select RabbitMQ or Kafka, and supply the endpoints. RabbitMQ defaults to a two-step guided form: enter AMQP and management hosts/ports plus the virtual host, then choose **Next: credentials** and enter username/password. Back preserves the draft. **Connection URL (advanced)** accepts a full AMQP URL instead. Kafka has separate bootstrap brokers and optional SASL credentials.
 
-Use verified TLS for remote brokers. Custom PEM CAs are supported; never turn off certificate validation. Plain transport requires explicit consent. Saving manually selects the connection and loads its resources; it does not start a capture. Test its endpoints using the connection controls. Stored secrets are not prefilled when editing: re-enter the complete settings. Imports remain disconnected until explicitly selected.
+Use verified TLS for remote brokers. Custom PEM CAs are supported; never turn off certificate validation. Plain transport requires explicit consent. Saving manually selects the connection and loads its resources; it does not start a capture. Test its endpoints using the connection controls. Edit connection loads the saved endpoints, credentials and TLS settings; change only what you need. Passwords remain masked. Imports remain disconnected until explicitly selected.
 
 Secure mode encrypts profiles and retained history with an OS-protected key. Session-only mode keeps profiles in memory and encrypted captures in a temporary directory. It is intentional when no secure backend is available. Check your OS keyring is unlocked before expecting persistence; a corrupt/locked existing vault requires recovery, not deletion.
 
-For RabbitMQ, AMQP and management URLs are separate. The management URL is the base before `/api`; both use the same credentials. Guided setup encodes credentials and the virtual host for you. In advanced mode the vhost comes from the AMQP path (`%2F` for `/`). See the [permission recipe](RABBITMQ.md). For Kafka, all bootstrap and metadata-advertised broker addresses must be reachable; see [authentication and permissions](KAFKA.md).
+For RabbitMQ, AMQP and management URLs are separate. The management URL is the base before `/api`; both use the same credentials. Guided setup encodes credentials and the virtual host for you. Standard ports select TLS automatically (5671/15671/443) or plain transport (5672/15672/80). Custom ports default to TLS; use the TLS checkboxes for your broker configuration. Plain transport still requires explicit consent. Protocols are never downgraded after a failed connection. In advanced mode the vhost comes from the AMQP path (`%2F` for `/`). See the [permission recipe](RABBITMQ.md). For Kafka, all bootstrap and metadata-advertised broker addresses must be reachable; see [authentication and permissions](KAFKA.md).
 
 Dot-only virtual host names (`.` and `..`) are unsupported by guided setup because URL parsing normalizes them; the form rejects them instead of selecting the default virtual host.
 
 ## Capture and inspect
 
-Search broker resources on the left, select a queue/stream/topic, review its routes or starting positions, then choose **Start capture**. Selecting alone does not subscribe. For ready-made destinations and traffic, follow the README's [local demo](../README.md#try-a-capture-with-local-demo-traffic).
+Search broker resources on the left, select a queue/stream/topic, review its routes or starting positions, then choose **Start capture**. Selecting alone does not subscribe. Start reuses the existing capture for that connection/destination. Stop preserves its messages; Start resumes in the same history. Queue traffic during a stop cannot be recovered and counts as an observation gap. Streams/Kafka continue from saved offsets when the selected starting options are unchanged; explicitly changing those options repositions the same capture and may repeat retained messages.
+
+Hover a truncated resource name to see it in full. Drag the divider beside the resource list, or focus it and use Left/Right/Home/End, to resize that pane. Resource type and message-count filters apply to broker pages; pages with no matches are skipped up to ten at a time. Continue with the next-page button when more source pages remain. Unknown counts are excluded from with/without-message filters; Kafka does not expose queue-style message counts.
+
+Choose **Routing keys** to browse distinct keys from queue/stream bindings in the connection's virtual host. Expand a key to see exchanges and destinations, then select one to inspect. Discovery is bounded to 10,000 bindings/queues and 100 displayed keys per page; a larger response fails visibly instead of silently truncating it. This is a binding inventory, not a list of keys inferred from message bodies. Implicit default-exchange keys are visible but cannot be mirrored.
+
+For a queue, check only the bindings you want to observe. **Add a routing key manually** takes an exchange and key/pattern; direct and topic exchanges are supported, including topic wildcards. It binds only the owned temporary observation queue. The application queue and its bindings remain unchanged. Fanout/headers routes can be selected from existing bindings; manual keys are not meaningful for those exchange types. Selected bindings must still exist when restarting/reconnecting; a missing selection fails visibly.
+
+For ready-made destinations and traffic, follow the README's [local demo](../README.md#try-a-capture-with-local-demo-traffic).
 
 RabbitMQ queue capture copies supported bindings onto a temporary queue: it sees future routed traffic, never the selected queue's existing backlog. Default-exchange and unknown/distribution exchanges cannot be mirrored; accepting partial coverage can miss routes.
 
