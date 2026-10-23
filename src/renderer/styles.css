@@ -472,7 +472,9 @@ details > label {
 }
 .inspection {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns:
+    minmax(200px, min(var(--resource-width, 280px), 40vw))
+    6px minmax(0, 1fr);
   flex: 1;
   min-height: 0;
 }
@@ -866,7 +868,9 @@ pre {
     grid-template-columns: 190px minmax(0, 1fr);
   }
   .inspection {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns:
+      minmax(200px, min(var(--resource-width, 220px), 35vw))
+      6px minmax(0, 1fr);
   }
   .messages-workspace {
     grid-template-columns: 1fr;
@@ -1064,4 +1068,77 @@ pre {
 
 .connection-endpoint {
   overflow-wrap: anywhere;
+}
+
+.pane-resizer {
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--ground);
+}
+.pane-resizer:hover,
+.pane-resizer:focus-visible {
+  background: var(--accent);
+}
+.resource-filters {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+.resource-filters label {
+  font-size: 12px;
+}
+.resource-filters select {
+  width: 100%;
+}
+.endpoint-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
+}
+.routing-key-group {
+  padding: 8px 14px;
+}
+.routing-key-group summary {
+  overflow-wrap: anywhere;
+}
+.routing-key-group button {
+  width: 100%;
+  text-align: left;
+  margin-top: 8px;
+}
+.routing-key-group button span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.manual-route {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+.manual-route span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.manual-routes {
+  margin: 12px 0;
+}
+.binding-table td {
+  overflow-wrap: anywhere;
+}
+.messages-pane .pane-title {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.route-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.messages-pane .pane-title select {
+  width: auto;
+  max-width: 180px;
+}
+.resource-filters {
+  padding-top: 12px;
 }

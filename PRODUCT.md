@@ -29,8 +29,9 @@ A local desktop inspector with a common workflow across brokers and explicit han
 - Connect to self-hosted and cloud-hosted broker endpoints; save and independently test multiple connection profiles.
 - Browse and search queues, streams, exchanges and routing bindings where applicable.
 - Selecting a resource shows its routes/starting positions; an explicit Start capture action starts an ephemeral inspection session.
-- Offer guided RabbitMQ setup with separate endpoints, virtual host and credentials, alongside advanced connection URLs. Provide disposable local demo destinations and synthetic traffic for trying capture.
+- Offer guided RabbitMQ setup with separate hosts/ports, TLS settings, virtual host and credentials, alongside advanced connection URLs. Editing preserves saved values. Provide disposable local demo destinations and synthetic traffic for trying capture.
 - For a RabbitMQ queue, inspect its bindings and create an owned temporary queue bound to the same exchanges, keys and binding arguments. Capture newly routed copies without consuming the original queue's backlog.
+- Reuse capture history across Start/Stop; browse distinct binding routing keys and select individual bindings or enter a direct/topic route manually. Resource panes support full-name tooltips, resizing and kind/message-count filters; captured messages support either arrival order.
 - Choose beginning, live end or a specific offset when stream positioning is supported.
 - Inspect structured headers and recognized formatted content, beginning with JSON; preserve original message bytes.
 - Continue subscriptions after closing the window, with session status available through the system tray where supported.

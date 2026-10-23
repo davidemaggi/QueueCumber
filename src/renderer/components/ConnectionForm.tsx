@@ -1,8 +1,8 @@
 import {
   validateConnection,
-  type ConnectionSummary,
+  type ConnectionProfile,
 } from '../../shared/connection'
-import { buildRabbitUrl } from '../../shared/rabbit-endpoint'
+import { buildRabbitUrl, rabbitEndpoint } from '../../shared/rabbit-endpoint'
 import { Fragment, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import type { translator } from '../i18n'
@@ -17,25 +17,57 @@ export function ConnectionForm({
   onClose: () => void
   onSave: (input: any) => Promise<void>
   busy: boolean
-  initial?: ConnectionSummary | null
+  initial?: ConnectionProfile | null
 }) {
+  const rabbit = initial && initial.provider !== 'kafka' ? initial : null
+  const kafka = initial?.provider === 'kafka' ? initial : null
+  const parsed = rabbit ? new URL(rabbit.protocolUrl) : null
+  const managed = rabbit ? new URL(rabbit.managementUrl) : null
+  const [host, setHost] = useState(parsed?.hostname ?? '')
+  const [port, setPort] = useState(
+    parsed?.port || (parsed?.protocol === 'amqp:' ? '5672' : '5671'),
+  )
+  const [managementHost, setManagementHost] = useState(managed?.hostname ?? '')
+  const [managementPort, setManagementPort] = useState(
+    managed?.port ||
+      (managed?.protocol === 'http:' ? '80' : managed ? '443' : '15671'),
+  )
+  const [amqpTls, setAmqpTls] = useState(
+    parsed ? parsed.protocol === 'amqps:' : true,
+  )
+  const [managementTls, setManagementTls] = useState(
+    managed ? managed.protocol === 'https:' : true,
+  )
   const [name, setName] = useState(initial?.name ?? ''),
-    [url, setUrl] = useState(''),
-    [management, setManagement] = useState(''),
-    [insecure, setInsecure] = useState(false),
-    [ca, setCa] = useState(''),
+    [url, setUrl] = useState(rabbit?.protocolUrl ?? ''),
+    [management, setManagement] = useState(rabbit?.managementUrl ?? ''),
+    [insecure, setInsecure] = useState(initial?.allowInsecure ?? false),
+    [ca, setCa] = useState(initial?.caPem ?? ''),
     [provider, setProvider] = useState<'rabbitmq' | 'kafka'>(
       initial?.provider ?? 'rabbitmq',
     ),
-    [brokers, setBrokers] = useState(''),
-    [tls, setTls] = useState(true),
-    [mechanism, setMechanism] = useState('none'),
-    [username, setUsername] = useState(''),
-    [password, setPassword] = useState(''),
-    [setup, setSetup] = useState('guided'),
+    [brokers, setBrokers] = useState(kafka?.brokers.join(', ') ?? ''),
+    [tls, setTls] = useState(kafka?.tls ?? true),
+    [mechanism, setMechanism] = useState<string>(
+      kafka?.sasl?.mechanism ?? 'none',
+    ),
+    [username, setUsername] = useState(
+      kafka?.sasl?.username ??
+        (parsed ? decodeURIComponent(parsed.username || 'guest') : ''),
+    ),
+    [password, setPassword] = useState(
+      kafka?.sasl?.password ??
+        (parsed ? decodeURIComponent(parsed.password || 'guest') : ''),
+    ),
+    [setup, setSetup] = useState(
+      parsed?.search || (managed && managed.pathname !== '/')
+        ? 'url'
+        : 'guided',
+    ),
     [step, setStep] = useState(0),
-    [endpoint, setEndpoint] = useState(''),
-    [vhost, setVhost] = useState('/'),
+    [vhost, setVhost] = useState(
+      parsed ? decodeURIComponent(parsed.pathname.slice(1)) || '/' : '/',
+    ),
     [formError, setFormError] = useState(false)
   const guided = provider === 'rabbitmq' && setup === 'guided'
   async function submit(event: FormEvent) {
@@ -57,9 +89,21 @@ export function ConnectionForm({
           : {
               provider,
               protocolUrl: guided
-                ? buildRabbitUrl(endpoint, vhost, username, password)
+                ? buildRabbitUrl(
+                    rabbitEndpoint(host, port, amqpTls, 'amqp'),
+                    vhost,
+                    username,
+                    password,
+                  )
                 : url,
-              managementUrl: management,
+              managementUrl: guided
+                ? rabbitEndpoint(
+                    managementHost || host,
+                    managementPort,
+                    managementTls,
+                    'http',
+                  )
+                : management,
             }),
         allowInsecure: insecure,
         ...(ca ? { caPem: ca } : {}),
@@ -143,7 +187,7 @@ export function ConnectionForm({
             {guided && step === 1 ? (
               <Fragment key="credentials">
                 <p className="small connection-endpoint">
-                  {endpoint} · {t('virtualHost')}: {vhost}
+                  {host}:{port} · {t('virtualHost')}: {vhost}
                 </p>
                 <label>
                   {t('username')}
@@ -172,28 +216,63 @@ export function ConnectionForm({
               </Fragment>
             ) : (
               <Fragment key="endpoints">
-                <label>
-                  {t(guided ? 'amqpEndpoint' : 'amqpUrl')}
-                  <input
-                    required
-                    type={guided ? 'url' : 'password'}
-                    autoComplete="off"
-                    spellCheck={false}
-                    maxLength={8192}
-                    disabled={busy}
-                    value={guided ? endpoint : url}
-                    onChange={(e) =>
-                      guided
-                        ? setEndpoint(e.target.value)
-                        : setUrl(e.target.value)
-                    }
-                    placeholder={
-                      guided
-                        ? 'amqps://broker:5671'
-                        : 'amqps://user:password@broker:5671/vhost'
-                    }
-                  />
-                </label>
+                {guided ? (
+                  <>
+                    <div className="endpoint-fields">
+                      <label>
+                        {t('amqpHost')}
+                        <input
+                          required
+                          maxLength={255}
+                          disabled={busy}
+                          value={host}
+                          onChange={(e) => setHost(e.target.value)}
+                          placeholder="broker.example.com"
+                        />
+                      </label>
+                      <label>
+                        {t('port')}
+                        <input
+                          required
+                          type="number"
+                          min="1"
+                          max="65535"
+                          disabled={busy}
+                          value={port}
+                          onChange={(e) => {
+                            setPort(e.target.value)
+                            if (['5671', '5672'].includes(e.target.value))
+                              setAmqpTls(e.target.value === '5671')
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        checked={amqpTls}
+                        onChange={(e) => setAmqpTls(e.target.checked)}
+                        disabled={busy}
+                      />
+                      {t('amqpTls')}
+                    </label>
+                  </>
+                ) : (
+                  <label>
+                    {t('amqpUrl')}
+                    <input
+                      required
+                      type="password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      maxLength={8192}
+                      disabled={busy}
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="amqps://user:password@broker:5671/vhost"
+                    />
+                  </label>
+                )}
                 {guided ? (
                   <label>
                     {t('virtualHost')}
@@ -206,18 +285,66 @@ export function ConnectionForm({
                     />
                   </label>
                 ) : null}
-                <label>
-                  {t('managementUrl')}
-                  <input
-                    required
-                    type="url"
-                    maxLength={8192}
-                    disabled={busy}
-                    value={management}
-                    onChange={(e) => setManagement(e.target.value)}
-                    placeholder="https://broker:15671"
-                  />
-                </label>
+                {guided ? (
+                  <>
+                    <div className="endpoint-fields">
+                      <label>
+                        {t('managementHost')}
+                        <input
+                          maxLength={255}
+                          disabled={busy}
+                          value={managementHost}
+                          onChange={(e) => setManagementHost(e.target.value)}
+                          placeholder={host || 'broker.example.com'}
+                        />
+                      </label>
+                      <label>
+                        {t('managementPort')}
+                        <input
+                          required
+                          type="number"
+                          min="1"
+                          max="65535"
+                          disabled={busy}
+                          value={managementPort}
+                          onChange={(e) => {
+                            setManagementPort(e.target.value)
+                            if (
+                              ['80', '443', '15671', '15672'].includes(
+                                e.target.value,
+                              )
+                            )
+                              setManagementTls(
+                                ['443', '15671'].includes(e.target.value),
+                              )
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        checked={managementTls}
+                        onChange={(e) => setManagementTls(e.target.checked)}
+                        disabled={busy}
+                      />
+                      {t('managementTls')}
+                    </label>
+                  </>
+                ) : (
+                  <label>
+                    {t('managementUrl')}
+                    <input
+                      required
+                      type="url"
+                      maxLength={8192}
+                      disabled={busy}
+                      value={management}
+                      onChange={(e) => setManagement(e.target.value)}
+                      placeholder="https://broker:15671"
+                    />
+                  </label>
+                )}
               </Fragment>
             )}
           </>

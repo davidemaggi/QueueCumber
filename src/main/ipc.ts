@@ -1,3 +1,4 @@
+import { resourceFilterSchema } from '../shared/resource-filter'
 import { kafkaSelectionSchema } from '../shared/kafka'
 import { exportFormatSchema } from '../shared/export'
 import { passwordSchema, importModeSchema } from '../shared/transfer'
@@ -39,9 +40,16 @@ export const operationSchemas = {
   saveDesktopPreferences: z.tuple([desktopPreferencesSchema]),
   getStatus: z.tuple([]),
   getState: z.tuple([]),
+  getConnection: z.tuple([id]),
+  listRoutingBindings: z.tuple([id]),
   saveConnection: z.tuple([connectionSchema]),
   testConnection: z.tuple([id]),
-  listResources: z.tuple([id, z.string().max(255), page]),
+  listResources: z.tuple([
+    id,
+    z.string().max(255),
+    page,
+    resourceFilterSchema.optional(),
+  ]),
   getBindings: z.tuple([id, resource]),
   getPartitions: z.tuple([id, resource]),
   startCapture: z.tuple([
@@ -49,7 +57,20 @@ export const operationSchemas = {
     resource,
     z
       .object({
+        captureId: id.optional(),
         allowPartial: z.boolean(),
+        bindingKeys: z.array(z.string().max(65536)).max(256).optional(),
+        manualRoutes: z
+          .array(
+            z
+              .object({
+                source: z.string().min(1).max(255),
+                routingKey: z.string().max(255),
+              })
+              .strict(),
+          )
+          .max(64)
+          .optional(),
         kafkaPartitions: kafkaSelectionSchema.optional(),
         limits: limits.optional(),
         streamStart: z
@@ -63,7 +84,11 @@ export const operationSchemas = {
       .strict(),
   ]),
   stopCapture: z.tuple([id]),
-  readMessages: z.tuple([id, z.number().int().positive().nullable()]),
+  readMessages: z.tuple([
+    id,
+    z.number().int().positive().nullable(),
+    z.enum(['asc', 'desc']).optional(),
+  ]),
   readMessage: z.tuple([z.number().int().positive()]),
   readPayloadChunk: z.tuple([
     z.number().int().positive(),

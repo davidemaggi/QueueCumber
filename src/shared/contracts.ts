@@ -1,7 +1,12 @@
+import type { ResourceFilter } from './resource-filter'
 import type { ExportFormat, ExportStatus } from './export'
 import type { ImportPreview, ImportMode } from './transfer'
 import type { DesktopPreferences } from './desktop'
-import type { ConnectionInput, ConnectionSummary } from './connection'
+import type {
+  ConnectionInput,
+  ConnectionSummary,
+  ConnectionProfile,
+} from './connection'
 import type { CaptureSettings } from './limits'
 import type {
   ResourcePage,
@@ -57,11 +62,18 @@ export interface DesktopApi {
   saveDesktopPreferences(input: DesktopPreferences): Promise<void>
   getStatus(): Promise<AppStatus>
   getState(): Promise<State>
+  getConnection(id: string): Promise<ConnectionProfile>
+  listRoutingBindings(id: string): Promise<Binding[]>
   saveConnection(input: ConnectionInput): Promise<ConnectionSummary>
   testConnection(
     id: string,
   ): Promise<{ protocol: EndpointStatus; management: EndpointStatus }>
-  listResources(id: string, query: string, page: number): Promise<ResourcePage>
+  listResources(
+    id: string,
+    query: string,
+    page: number,
+    filter?: ResourceFilter,
+  ): Promise<ResourcePage>
   getPartitions(
     id: string,
     resource: ResourceRef,
@@ -76,6 +88,7 @@ export interface DesktopApi {
   readMessages(
     id: string,
     cursor: number | null,
+    order?: 'asc' | 'desc',
   ): Promise<{ records: MessageSummary[]; nextCursor: number | null }>
   readMessage(id: number): Promise<MessageDetail>
   readPayloadChunk(

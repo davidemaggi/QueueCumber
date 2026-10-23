@@ -1,3 +1,5 @@
+import type { ResourceFilter } from '../shared/resource-filter'
+import { bindingKey } from '../shared/routes'
 import { KafkaPartitions } from './components/KafkaPartitions'
 import brandMark from '../../resources/branding/mark.svg'
 import {
@@ -12,9 +14,16 @@ const releaseName =
   'releaseName' in packageInfo && typeof packageInfo.releaseName === 'string'
     ? packageInfo.releaseName
     : undefined
-import type { ConnectionSummary } from '../shared/connection'
+import type { ConnectionProfile } from '../shared/connection'
 import { CaptureTools } from './components/CaptureTools'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import {
   Plus,
   Settings as SettingsIcon,
@@ -51,7 +60,7 @@ export default function App() {
     )
   const [screen, setScreen] = useState<'inspect' | 'settings'>('inspect'),
     [form, setForm] = useState(false),
-    [editingProfile, setEditingProfile] = useState<ConnectionSummary | null>(
+    [editingProfile, setEditingProfile] = useState<ConnectionProfile | null>(
       null,
     ),
     [connection, setConnection] = useState(''),
@@ -60,10 +69,10 @@ export default function App() {
     [query, setQuery] = useState(''),
     [kind, setKind] = useState('all'),
     [resourcePage, setResourcePage] = useState(1),
-    [hasMore, setHasMore] = useState(false)
+    [hasMore, setHasMore] = useState(false),
+    [nextResourcePage, setNextResourcePage] = useState(2)
   const [bindings, setBindings] = useState<Binding[]>([]),
     [bindingReady, setBindingReady] = useState(false),
-    [partial, setPartial] = useState(false),
     [sessionId, setSessionId] = useState('')
   const [rows, setRows] = useState<MessageSummary[]>([]),
     [cursor, setCursor] = useState<number | null>(null),
@@ -77,6 +86,64 @@ export default function App() {
     [sessionDisk, setSessionDisk] = useState(''),
     [sessionRate, setSessionRate] = useState('')
   const [resourceRevision, setResourceRevision] = useState(0)
+  const [messageOrder, setMessageOrder] = useState<'asc' | 'desc'>('desc')
+  const [messageFilter, setMessageFilter] = useState('all')
+  const [routeKeys, setRouteKeys] = useState<string[]>([])
+  const [manualRoutes, setManualRoutes] = useState<
+    { source: string; routingKey: string }[]
+  >([])
+  const [manualSource, setManualSource] = useState('')
+  const [manualKey, setManualKey] = useState('')
+  const [routingBindings, setRoutingBindings] = useState<Binding[]>([])
+  const [routingLoading, setRoutingLoading] = useState(false)
+  const routingGroups = useMemo(() => {
+    const groups = new Map<string, Binding[]>()
+    const seen = new Set<string>()
+    for (const binding of routingBindings) {
+      const identity = JSON.stringify([
+        binding.source,
+        binding.destination,
+        binding.routing_key,
+      ])
+      if (seen.has(identity)) continue
+      seen.add(identity)
+      const group = groups.get(binding.routing_key) ?? []
+      group.push(binding)
+      groups.set(binding.routing_key, group)
+    }
+    return [...groups]
+      .filter(([key]) => key.toLowerCase().includes(query.toLowerCase()))
+      .sort(([a], [b]) => a.localeCompare(b))
+  }, [routingBindings, query])
+  const [paneWidth, setPaneWidth] = useState(() =>
+    Math.min(
+      480,
+      Math.max(200, Number(localStorage.getItem('qc.resourceWidth')) || 280),
+    ),
+  )
+  useEffect(() => {
+    localStorage.setItem('qc.resourceWidth', String(paneWidth))
+  }, [paneWidth])
+  useEffect(() => {
+    if (!connection || kind !== 'routingKeys') return
+    let cancelled = false
+    setRoutingBindings([])
+    setRoutingLoading(true)
+    void api
+      .listRoutingBindings(connection)
+      .then((rows) => {
+        if (!cancelled) setRoutingBindings(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setRoutingLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [connection, kind, resourceRevision])
   const [streamChoice, setStreamChoice] = useState<'first' | 'next' | 'offset'>(
       'next',
     ),
@@ -136,11 +203,17 @@ export default function App() {
     let cancelled = false
     const timer = setTimeout(() => {
       void api
-        .listResources(connection, query, resourcePage)
+        .listResources(connection, query, resourcePage, {
+          kind: (kind === 'routingKeys'
+            ? 'all'
+            : kind) as ResourceFilter['kind'],
+          messages: messageFilter as ResourceFilter['messages'],
+        })
         .then((p) => {
           if (!cancelled) {
             setResources(p.resources)
             setHasMore(p.hasMore)
+            setNextResourcePage(p.page + 1)
           }
         })
         .catch(() => {
@@ -151,7 +224,7 @@ export default function App() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [connection, query, resourcePage, resourceRevision])
+  }, [connection, query, resourcePage, resourceRevision, kind, messageFilter])
   useEffect(() => {
     if (!sessionId) {
       setRows([])
@@ -161,7 +234,7 @@ export default function App() {
       timer: ReturnType<typeof setTimeout>
     async function tick() {
       try {
-        const page = await api.readMessages(sessionId, cursor)
+        const page = await api.readMessages(sessionId, cursor, messageOrder)
         if (!cancelled) {
           setRows(page.records)
           setNextCursor(page.nextCursor)
@@ -176,7 +249,7 @@ export default function App() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [sessionId, cursor])
+  }, [sessionId, cursor, messageOrder])
   async function run<T>(operation: () => Promise<T>): Promise<T | undefined> {
     setBusy(true)
     setError(false)
@@ -197,12 +270,15 @@ export default function App() {
       await refresh()
     })
   }
-  async function chooseResource(r: ResourceRef) {
+  async function chooseResource(r: ResourceRef, onlyKey?: string) {
     const token = ++selection.current
     setResource(r)
     setBindings([])
+    setRouteKeys([])
+    setManualRoutes([])
+    setManualSource('')
+    setManualKey('')
     setBindingReady(false)
-    setPartial(false)
     setStreamChoice('next')
     setStreamOffset('')
     setMessage(null)
@@ -213,13 +289,30 @@ export default function App() {
     setSessionCache('')
     setSessionDisk('')
     setSessionRate('')
-    const existing = state?.sessions.find(
-      (s) =>
-        s.connectionId === connection &&
-        s.resource.name === r.name &&
-        s.state === 'capturing',
-    )
+    const existing = state?.sessions
+      .slice()
+      .reverse()
+      .find(
+        (s) =>
+          s.connectionId === connection &&
+          s.resource.name === r.name &&
+          s.resource.kind === r.kind &&
+          s.resource.vhost === r.vhost,
+      )
+    if (existing?.streamStart !== undefined) {
+      setStreamChoice(
+        typeof existing.streamStart === 'number'
+          ? 'offset'
+          : existing.streamStart,
+      )
+      setStreamOffset(
+        typeof existing.streamStart === 'number'
+          ? String(existing.streamStart)
+          : '',
+      )
+    }
     setSessionId(existing?.id ?? '')
+    setManualRoutes(existing?.options?.manualRoutes ?? [])
     setPartitions([])
     setKafkaSelection([])
     if (r.kind === 'topic') {
@@ -228,10 +321,11 @@ export default function App() {
         if (token === selection.current) {
           setPartitions(p)
           setKafkaSelection(
-            existing?.kafkaPositions?.map((p) => ({
-              partition: p.partition,
-              from: p.start,
-            })) ??
+            existing?.options?.kafkaPartitions ??
+              existing?.kafkaPositions?.map((p) => ({
+                partition: p.partition,
+                from: p.start,
+              })) ??
               p
                 .slice(0, 128)
                 .map((p) => ({ partition: p.partition, from: 'next' })),
@@ -247,6 +341,16 @@ export default function App() {
       const b = await api.getBindings(connection, r)
       if (token === selection.current) {
         setBindings(b)
+        setRouteKeys(
+          onlyKey !== undefined
+            ? b
+                .filter(
+                  (route) => route.supported && route.routing_key === onlyKey,
+                )
+                .map(bindingKey)
+            : (existing?.options?.bindingKeys ??
+                b.filter((route) => route.supported).map(bindingKey)),
+        )
         setBindingReady(true)
       }
     } catch {
@@ -261,9 +365,13 @@ export default function App() {
     streamOffset.trim() !== '' &&
     Number.isSafeInteger(Number(streamOffset)) &&
     Number(streamOffset) >= 0
-  const shownBindings = session?.bindings ?? bindings
+  const shownBindings = active ? session.bindings : bindings
   const shownResources = resources.filter(
-    (r) => kind === 'all' || r.kind === kind,
+    (r) =>
+      (kind === 'all' || r.kind === kind) &&
+      (messageFilter === 'all' ||
+        (r.messages !== undefined &&
+          (messageFilter === 'empty' ? r.messages === 0 : r.messages > 0))),
   )
   async function start() {
     if (!resource) return
@@ -281,7 +389,11 @@ export default function App() {
           : {}),
       }
       const s = await api.startCapture(connection, resource, {
-        allowPartial: partial,
+        ...(sessionId ? { captureId: sessionId } : {}),
+        ...(resource.kind === 'queue'
+          ? { bindingKeys: routeKeys, manualRoutes }
+          : {}),
+        allowPartial: false,
         limits,
         ...(resource.kind === 'topic'
           ? { kafkaPartitions: kafkaSelection }
@@ -357,6 +469,7 @@ export default function App() {
               className={
                 connection === p.id ? 'connection selected' : 'connection'
               }
+              title={p.name}
               aria-label={p.name}
               key={p.id}
               onClick={() => {
@@ -364,6 +477,7 @@ export default function App() {
                 messageSelection.current++
                 setNextCursor(null)
                 setKind('all')
+                setMessageFilter('all')
                 setConnection(p.id)
                 setResource(null)
                 setRows([])
@@ -403,7 +517,6 @@ export default function App() {
                     messageSelection.current++
                     setRows([])
                     setNextCursor(null)
-                    setPartial(false)
                     setKind('all')
                     setConnection(s.connectionId)
                     setResource(s.resource)
@@ -419,12 +532,19 @@ export default function App() {
                     )
                     setPartitions(s.kafkaPositions ?? [])
                     setKafkaSelection(
-                      s.kafkaPositions?.map((p) => ({
-                        partition: p.partition,
-                        from: p.start,
-                      })) ?? [],
+                      s.options?.kafkaPartitions ??
+                        s.kafkaPositions?.map((p) => ({
+                          partition: p.partition,
+                          from: p.start,
+                        })) ??
+                        [],
                     )
                     setBindings(s.bindings)
+                    setRouteKeys(
+                      s.options?.bindingKeys ??
+                        s.bindings.filter((b) => b.supported).map(bindingKey),
+                    )
+                    setManualRoutes(s.options?.manualRoutes ?? [])
                     setBindingReady(true)
                     setSessionId(s.id)
                     setCursor(null)
@@ -635,7 +755,10 @@ export default function App() {
             ) : null}
           </main>
         ) : (
-          <main className="inspection">
+          <main
+            className="inspection"
+            style={{ '--resource-width': `${paneWidth}px` } as CSSProperties}
+          >
             <section className="resource-pane">
               <div className="pane-title">
                 <h2>{t('resources')}</h2>
@@ -666,10 +789,13 @@ export default function App() {
                 className="text-button edit-connection"
                 disabled={busy}
                 onClick={() => {
-                  setEditingProfile(
-                    state?.profiles.find((p) => p.id === connection) ?? null,
-                  )
-                  setForm(true)
+                  const token = selection.current
+                  void run(async () => {
+                    const profile = await api.getConnection(connection)
+                    if (token !== selection.current) return
+                    setEditingProfile(profile)
+                    setForm(true)
+                  })
                 }}
               >
                 {t('editConnection')}
@@ -686,28 +812,85 @@ export default function App() {
                   }}
                 />
               </div>
-              <div className="tabs resource-tabs">
-                <button
-                  className={kind === 'all' ? 'active' : ''}
-                  onClick={() => setKind('all')}
-                >
-                  {t('allResources')}
-                </button>
-                <button
-                  className={
-                    kind === (capabilities.partitions ? 'topic' : 'queue')
-                      ? 'active'
-                      : ''
-                  }
-                  onClick={() =>
-                    setKind(capabilities.partitions ? 'topic' : 'queue')
-                  }
-                >
-                  {t(capabilities.partitions ? 'topics' : 'queues')}
-                </button>
+              <div className="resource-filters">
+                <label>
+                  {t('resourceType')}
+                  <select
+                    value={kind}
+                    onChange={(e) => {
+                      setKind(e.target.value)
+                      setResourcePage(1)
+                    }}
+                  >
+                    <option value="all">{t('allResources')}</option>
+                    {chosenProvider === 'rabbitmq' ? (
+                      <>
+                        <option value="queue">{t('queues')}</option>
+                        <option value="stream">{t('streams')}</option>
+                        <option value="exchange">{t('exchanges')}</option>
+                        <option value="routingKeys">{t('routingKeys')}</option>
+                      </>
+                    ) : (
+                      <option value="topic">{t('topics')}</option>
+                    )}
+                  </select>
+                </label>
+                {chosenProvider === 'rabbitmq' && kind !== 'routingKeys' ? (
+                  <label>
+                    {t('messageFilter')}
+                    <select
+                      value={messageFilter}
+                      onChange={(e) => {
+                        setMessageFilter(e.target.value)
+                        setResourcePage(1)
+                      }}
+                    >
+                      <option value="all">{t('anyMessageCount')}</option>
+                      <option value="nonempty">{t('withMessages')}</option>
+                      <option value="empty">{t('withoutMessages')}</option>
+                    </select>
+                  </label>
+                ) : null}
               </div>
               <div className="resource-list">
-                {shownResources.length ? (
+                {kind === 'routingKeys' ? (
+                  routingLoading ? (
+                    <p className="empty-line">{t('loading')}</p>
+                  ) : !routingGroups.length ? (
+                    <p className="empty-line">{t('noResults')}</p>
+                  ) : (
+                    routingGroups
+                      .slice((resourcePage - 1) * 100, resourcePage * 100)
+                      .map(([key, routes]) => (
+                        <details className="routing-key-group" key={key}>
+                          <summary className="mono" title={key}>
+                            {key || t('emptyRoutingKey')}
+                          </summary>
+                          {routes.map((b, i) => (
+                            <button
+                              key={i}
+                              title={`${b.source} → ${b.destination}`}
+                              onClick={() =>
+                                void chooseResource(
+                                  {
+                                    name: b.destination,
+                                    vhost: b.vhost ?? '/',
+                                    kind: b.destinationKind ?? 'queue',
+                                  },
+                                  key,
+                                )
+                              }
+                            >
+                              <span className="mono">
+                                {b.source || t('defaultExchange')} →{' '}
+                                {b.destination}
+                              </span>
+                            </button>
+                          ))}
+                        </details>
+                      ))
+                  )
+                ) : shownResources.length ? (
                   shownResources.map((r) => (
                     <button
                       key={r.kind + ':' + r.name}
@@ -717,6 +900,7 @@ export default function App() {
                           ? 'selected'
                           : '')
                       }
+                      title={r.name || t('defaultExchange')}
                       aria-label={
                         t(r.kind) + ' ' + (r.name || t('defaultExchange'))
                       }
@@ -742,8 +926,20 @@ export default function App() {
                   <p className="empty-line">{t('noResults')}</p>
                 )}
               </div>
-              {hasMore ? (
-                <button onClick={() => setResourcePage((p) => p + 1)}>
+              {(
+                kind === 'routingKeys'
+                  ? resourcePage * 100 < routingGroups.length
+                  : hasMore
+              ) ? (
+                <button
+                  onClick={() =>
+                    setResourcePage(
+                      kind === 'routingKeys'
+                        ? resourcePage + 1
+                        : nextResourcePage,
+                    )
+                  }
+                >
                   {t('older')}
                 </button>
               ) : null}
@@ -753,6 +949,46 @@ export default function App() {
                 </button>
               ) : null}
             </section>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('resizeResources')}
+              aria-valuemin={200}
+              aria-valuemax={480}
+              aria-valuenow={paneWidth}
+              tabIndex={0}
+              className="pane-resizer"
+              onKeyDown={(e) => {
+                if (
+                  ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)
+                ) {
+                  e.preventDefault()
+                  setPaneWidth((w) =>
+                    e.key === 'Home'
+                      ? 200
+                      : e.key === 'End'
+                        ? 480
+                        : Math.min(
+                            480,
+                            Math.max(
+                              200,
+                              w + (e.key === 'ArrowRight' ? 20 : -20),
+                            ),
+                          ),
+                  )
+                }
+              }}
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId)
+              }}
+              onPointerMove={(e) => {
+                if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                  const left =
+                    e.currentTarget.parentElement!.getBoundingClientRect().left
+                  setPaneWidth(Math.min(480, Math.max(200, e.clientX - left)))
+                }
+              }}
+            />
             <div className="capture-workspace">
               {!resource ? <p className="notice">{t('captureGuide')}</p> : null}
               <section
@@ -789,11 +1025,9 @@ export default function App() {
                           !kafkaSelectionSchema.safeParse(kafkaSelection)
                             .success) ||
                         (resource.kind === 'queue' &&
+                          !active &&
                           (!bindingReady ||
-                            (!active &&
-                              (!bindings.some((b) => b.supported) ||
-                                (bindings.some((b) => !b.supported) &&
-                                  !partial))))) ||
+                            (!routeKeys.length && !manualRoutes.length))) ||
                         (resource.kind === 'stream' &&
                           !active &&
                           streamChoice === 'offset' &&
@@ -870,6 +1104,7 @@ export default function App() {
                       <table>
                         <thead>
                           <tr>
+                            <th>{t('includeRoute')}</th>
                             <th>{t('source')}</th>
                             <th>{t('route')}</th>
                             <th>{t('coverage')}</th>
@@ -878,6 +1113,26 @@ export default function App() {
                         <tbody>
                           {shownBindings.map((b, i) => (
                             <tr key={i}>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  aria-label={`${t('includeRoute')} ${b.source} ${b.routing_key}`}
+                                  disabled={!!active || busy || !b.supported}
+                                  checked={
+                                    !!active ||
+                                    routeKeys.includes(bindingKey(b))
+                                  }
+                                  onChange={(e) =>
+                                    setRouteKeys((keys) =>
+                                      e.target.checked
+                                        ? [...keys, bindingKey(b)]
+                                        : keys.filter(
+                                            (key) => key !== bindingKey(b),
+                                          ),
+                                    )
+                                  }
+                                />
+                              </td>
                               <td className="mono">
                                 {b.source || t('defaultExchange')}
                               </td>
@@ -906,17 +1161,91 @@ export default function App() {
                         </tbody>
                       </table>
                     </div>
-                    {bindings.some((b) => !b.supported) ? (
-                      <label className="checkbox">
-                        <input
-                          type="checkbox"
-                          checked={partial}
-                          disabled={!!active}
-                          onChange={(e) => setPartial(e.target.checked)}
-                        />
-                        {t('partial')}
-                      </label>
-                    ) : null}
+                    <details className="manual-routes">
+                      <summary>{t('manualRoute')}</summary>
+                      <p className="small muted">{t('manualRouteHint')}</p>
+                      <div className="endpoint-fields route-fields">
+                        <label>
+                          {t('source')}
+                          <input
+                            value={manualSource}
+                            maxLength={255}
+                            disabled={!!active || busy}
+                            onChange={(e) => setManualSource(e.target.value)}
+                            list="route-exchanges"
+                          />
+                        </label>
+                        <datalist id="route-exchanges">
+                          {[
+                            ...new Set(
+                              bindings
+                                .filter((b) =>
+                                  ['direct', 'topic'].includes(b.type),
+                                )
+                                .map((b) => b.source),
+                            ),
+                          ].map((source) => (
+                            <option key={source} value={source} />
+                          ))}
+                        </datalist>
+                        <label>
+                          {t('route')}
+                          <input
+                            value={manualKey}
+                            maxLength={255}
+                            disabled={!!active || busy}
+                            onChange={(e) => setManualKey(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                      <button
+                        disabled={
+                          !!active ||
+                          busy ||
+                          !manualSource.trim() ||
+                          manualRoutes.length >= 64
+                        }
+                        onClick={() => {
+                          setManualRoutes((routes) =>
+                            routes.some(
+                              (r) =>
+                                r.source === manualSource.trim() &&
+                                r.routingKey === manualKey,
+                            )
+                              ? routes
+                              : [
+                                  ...routes,
+                                  {
+                                    source: manualSource.trim(),
+                                    routingKey: manualKey,
+                                  },
+                                ],
+                          )
+                          setManualKey('')
+                        }}
+                      >
+                        {t('addRoute')}
+                      </button>
+                    </details>
+                    {manualRoutes.map((route, i) => (
+                      <div className="manual-route" key={i}>
+                        <span className="mono">
+                          {route.source} →{' '}
+                          {route.routingKey || t('emptyRoutingKey')}
+                        </span>
+                        <button
+                          disabled={!!active || busy}
+                          aria-label={`${t('removeRoute')} ${route.source} ${route.routingKey}`}
+                          onClick={() =>
+                            setManualRoutes((routes) =>
+                              routes.filter((_, index) => index !== i),
+                            )
+                          }
+                        >
+                          {t('removeRoute')}
+                        </button>
+                      </div>
+                    ))}
                     <p className="small muted">{t('partialHint')}</p>
                   </>
                 ) : resource?.kind === 'stream' ? (
@@ -1022,6 +1351,19 @@ export default function App() {
                 <section className="messages-pane">
                   <div className="pane-title">
                     <h2>{t('messages')}</h2>
+                    <select
+                      aria-label={t('messageOrder')}
+                      value={messageOrder}
+                      onChange={(e) => {
+                        setMessageOrder(e.target.value as 'asc' | 'desc')
+                        setCursor(null)
+                        setRows([])
+                        setNextCursor(null)
+                      }}
+                    >
+                      <option value="desc">{t('newestFirst')}</option>
+                      <option value="asc">{t('oldestFirst')}</option>
+                    </select>
                     <span className={'session-state ' + (session?.state ?? '')}>
                       {session ? t(session.state) : '—'}
                     </span>
@@ -1090,12 +1432,12 @@ export default function App() {
                   <div className="pagination">
                     {cursor ? (
                       <button onClick={() => setCursor(null)}>
-                        {t('latest')}
+                        {t(messageOrder === 'desc' ? 'latest' : 'oldestFirst')}
                       </button>
                     ) : null}
                     {nextCursor ? (
                       <button onClick={() => setCursor(nextCursor)}>
-                        {t('older')}
+                        {t(messageOrder === 'desc' ? 'older' : 'newer')}
                       </button>
                     ) : null}
                   </div>

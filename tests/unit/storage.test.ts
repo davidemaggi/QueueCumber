@@ -245,3 +245,30 @@ it('pages every retained raw byte including binary beyond the preview', async ()
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+it('pages all retained records in either arrival order without reversing only one page', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'qc-sort-'))
+  const store = new CaptureStorage(dir, randomBytes(32), DEFAULT_SETTINGS)
+  try {
+    for (let i = 0; i < 5; i++)
+      store.append('sort', {
+        payload: Buffer.from(String(i)),
+        headers: {},
+        routingKey: '',
+        exchange: '',
+      })
+    const first = store.readPage('sort', null, 2, 'asc')
+    expect(first.records.map((r) => r.preview)).toEqual(['0', '1'])
+    expect(
+      store
+        .readPage('sort', first.nextCursor, 2, 'asc')
+        .records.map((r) => r.preview),
+    ).toEqual(['2', '3'])
+    expect(
+      store.readPage('sort', null, 2, 'desc').records.map((r) => r.preview),
+    ).toEqual(['4', '3'])
+  } finally {
+    store.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

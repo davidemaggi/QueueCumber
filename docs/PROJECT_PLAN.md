@@ -10,7 +10,7 @@ Build a local Windows/macOS/Linux desktop inspector for developers. Start with R
 
 The first slice is: securely save a connection → test endpoints → discover a queue → inspect supported bindings → create a temporary observation queue → capture bounded local data → inspect a message → stop and clean up.
 
-The maintainer also requested guided connection entry and usable demo traffic during acceptance. RabbitMQ offers separate endpoints/vhost and credentials before saving, with advanced URLs retained. A developer-only localhost fixture seeds bounded RabbitMQ/Kafka destinations and publishes synthetic traffic; broker mutation remains outside the desktop app.
+The maintainer also requested guided connection entry and usable demo traffic during acceptance. RabbitMQ offers separate hosts/ports, TLS choices, vhost and credentials before saving, with advanced URLs retained. For 1.0.1, the maintainer requested preserved edit values, reusable Start/Stop history, resource resizing/tooltips/filters, distinct binding routing keys, individual route selection/manual direct-topic routes, and message paging in either arrival order. A developer-only localhost fixture seeds bounded RabbitMQ/Kafka destinations and publishes synthetic traffic; broker mutation remains outside the desktop app.
 
 No remote QueueCumber backend, broker administration UI, executable plugin loader or cloud account provisioning is proposed.
 

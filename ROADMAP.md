@@ -74,7 +74,7 @@ The maintainer confirmed manual installation checks and authorized publication o
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
 
-## 1.0.1 — optional signed Windows downloads (prepared locally; no character name)
+## 1.0.1 — inspection improvements and optional signed Windows downloads (prepared locally; no character name)
 
 - [x] Always build unsigned variants independently on GitHub-hosted runners.
 - [x] Isolated optional signing workflow with idle-runner preflight, queue watchdog, local certificate selection and signature checks.
@@ -83,6 +83,10 @@ Version 1.0 remains for inspection. Owned observation resources are permitted; a
 - [ ] Provision the self-hosted signing runner and its repository settings; verify real signing/upload and runner-unavailable behavior remotely.
 - [x] Bump to 1.0.1 and remove releaseName.
 - [x] Reuse the codesign runner label, subject/RFC3161 settings and SHA-256 signing convention from the supplied action; verify ZIP content matches the signed executable.
+- [x] Reuse captures across Start/Stop, retaining history and unchanged stream/Kafka positions.
+- [x] Guided host/port setup, preserved edit values, full-name tooltips and a resizable resource pane.
+- [x] Resource/message-count filters, distinct routing-key inventory, selected bindings and manual direct/topic routes.
+- [x] Newest/oldest-first paging across retained capture history.
 - [ ] Wait for maintainer runner-start confirmation before any remote execution, then verify actual signing and publication.
 
 The working source is 1.0.1 with no character name; 1.0.0 Ackbar remains the published release. No 1.0.1 remote run or real signing is claimed. Unsigned release drafts remain independent of signer availability. See [release policy](docs/RELEASING.md).

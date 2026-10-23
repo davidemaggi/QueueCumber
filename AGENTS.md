@@ -28,7 +28,7 @@ Architecture was approved on 2026-10-22. The MVP implementation plan at `docs/su
 
 The proposal's RabbitMQ capture contract governs observation. Never consume or acknowledge from application queues. Owned temporary observation queues/bindings are explicitly permitted; editing other broker resources is not.
 
-- Keep credentials and broker/file access out of the renderer. Validate IPC data and callers; expose narrowly scoped operations.
+- Keep broker/file access and routine credential state out of the renderer. Explicit editing may load one selected profile through validated IPC into a masked local form; never persist it in renderer storage or include credentials in summaries/logs. Validate IPC data and callers; expose narrowly scoped operations.
 - Treat messages, headers, imports, connection strings and filenames as untrusted. Preserve original bytes; render content as data.
 - Encrypt private connection data and sensitive captures at rest. Use OS-backed key protection; fail closed for persistence when protection is unavailable. Redact secrets from logs/errors.
 - Bound RAM, disk, IPC batches, pending writes and formatting work. Make overflow and capture gaps visible.

@@ -285,6 +285,12 @@ app.whenReady().then(async () => {
         platform: process.platform,
       },
     })),
+    getConnection: withReady(async (id) =>
+      structuredClone(await getProfile(id)),
+    ),
+    listRoutingBindings: withReady(async (id) =>
+      rpc('routingBindings', await getProfile(id)),
+    ),
     saveConnection: withReady(async (input) => {
       if (vault) return vault.save(input)
       const p = validateConnection(input)
@@ -295,8 +301,8 @@ app.whenReady().then(async () => {
       return summarizeConnection({ ...p, id })
     }),
     testConnection: withReady(async (id) => rpc('test', await getProfile(id))),
-    listResources: withReady(async (id, query, page) =>
-      rpc('resources', await getProfile(id), query, page),
+    listResources: withReady(async (id, query, page, filter) =>
+      rpc('resources', await getProfile(id), query, page, filter),
     ),
     getPartitions: withReady(async (id, resource) =>
       rpc('partitions', await getProfile(id), resource),
@@ -308,7 +314,9 @@ app.whenReady().then(async () => {
       rpc('start', await getProfile(id), resource, options),
     ),
     stopCapture: withReady((id) => rpc('stop', id)),
-    readMessages: withReady((id, cursor) => rpc('page', id, cursor)),
+    readMessages: withReady((id, cursor, order) =>
+      rpc('page', id, cursor, order),
+    ),
     readMessage: withReady((id) => rpc('message', id)),
     readPayloadChunk: withReady((id, offset) => rpc('chunk', id, offset)),
     previewSettings: withReady((input) => rpc('previewSettings', input)),

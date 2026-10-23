@@ -226,3 +226,13 @@ Local verification passes: **85 unit tests**, **8 native desktop tests** on macO
 One final review found two required corrections: an existing tag must match the expected commit even while the release is a draft, and uploads must target the verified numeric release ID rather than resolving the tag again. Both regression tests failed first and passed after correction; the full unit suite then passed. No second review was requested.
 
 No 1.0.1 push, remote workflow, distribution build or real signing run has been started. Runner availability/configuration, certificate service-account access, timestamps, actual signed app/installer/uninstaller acceptance and signed asset attachment remain pending. The maintainer must confirm runner startup before remote execution.
+
+## 1.0.1 inspection feedback and runner readiness
+
+The maintainer added inspection feedback before the signing trial: capture reuse, host/port setup, preserved edit values, resource resizing/tooltips/filtering, routing-key discovery/selection/manual routes and either message paging order. Capture options are persisted inside the existing encrypted session catalog. No database schema migration or broker application-resource mutation was introduced.
+
+Local checks after the feedback fixes pass **94 unit tests** and **8 native desktop tests**. The full broker suite also passed **33 integration tests** after the final restart corrections. Inspected synthetic light/dark, English/Italian and 1000-pixel desktop captures. The resource divider supports pointer and keyboard resizing; routing-key display is paged and grouping is memoized. Count filters skip up to ten empty broker pages per request; routing discovery has explicit finite response/count limits. This is not a large-production-broker benchmark.
+
+One final review found three P2 restart defects: legacy duplicate histories could create multiple live subscriptions, first-restart Kafka edits could be ignored by migrated histories, and invalid limits could leave a stopped capture apparently connecting. Three focused regressions failed before correction and passed after checking all matching active sessions, deriving legacy selections from saved starts and validating limits before mutation. The full unit/native checks followed those corrections; no second review was requested.
+
+The maintainer then confirmed runner/configuration readiness and authorized the real signing flow. Repository inventory showed WIN_MBA online/idle; its required codesign label was added while retaining the default labels. No secret values were retrieved. Real remote build/signature/upload evidence follows the PR/main merge, separately from these local checks.

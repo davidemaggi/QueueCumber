@@ -151,7 +151,7 @@ test('positions a stream, exports all formats and deletes only the local capture
             .then((s) => s.sessions.at(-1)?.captured),
         ),
       )
-      .toBe(1)
+      .toBe(3)
   } finally {
     await app.close()
     await ch.deleteQueue(name)

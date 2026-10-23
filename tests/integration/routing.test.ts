@@ -146,3 +146,82 @@ it('cleans up its observation queue when a later binding fails during setup', as
     await c.close()
   }
 })
+
+it('reuses capture history and selected/manual routes across stops and process restoration', async () => {
+  const { bindingKey } = await import('../../src/shared/routes')
+  const connection = await amqp.connect(profile.protocolUrl),
+    channel = await connection.createChannel()
+  const name = 'qc-feedback-' + randomUUID(),
+    dir = await mkdtemp(join(tmpdir(), 'qc-feedback-'))
+  const store = new CaptureStorage(dir, randomBytes(32), DEFAULT_SETTINGS)
+  let sessions = new SessionManager(store, () => DEFAULT_SETTINGS)
+  try {
+    await channel.assertExchange(name, 'direct', { durable: false })
+    await channel.assertQueue(name, { durable: false })
+    await channel.bindQueue(name, name, 'wanted')
+    await channel.bindQueue(name, name, 'excluded')
+    const broker = new RabbitMQ(profile),
+      bindings = await broker.bindings(name)
+    const options = {
+      allowPartial: false,
+      bindingKeys: bindings
+        .filter((b) => b.routing_key === 'wanted')
+        .map(bindingKey),
+      manualRoutes: [{ source: name, routingKey: 'manual' }],
+    }
+    const resource = { name, vhost: '/', kind: 'queue' as const }
+    const first = await sessions.startCapture(profile, resource, options)
+    expect((await sessions.startCapture(profile, resource, options)).id).toBe(
+      first.id,
+    )
+    channel.publish(name, 'wanted', Buffer.from('first'))
+    channel.publish(name, 'excluded', Buffer.from('excluded'))
+    channel.publish(name, 'manual', Buffer.from('manual'))
+    await expect.poll(() => sessions.list()[0].captured).toBe(2)
+    await sessions.stopCapture(first.id)
+    const resumed = await sessions.startCapture(profile, resource, {
+      ...options,
+      captureId: first.id,
+    })
+    expect(resumed.id).toBe(first.id)
+    expect(sessions.list()).toHaveLength(1)
+    channel.publish(name, 'wanted', Buffer.from('resumed'))
+    await expect.poll(() => sessions.list()[0].captured).toBe(3)
+    await sessions.close()
+    sessions = new SessionManager(store, () => DEFAULT_SETTINGS)
+    const restored = await sessions.startCapture(profile, resource, {
+      ...options,
+      captureId: first.id,
+    })
+    expect(restored.id).toBe(first.id)
+    expect(restored.gaps).toBeGreaterThanOrEqual(2)
+    expect(
+      store
+        .readPage(first.id, null, 10)
+        .records.map((r) => r.preview)
+        .sort(),
+    ).toEqual(['first', 'manual', 'resumed'])
+    expect((await channel.checkQueue(name)).messageCount).toBe(3)
+    expect((await channel.checkQueue(name)).consumerCount).toBe(0)
+    expect(
+      (await broker.routingBindings())
+        .filter((b) => b.source === name)
+        .map((b) => b.routing_key)
+        .sort(),
+    ).toEqual(['excluded', 'wanted'])
+    await sessions.stopCapture(first.id)
+    await expect(
+      sessions.startCapture(profile, resource, {
+        ...options,
+        manualRoutes: [{ source: 'amq.fanout', routingKey: 'x' }],
+      }),
+    ).rejects.toThrow()
+  } finally {
+    await sessions.close()
+    store.close()
+    await channel.deleteQueue(name)
+    await channel.deleteExchange(name)
+    await connection.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

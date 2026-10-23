@@ -105,7 +105,9 @@ test('exports encrypted connections, previews conflicts and imports copies throu
       .getByRole('button', { name: 'Edit connection', exact: true })
       .click()
     await page.getByLabel('Connection setup').selectOption('url')
-    await expect(page.getByLabel('AMQP URL', { exact: true })).toHaveValue('')
+    await expect(page.getByLabel('AMQP URL', { exact: true })).toHaveValue(
+      'amqps://user:secret@example.invalid',
+    )
     await page
       .getByLabel('Connection name', { exact: true })
       .fill('Updated imported connection')

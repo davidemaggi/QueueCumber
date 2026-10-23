@@ -29,3 +29,21 @@ it('rejects credential-bearing, ambiguous or non-AMQP endpoints in guided mode',
   ])
     expect(() => buildRabbitUrl(endpoint, '/', 'u', 'p')).toThrow()
 })
+
+it('builds guided host/port endpoints with explicit TLS and rejects URL fragments', async () => {
+  const { rabbitEndpoint } = await import('../../src/shared/rabbit-endpoint')
+  expect(rabbitEndpoint('broker', '5671', true, 'amqp')).toBe(
+    'amqps://broker:5671',
+  )
+  expect(rabbitEndpoint('::1', '25673', false, 'http')).toBe(
+    'http://[::1]:25673',
+  )
+  for (const host of [
+    'http://broker',
+    'user@broker',
+    'broker/path',
+    'broker?x',
+  ])
+    expect(() => rabbitEndpoint(host, '5671', true, 'amqp')).toThrow()
+  expect(() => rabbitEndpoint('broker', '0', true, 'amqp')).toThrow()
+})
