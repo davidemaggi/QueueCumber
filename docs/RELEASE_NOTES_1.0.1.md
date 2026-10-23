@@ -11,4 +11,14 @@ A few less prickly inspection workflows, plus optional Windows signing.
 
 Queue captures still see future routed traffic, not application backlog. The implicit default-exchange route cannot be mirrored. Manual direct/topic routes do not change application queues or bindings. Message dumps remain plaintext; configuration transfers remain encrypted.
 
-Patch releases have no character name. Real signing and installation results must be recorded before publication; this file is prepared release copy, not a signing-success claim.
+## Downloads and verification
+
+Windows x64 has signed installer and ZIP downloads, verified on the signing runner with valid Authenticode signatures, timestamps and publisher `Open Source Developer Davide Maggi`. The ZIP contains the same verified application executable. Verify these two downloads with `SHA256SUMS-signed-windows-x64.txt`.
+
+Unsigned Windows x64, macOS arm64 and Linux x64 packages remain available; verify them with `SHA256SUMS.txt`. macOS uses ad-hoc integrity signing without Developer ID or notarization. All nine downloaded package hashes matched their manifests before publication.
+
+Built from merged-main commit `7b8ff2fc153d3a491b33fb43c04f5152f6da9d8e` through GitHub Actions. The maintainer authorized publication on 2026-10-23. Detailed clean-machine installation/upgrade/uninstaller checks remain unrecorded; automated signature verification is not a claim that those checks were performed.
+
+Patch releases have no character name. No trap this time—just fewer clicks.
+
+[Full changelog](https://github.com/davidemaggi/QueueCumber/compare/v1.0.0...v1.0.1)

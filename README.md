@@ -6,7 +6,7 @@
 
 A cross-platform desktop tool for developers who want to see what's flowing through their messaging systems. RabbitMQ and Kafka. Bring your own broker.
 
-> **1.0.0 — Ackbar is out.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.0). Windows x64, macOS arm64 and Linux x64 packages are built through GitHub Actions and explicitly labeled unsigned. Verify downloads with the release's `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID/notarization.
+> **1.0.1 is out.** [Release notes and downloads](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.1). Windows x64 includes signed installer/ZIP downloads; unsigned Windows x64, macOS arm64 and Linux x64 packages remain available. Verify downloads with the corresponding `SHA256SUMS*.txt` manifest. macOS uses ad-hoc integrity signing without Developer ID/notarization.
 
 ## What you can do
 
@@ -80,13 +80,13 @@ Prepared source is not a security certification. Desktop tests deliberately use 
 | [Product context](PRODUCT.md) | Confirmed requirements and open decisions |
 | [Agent conventions](AGENTS.md) | How AI-assisted work is designed and checked |
 
-Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Version 1.0.0 downloads will be unsigned. From 1.0.1, optional self-hosted Windows signing adds separately labeled signed downloads when its runner is available; unsigned releases remain independent. Install commands will appear when those packages actually exist.
+Development happens on `development`. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). From 1.0, major/minor releases also get Star Wars character names: **1.0.0 “Ackbar”**, A for major 1, B for major 2, and so on. Patch releases stick to numbers. All distribution builds run in GitHub Actions only after a pull request merges into `main`; development/PR compilation checks remain separate. GitHub Releases will provide Windows installers/ZIPs, macOS DMGs/ZIPs and Linux packages/TAR archives first, followed by Homebrew, WinGet and Chocolatey. Version 1.0.0 downloads are unsigned. From 1.0.1, optional self-hosted Windows signing adds separately labeled signed downloads when its runner is available; unsigned releases remain independent. Install commands will appear when those packages actually exist.
 
-## Next patch: 1.0.1
+## What changed in 1.0.1
 
-The local patch also improves inspection: Start/Stop reuses capture history, guided connections take host/port, editing preserves saved values, resource names have tooltips and a resizable pane, and kind/message-count filters help find destinations. Browse distinct routing keys with their exchange/queue context, select individual bindings or add a direct/topic route manually. Messages can be paged newest or oldest first.
+This patch improves inspection: Start/Stop reuses capture history, guided connections take host/port, editing preserves saved values, resource names have tooltips and a resizable pane, and kind/message-count filters help find destinations. Browse distinct routing keys with their exchange/queue context, select individual bindings or add a direct/topic route manually. Messages can be paged newest or oldest first.
 
-Optional Windows signing is being prepared for the maintainer's `codesign` runner, using `CODESIGN_CERT_SUBJECT` and `CODESIGN_TIMESTAMP_URL`. The patch has no character name. Unsigned downloads remain available independently; signed variants appear only after real signature verification. Version 1.0.1 has not been built or published remotely yet. See [runner setup and release checks](docs/RELEASING.md#optional-signed-windows-path-from-101).
+Windows signed installer/ZIP downloads are now available, verified for Authenticode validity, timestamp and publisher on the self-hosted runner. All nine downloaded package checksums matched before publication. Unsigned downloads remain available independently. Patch releases have no character name; 1.0.0 keeps “Ackbar.” See [release notes](docs/RELEASE_NOTES_1.0.1.md) and [runner setup and release checks](docs/RELEASING.md#optional-signed-windows-path-from-101).
 
 ## Contributing
 

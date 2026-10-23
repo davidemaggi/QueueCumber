@@ -18,7 +18,7 @@ The maintainer has explicitly authorized **1.0.0 Ackbar as unsigned**. Signing b
 
 ## Optional signed Windows path, from 1.0.1
 
-The 1.0.1 implementation is prepared locally. Before any remote execution, notify the maintainer and wait for confirmation that the signing runner has been started and made available to this repository. Local tests do not establish real signing success.
+Release 1.0.1 was published with maintainer authorization on 2026-10-23. Unsigned run 39955773639 and signing run 39956622696 attempt 6 succeeded from commit 7b8ff2f. WIN_MBA passed all 97 unit tests and verified valid timestamped app/installer Authenticode signatures, exact publisher and ZIP equality before upload. All nine downloaded package checksums match. The runner service uses the signing account with PowerShell 7 and Git visible on PATH; restart the service after tooling/PATH changes. Detailed clean-machine signed install/upgrade/uninstaller acceptance remains unrecorded.
 
 `.github/workflows/release-signed.yml` follows a successful Build release draft run through `workflow_run`. It has no manual/push/PR-head distribution trigger. The hosted preflight validates the original workflow event/path/repository, checks the context commit is an ancestor of main, and reads version metadata from that exact commit. The parent release workflow accepts only a merged main PR and checks out its immutable merge SHA. GitHub reports the PR head branch in workflow_run metadata, so that field is not used as proof of the signed source.
 
@@ -41,7 +41,7 @@ Application and installer Authenticode signatures must be Valid, timestamped and
 
 Availability is a snapshot, not a reservation. The existing hosted watchdog allows two minutes for the signer to start, then cancels only the isolated optional workflow if it is still observed queued. If the jobs API remains unavailable or state is unknown, it fails visibly without cancelling a potentially active signer; manually inspect any remaining queued job. A start concurrent with cancellation remains possible. Signing has a 30-minute execution timeout. The unsigned release workflow has already finished and is never cancelled by this watchdog. See [workflow cancellation](https://docs.github.com/en/rest/actions/workflow-runs#cancel-a-workflow-run).
 
-Use a dedicated, preferably ephemeral runner restricted to trusted release work. Clean checkout precedes each run; keep keys outside the workspace and never run arbitrary PR code on this machine. Inventory authorization does not grant signing-key access. Real signing/upload and unavailable-runner behavior remain remote verification steps for 1.0.1.
+Use a dedicated, preferably ephemeral runner restricted to trusted release work. Clean checkout precedes each run; keep keys outside the workspace and never run arbitrary PR code on this machine. Inventory authorization does not grant signing-key access. Real signing/upload passed for 1.0.1. The remaining unavailable-runner/watchdog acceptance cases are tracked in ROADMAP.md.
 
 ## Version names and publication
 
