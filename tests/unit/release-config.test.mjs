@@ -34,3 +34,18 @@ it('names major/minor releases after Star Wars characters by major initial and l
   ])
     expect(() => releaseTitle(version, name)).toThrow()
 })
+
+it('grants draft visibility only to the trusted signing preflight job', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const workflow = await readFile(
+    '.github/workflows/release-signed.yml',
+    'utf8',
+  )
+  const prepare = workflow.split('  prepare:')[1].split('  sign-windows:')[0]
+  expect(prepare.replace(/^\s*#.*$/gm, '')).toMatch(
+    /permissions:\s*\n\s+contents: write\s*\n\s+actions: read/,
+  )
+  expect(workflow.split('jobs:')[0]).toMatch(
+    /permissions:\s*\n\s+contents: read/,
+  )
+})
