@@ -297,3 +297,47 @@ it('pins signed asset upload to the verified numeric release ID and never falls 
     }
   }
 })
+
+it('checks tag existence through Git refs before resolving its commit', async () => {
+  const { resolveSigningTag } = await import('../../scripts/signing-api.mjs')
+  const originalFetch = globalThis.fetch,
+    originalToken = process.env.GH_TOKEN,
+    originalRepo = process.env.GITHUB_REPOSITORY
+  const paths = []
+  process.env.GH_TOKEN = 'synthetic-only'
+  process.env.GITHUB_REPOSITORY = 'example/synthetic'
+  try {
+    globalThis.fetch = async (url) => {
+      paths.push(String(url))
+      return {
+        ok: false,
+        status: String(url).includes('/git/ref/tags/') ? 404 : 422,
+      }
+    }
+    await expect(resolveSigningTag('v1.0.1')).resolves.toBeUndefined()
+    expect(paths).toHaveLength(1)
+    expect(paths[0]).toContain('/git/ref/tags/v1.0.1')
+    globalThis.fetch = async (url) =>
+      String(url).includes('/git/ref/tags/')
+        ? {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              object: { type: 'tag', sha: 'b'.repeat(40) },
+            }),
+          }
+        : { ok: true, status: 200, json: async () => ({ sha: 'a'.repeat(40) }) }
+    await expect(resolveSigningTag('v1.0.1')).resolves.toBe('a'.repeat(40))
+    globalThis.fetch = async () => ({ ok: false, status: 403 })
+    await expect(resolveSigningTag('v1.0.1')).rejects.toThrow('403')
+  } finally {
+    globalThis.fetch = originalFetch
+    for (const [name, value] of [
+      ['GH_TOKEN', originalToken],
+      ['GITHUB_REPOSITORY', originalRepo],
+    ]) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
+  }
+})

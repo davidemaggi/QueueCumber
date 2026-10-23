@@ -136,6 +136,10 @@ it('accepts only a merged main PR and its immutable versioned commit', async () 
         )
       else if (req.url.includes('/releases?'))
         res.end(JSON.stringify([release]))
+      else if (req.url.includes('/git/ref/tags/') && taggedCommit)
+        res.end(
+          JSON.stringify({ object: { type: 'commit', sha: taggedCommit } }),
+        )
       else if (req.url.includes('/commits/') && taggedCommit)
         res.end(JSON.stringify({ sha: taggedCommit }))
       else if (req.url.endsWith('/releases/42'))
@@ -177,7 +181,8 @@ it('accepts only a merged main PR and its immutable versioned commit', async () 
         [resolve('scripts/verify-signing-release.mjs')],
         { cwd: dir, env: signingEnv },
       )
-      expect(requested.some((url) => url.includes('/commits/'))).toBe(true)
+      expect(requested.some((url) => url.includes('/git/ref/tags/'))).toBe(true)
+      expect(requested.some((url) => url.includes('/commits/'))).toBe(false)
       taggedCommit = 'b'.repeat(40)
       await expect(
         promisify(execFile)(

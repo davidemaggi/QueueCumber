@@ -29,14 +29,17 @@ export async function github(
 
 export async function resolveSigningTag(tag) {
   try {
-    const result = await github(`commits/${encodeURIComponent(tag)}`)
-    if (!/^[a-f0-9]{40}$/.test(result.sha ?? ''))
-      throw Error('Invalid tag commit')
-    return result.sha
+    await github(`git/ref/tags/${encodeURIComponent(tag)}`)
   } catch (error) {
     if (error.status === 404) return undefined
     throw error
   }
+  const result = await github(
+    `commits/${encodeURIComponent('refs/tags/' + tag)}`,
+  )
+  if (!/^[a-f0-9]{40}$/.test(result.sha ?? ''))
+    throw Error('Invalid tag commit')
+  return result.sha
 }
 
 export async function uploadReleaseAsset(id, name, bytes) {
