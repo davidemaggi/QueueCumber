@@ -266,3 +266,13 @@ Verified locally on macOS: 99 unit tests, typecheck, lint, development build and
 The first sandboxed unit run could not open the synthetic release-tools loopback server (EPERM); the full suite passed with native execution. Actual Windows/Linux desktop behavior, the full broker integration suite and release packaging were not run for this change. No release was created or published.
 
 The first 1.0.2 preparation CI found an existing desktop smoke assertion hard-coded to 1.0.1. The app correctly displayed 1.0.2, and the new background/configuration tests passed. The smoke test now reads the expected version from package metadata, so future version changes retain the display check. This correction is verified before merging the release PR.
+
+## Published 1.0.2 verification — 2026-10-23
+
+The maintainer explicitly authorized the entire release and publication. PR #10 merged as `8367103c10d24ca2b147d4cd592f48e99fff828d` after all push/PR platform checks passed. Merged-main Checks run 40017079283 passes 99 unit tests on each platform, 33 integration tests and eight native desktop tests on Linux, plus four native desktop smoke/background/configuration tests on each of Windows and macOS.
+
+Unsigned build 40017079451 succeeded on all three targets and created draft 422271863 for that exact merge. All seven downloaded unsigned package SHA-256 checksums passed. The extracted Actions macOS arm64 ZIP passed `codesign --verify --deep --strict` and a local packaged-app test: displayed version 1.0.2, ready service, synthetic saved-connection deletion, default tray close, reopen and explicit Quit. The smoke uses temporary session-only synthetic data and does not establish real OS-keystore or clean-machine acceptance.
+
+Signing run 40017961329 completed on WIN_MBA. All 99 unit tests passed before packaging. The verification step confirmed valid timestamped application/installer signatures, publisher `Open Source Developer Davide Maggi` and a byte-identical application in the signed ZIP before upload to the verified release ID/source. Both downloaded signed hashes matched `SHA256SUMS-signed-windows-x64.txt`.
+
+Published release 422271863 as v1.0.2 after verifying its draft state, exact target and 11 assets (nine packages and two manifests). The public latest-release API reports v1.0.2; its tag resolves to the merge above. Anonymous signed-manifest download matches the locally verified manifest. Manual clean-machine installation, upgrade, installed-uninstaller, OS-keystore and desktop-environment tray acceptance remain separate; no additional manual result is inferred. No local distribution packaging was performed.

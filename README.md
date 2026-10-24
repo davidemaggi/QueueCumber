@@ -16,7 +16,7 @@ See what's flowing through RabbitMQ and Kafka, without juggling terminals or bor
 
 ---
 
-> 🥒 **QueueCumber 1.0.1 is out.** [Grab a download](https://github.com/davidemaggi/QueueCumber/releases/latest), [read what changed](docs/RELEASE_NOTES_1.0.1.md), or [tell me what breaks](https://github.com/davidemaggi/QueueCumber/issues). Windows now has signed installer and ZIP downloads.
+> 🥒 **QueueCumber 1.0.2 is out.** [Grab a download](https://github.com/davidemaggi/QueueCumber/releases/latest), [read what changed](docs/RELEASE_NOTES_1.0.2.md), or [tell me what breaks](https://github.com/davidemaggi/QueueCumber/issues). Signed Windows installer and ZIP downloads are available.
 
 ## Why
 
@@ -35,14 +35,14 @@ QueueCumber gives you a desktop window into that traffic:
 
 Download a package from [GitHub Releases](https://github.com/davidemaggi/QueueCumber/releases/latest). **You don't need Node.js, pnpm or Docker to run the packaged app.**
 
-| System | Recommended 1.0.1 download | How to install |
+| System | Recommended 1.0.2 download | How to install |
 | --- | --- | --- |
-| Windows x64 | [Signed installer](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-win-x64-signed-setup.exe) | Run the installer, then open QueueCumber. |
-| macOS, Apple silicon | [DMG](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-mac-arm64-unsigned.dmg) | Open the DMG and drag QueueCumber into Applications. |
-| Debian / Ubuntu, x64 | [DEB](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-linux-amd64-unsigned.deb) | Install with your package manager; see below. |
-| Other Linux desktops, x64 | [AppImage](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-linux-x86_64-unsigned.AppImage) | Make it executable, then run it; see below. |
+| Windows x64 | [Signed installer](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-win-x64-signed-setup.exe) | Run the installer, then open QueueCumber. |
+| macOS, Apple silicon | [DMG](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-mac-arm64-unsigned.dmg) | Open the DMG and drag QueueCumber into Applications. |
+| Debian / Ubuntu, x64 | [DEB](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-linux-amd64-unsigned.deb) | Install with your package manager; see below. |
+| Other Linux desktops, x64 | [AppImage](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-linux-x86_64-unsigned.AppImage) | Make it executable, then run it; see below. |
 
-Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.1/QueueCumber-1.0.1-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
+Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.2/QueueCumber-1.0.2-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
 
 Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Homebrew, WinGet and Chocolatey are planned; there are no registry install commands yet. Updates are manual for now.
 
@@ -63,21 +63,21 @@ Run these commands from the directory containing your download.
 Debian / Ubuntu:
 
 ```sh
-sudo apt install ./QueueCumber-1.0.1-linux-amd64-unsigned.deb
+sudo apt install ./QueueCumber-1.0.2-linux-amd64-unsigned.deb
 ```
 
 AppImage:
 
 ```sh
-chmod +x QueueCumber-1.0.1-linux-x86_64-unsigned.AppImage
-./QueueCumber-1.0.1-linux-x86_64-unsigned.AppImage
+chmod +x QueueCumber-1.0.2-linux-x86_64-unsigned.AppImage
+./QueueCumber-1.0.2-linux-x86_64-unsigned.AppImage
 ```
 
 AppImage needs a compatible desktop and FUSE support. If that isn't available, use the DEB or tar.gz:
 
 ```sh
-tar -xzf QueueCumber-1.0.1-linux-x64-unsigned.tar.gz
-./QueueCumber-1.0.1-linux-x64-unsigned/queuecumber
+tar -xzf QueueCumber-1.0.2-linux-x64-unsigned.tar.gz
+./QueueCumber-1.0.2-linux-x64-unsigned/queuecumber
 ```
 
 Runtime libraries, tray support, keyrings and Chromium sandbox requirements depend on your distribution. See the [field guide](docs/USER_GUIDE.md) for troubleshooting; keep the sandbox enabled.
@@ -89,14 +89,14 @@ Each release includes two SHA-256 manifests: **`SHA256SUMS-signed-windows-x64.tx
 On Windows, hash the downloaded file and compare the value with its exact filename in the signed manifest:
 
 ```powershell
-Get-FileHash .\QueueCumber-1.0.1-win-x64-signed-setup.exe -Algorithm SHA256
+Get-FileHash .\QueueCumber-1.0.2-win-x64-signed-setup.exe -Algorithm SHA256
 Get-Content .\SHA256SUMS-signed-windows-x64.txt
 ```
 
 On macOS, compare the DMG's hash with its line in `SHA256SUMS.txt`:
 
 ```sh
-shasum -a 256 QueueCumber-1.0.1-mac-arm64-unsigned.dmg
+shasum -a 256 QueueCumber-1.0.2-mac-arm64-unsigned.dmg
 cat SHA256SUMS.txt
 ```
 
@@ -202,7 +202,7 @@ Homebrew, WinGet and Chocolatey distribution and remaining platform acceptance a
 
 ## Versions
 
-[SemVer](https://semver.org/), with Star Wars character names for major/minor releases: major 1 uses A, major 2 uses B, and so on. **1.0.0 is Ackbar.** Patch releases such as 1.0.1 don't get a character name.
+[SemVer](https://semver.org/), with Star Wars character names for major/minor releases: major 1 uses A, major 2 uses B, and so on. **1.0.0 is Ackbar.** Patch releases such as 1.0.2 don't get a character name.
 
 ## License
 

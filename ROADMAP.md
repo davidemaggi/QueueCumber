@@ -1,6 +1,6 @@
 # Roadmap
 
-**[1.0.1](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.1) was published on 2026-10-23**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages built through GitHub Actions. All nine downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
+**[1.0.2](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.2) was published on 2026-10-23**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages built through GitHub Actions. All nine downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
 
 ## Foundation — complete
 
@@ -95,13 +95,22 @@ Version 1.0 remains for inspection. Owned observation resources are permitted; a
 
 Release 1.0.1 targets 7b8ff2f. Optional signing run 39956622696 attempt 6 passed on WIN_MBA: 97 unit tests, packaging, valid timestamped app/installer signatures, publisher verification, ZIP equality and signed upload. The release has nine packages and two checksum manifests. The maintainer explicitly authorized publication on 2026-10-23; no unrecorded manual installation result is inferred. See [release policy](docs/RELEASING.md).
 
-## 1.0.2 — tray defaults and connection removal (preparing; no character name)
+## 1.0.2 — tray defaults and connection removal (published; no character name)
 
 - [x] Keep running on window close by default for installations without saved desktop preferences; preserve saved choices and disable background close on corrupt preferences.
 - [x] Add confirmed saved-connection removal: stop its captures, remove stored credentials and retain readable/exportable history without changing broker resources.
 - [x] Verify macOS tray/default close/explicit Quit and EN/IT deletion interactions in light/dark layouts, including an 860px window; verify real RabbitMQ capture removal preserves 52 synthetic messages and no original-queue consumer.
-- [ ] Verify these changes on actual Windows/Linux desktops.
-- [ ] Merge through a reviewed PR, build via GitHub Actions, verify downloaded assets and publish with the maintainer’s 2026-10-23 authorization.
+- [x] Run automated Windows/macOS desktop smoke tests and the complete Linux desktop/broker suite through GitHub Actions.
+- [ ] Complete manual Windows/Linux tray and desktop-environment acceptance.
+- [x] Merge through reviewed PR #10, build via GitHub Actions, verify all nine downloaded package hashes and publish with the maintainer’s 2026-10-23 authorization.
+
+Release 1.0.2 targets `8367103`. Unsigned run 40017079451 and signing run 40017961329 succeeded. All 99 unit tests pass on each platform; merged-main Checks run 40017079283 also passes 33 integration/eight Linux desktop tests and four desktop smoke tests on each of Windows and macOS. Signed Windows assets have valid timestamped app/installer signatures, verified publisher and matching ZIP application content. All nine downloaded package checksums match; the downloaded macOS application passed local session-only smoke checks. The public latest-release API, tag target and anonymous signed-manifest download are verified.
+
+## 1.0.3 — hidden extra (in release; no character name)
+
+- [x] Add a localized, keyboard-operable hidden extra behind the sidebar version, with bounded animation that respects reduced motion and no broker or storage access.
+- [x] Verify the EN/IT interaction with unit tests and an Electron run in light/dark themes at the 860×600 minimum window.
+- [ ] Merge through a reviewed PR, build via GitHub Actions, verify downloaded package hashes and publish with the maintainer’s 2026-10-24 authorization.
 
 ## After 1.0 — candidates, not commitments
 

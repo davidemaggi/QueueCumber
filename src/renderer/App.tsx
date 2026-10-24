@@ -45,6 +45,7 @@ import { translator, type Locale } from './i18n'
 import { ConnectionForm } from './components/ConnectionForm'
 import { Settings } from './components/Settings'
 import { MessageList, MessageView } from './components/Messages'
+import { EasterEgg, VersionButton } from './components/EasterEgg'
 const api = window.queuecumber
 const bytes = (n: number) =>
   n >= 1024 ** 2
@@ -60,6 +61,7 @@ export default function App() {
     )
   const [screen, setScreen] = useState<'inspect' | 'settings'>('inspect'),
     [form, setForm] = useState(false),
+    [easterEgg, setEasterEgg] = useState(false),
     [deletingConnection, setDeletingConnection] = useState(''),
     [editingProfile, setEditingProfile] = useState<ConnectionProfile | null>(
       null,
@@ -585,10 +587,10 @@ export default function App() {
                 : 'closeBehaviorQuit',
             )}
           </p>
-          <span className="small">
-            {version}
-            {releaseName ? ` · ${releaseName}` : ''}
-          </span>
+          <VersionButton
+            label={version + (releaseName ? ` · ${releaseName}` : '')}
+            onUnlock={() => setEasterEgg(true)}
+          />
         </div>
       </aside>
       <div className="workspace">
@@ -1544,6 +1546,9 @@ export default function App() {
           </span>
         </footer>
       </div>
+      {easterEgg ? (
+        <EasterEgg t={t} onClose={() => setEasterEgg(false)} />
+      ) : null}
     </div>
   )
 }
