@@ -1,6 +1,6 @@
 # Roadmap
 
-**[1.0.3](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.3) was published on 2026-10-24**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages built through GitHub Actions. All nine downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
+**[1.0.4](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.4) was published on 2026-10-24**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages (now including RPM) built through GitHub Actions. All ten downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
 
 ## Foundation — complete
 
@@ -114,12 +114,14 @@ Release 1.0.2 targets `8367103`. Unsigned run 40017079451 and signing run 400179
 
 Release 1.0.3 targets `e81acc1`. Unsigned run 40083719672 and signing run 40084084334 succeeded; merged-main Checks run 40083719998 passes on Windows, macOS and Linux. All nine downloaded package checksums match; the downloaded macOS bundle passed integrity and version checks. The public latest-release API and tag target are verified.
 
-## 1.0.4 — routing-key capture and RPM (in release; no character name)
+## 1.0.4 — routing-key capture and RPM (published; no character name)
 
 - [x] Show routing keys as one flat distinct list. Default-exchange bindings are hidden because they are implicit per-queue names that an observation queue cannot bind.
 - [x] Select up to 64 keys and capture them through one temporary observation queue bound to each direct/topic exchange that routes them; fanout, headers and default-exchange routes are listed as unsupported. Verified against a real broker: only matching direct/topic traffic is captured and application queues keep their messages with no consumer.
 - [x] Add an unsigned x86_64 RPM to the Linux release job. A locally built RPM installed with dnf on Fedora and started under Xvfb (amd64 emulation on macOS).
-- [ ] Merge through a reviewed PR, verify downloaded hashes including the RPM, and publish with the maintainer’s 2026-10-24 authorization.
+- [x] Merge through PR #13, verify all ten downloaded hashes including the RPM, and publish with the maintainer’s 2026-10-24 authorization.
+
+Release 1.0.4 targets `95211cc`. Unsigned run 40114239762 needed a Windows packaging rerun after a slow-runner storage test timeout; signing run 40115085073 needed a rerun after a timing-flaky App selection test (reproduced on 1.0.3 under CPU load; wait hardening is queued on development). Merged-main Checks run 40114239559 passes on all three platforms. All ten downloaded package checksums match; the downloaded macOS bundle passed integrity/version checks and the CI-built RPM installed with dnf on Fedora and started under Xvfb (amd64 emulation).
 
 ## After 1.0 — candidates, not commitments
 
