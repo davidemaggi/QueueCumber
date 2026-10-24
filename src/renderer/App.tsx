@@ -1,5 +1,9 @@
 import type { ResourceFilter } from '../shared/resource-filter'
-import { bindingKey } from '../shared/routes'
+import {
+  bindingKey,
+  routesResourceName,
+  sameRoutingKeys,
+} from '../shared/routes'
 import { KafkaPartitions } from './components/KafkaPartitions'
 import brandMark from '../../resources/branding/mark.svg'
 import {
@@ -99,25 +103,32 @@ export default function App() {
   const [manualKey, setManualKey] = useState('')
   const [routingBindings, setRoutingBindings] = useState<Binding[]>([])
   const [routingLoading, setRoutingLoading] = useState(false)
-  const routingGroups = useMemo(() => {
-    const groups = new Map<string, Binding[]>()
+  const [pickedKeys, setPickedKeys] = useState<string[]>([])
+  const routingKeyList = useMemo(
+    () =>
+      // Default-exchange bindings are implicit per-queue names and cannot be
+      // bound by an observation queue, so they are not offered as keys.
+      [
+        ...new Set(
+          routingBindings.filter((b) => b.source).map((b) => b.routing_key),
+        ),
+      ]
+        .filter((key) => key.toLowerCase().includes(query.toLowerCase()))
+        .sort((a, b) => a.localeCompare(b)),
+    [routingBindings, query],
+  )
+  // Preview of the exchange routes a routing-key capture will bind. Exchange
+  // types are only known once the service resolves them at start.
+  const pickedRoutes = useMemo(() => {
     const seen = new Set<string>()
-    for (const binding of routingBindings) {
-      const identity = JSON.stringify([
-        binding.source,
-        binding.destination,
-        binding.routing_key,
-      ])
-      if (seen.has(identity)) continue
+    return routingBindings.filter((b) => {
+      const identity = JSON.stringify([b.source, b.routing_key])
+      if (!pickedKeys.includes(b.routing_key) || seen.has(identity))
+        return false
       seen.add(identity)
-      const group = groups.get(binding.routing_key) ?? []
-      group.push(binding)
-      groups.set(binding.routing_key, group)
-    }
-    return [...groups]
-      .filter(([key]) => key.toLowerCase().includes(query.toLowerCase()))
-      .sort(([a], [b]) => a.localeCompare(b))
-  }, [routingBindings, query])
+      return true
+    })
+  }, [routingBindings, pickedKeys])
   const [paneWidth, setPaneWidth] = useState(() =>
     Math.min(
       480,
@@ -284,7 +295,11 @@ export default function App() {
       await refresh()
     })
   }
-  async function chooseResource(r: ResourceRef, onlyKey?: string) {
+  async function chooseResource(
+    r: ResourceRef,
+    onlyKey?: string,
+    routingKeys?: string[],
+  ) {
     const token = ++selection.current
     setResource(r)
     setBindings([])
@@ -311,7 +326,9 @@ export default function App() {
           s.connectionId === connection &&
           s.resource.name === r.name &&
           s.resource.kind === r.kind &&
-          s.resource.vhost === r.vhost,
+          s.resource.vhost === r.vhost &&
+          (r.kind !== 'routes' ||
+            sameRoutingKeys(s.options?.routingKeys, routingKeys)),
       )
     if (existing?.streamStart !== undefined) {
       setStreamChoice(
@@ -371,6 +388,26 @@ export default function App() {
       if (token === selection.current) setError(true)
     }
   }
+  function pickRoutingKeys(keys: string[]) {
+    setPickedKeys(keys)
+    if (!keys.length) {
+      selection.current++
+      setResource(null)
+      setSessionId('')
+      setRows([])
+      setMessage(null)
+      return
+    }
+    void chooseResource(
+      {
+        kind: 'routes',
+        name: routesResourceName(keys),
+        vhost: routingBindings[0]?.vhost ?? '/',
+      },
+      undefined,
+      keys,
+    )
+  }
   const session = state?.sessions.find((s) => s.id === sessionId),
     active =
       session &&
@@ -407,7 +444,9 @@ export default function App() {
         ...(resource.kind === 'queue'
           ? { bindingKeys: routeKeys, manualRoutes }
           : {}),
-        allowPartial: false,
+        ...(resource.kind === 'routes' ? { routingKeys: pickedKeys } : {}),
+        // Routing-key captures list skipped fanout/headers/default routes up front.
+        allowPartial: resource.kind === 'routes',
         limits,
         ...(resource.kind === 'topic'
           ? { kafkaPartitions: kafkaSelection }
@@ -495,6 +534,7 @@ export default function App() {
                 setDeletingConnection('')
                 setConnection(p.id)
                 setResource(null)
+                setPickedKeys([])
                 setRows([])
                 setSessionId('')
                 setMessage(null)
@@ -532,7 +572,10 @@ export default function App() {
                     messageSelection.current++
                     setRows([])
                     setNextCursor(null)
-                    setKind('all')
+                    setKind(
+                      s.resource.kind === 'routes' ? 'routingKeys' : 'all',
+                    )
+                    setPickedKeys(s.options?.routingKeys ?? [])
                     setDeletingConnection('')
                     setResources([])
                     setConnection(s.connectionId)
@@ -725,6 +768,7 @@ export default function App() {
                 setConnection(saved.id)
                 setKind('all')
                 setResource(null)
+                setPickedKeys([])
                 setSessionId('')
                 setRows([])
                 setMessage(null)
@@ -856,6 +900,7 @@ export default function App() {
                             messageSelection.current++
                             setConnection('')
                             setResource(null)
+                            setPickedKeys([])
                             setSessionId('')
                             setResources([])
                             setRows([])
@@ -929,39 +974,46 @@ export default function App() {
                 {kind === 'routingKeys' ? (
                   routingLoading ? (
                     <p className="empty-line">{t('loading')}</p>
-                  ) : !routingGroups.length ? (
+                  ) : !routingKeyList.length ? (
                     <p className="empty-line">{t('noResults')}</p>
                   ) : (
-                    routingGroups
-                      .slice((resourcePage - 1) * 100, resourcePage * 100)
-                      .map(([key, routes]) => (
-                        <details className="routing-key-group" key={key}>
-                          <summary className="mono" title={key}>
-                            {key || t('emptyRoutingKey')}
-                          </summary>
-                          {routes.map((b, i) => (
-                            <button
-                              key={i}
-                              title={`${b.source} → ${b.destination}`}
-                              onClick={() =>
-                                void chooseResource(
-                                  {
-                                    name: b.destination,
-                                    vhost: b.vhost ?? '/',
-                                    kind: b.destinationKind ?? 'queue',
-                                  },
-                                  key,
+                    <div
+                      role="group"
+                      aria-label={t('routingKeys')}
+                      className="routing-key-list"
+                    >
+                      {routingKeyList
+                        .slice((resourcePage - 1) * 100, resourcePage * 100)
+                        .map((key) => (
+                          <label
+                            key={key}
+                            className={
+                              'routing-key-row' +
+                              (pickedKeys.includes(key) ? ' selected' : '')
+                            }
+                            title={key}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={pickedKeys.includes(key)}
+                              disabled={
+                                !pickedKeys.includes(key) &&
+                                pickedKeys.length >= 64
+                              }
+                              onChange={(e) =>
+                                pickRoutingKeys(
+                                  e.target.checked
+                                    ? [...pickedKeys, key]
+                                    : pickedKeys.filter((k) => k !== key),
                                 )
                               }
-                            >
-                              <span className="mono">
-                                {b.source || t('defaultExchange')} →{' '}
-                                {b.destination}
-                              </span>
-                            </button>
-                          ))}
-                        </details>
-                      ))
+                            />
+                            <span className="mono">
+                              {key || t('emptyRoutingKey')}
+                            </span>
+                          </label>
+                        ))}
+                    </div>
                   )
                 ) : shownResources.length ? (
                   shownResources.map((r) => (
@@ -1001,7 +1053,7 @@ export default function App() {
               </div>
               {(
                 kind === 'routingKeys'
-                  ? resourcePage * 100 < routingGroups.length
+                  ? resourcePage * 100 < routingKeyList.length
                   : hasMore
               ) ? (
                 <button
@@ -1081,13 +1133,16 @@ export default function App() {
                           ? 'kafkaHint'
                           : resource?.kind === 'stream'
                             ? 'streamHint'
-                            : 'bindingHint',
+                            : resource?.kind === 'routes'
+                              ? 'routesHint'
+                              : 'bindingHint',
                       )}
                     </p>
                   </div>
                   {resource &&
                   (resource.kind === 'queue' ||
                     resource.kind === 'stream' ||
+                    resource.kind === 'routes' ||
                     resource.kind === 'topic') ? (
                     <button
                       className={active ? '' : 'primary'}
@@ -1102,6 +1157,9 @@ export default function App() {
                           !active &&
                           (!bindingReady ||
                             (!routeKeys.length && !manualRoutes.length))) ||
+                        (resource.kind === 'routes' &&
+                          !active &&
+                          !pickedKeys.length) ||
                         (resource.kind === 'stream' &&
                           !active &&
                           streamChoice === 'offset' &&
@@ -1374,12 +1432,61 @@ export default function App() {
                       </p>
                     ) : null}
                   </div>
+                ) : resource?.kind === 'routes' ? (
+                  <>
+                    <div className="binding-title">
+                      <h2>{t('routesBound')}</h2>
+                    </div>
+                    <div className="binding-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>{t('source')}</th>
+                            <th>{t('route')}</th>
+                            <th>{t('coverage')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(active
+                            ? session.bindings
+                            : pickedRoutes.map((b) => ({
+                                ...b,
+                                supported: !!b.source,
+                              }))
+                          ).map((b, i) => (
+                            <tr key={i}>
+                              <td className="mono">
+                                {b.source || t('defaultExchange')}
+                              </td>
+                              <td className="mono">
+                                {b.routing_key || t('emptyRoutingKey')}
+                              </td>
+                              <td>
+                                {!b.supported ? (
+                                  <span className="muted">
+                                    {t('unsupported')}
+                                  </span>
+                                ) : active ? (
+                                  <span>{t('supported')}</span>
+                                ) : (
+                                  <span className="muted">
+                                    {t('checkedAtStart')}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : resource?.kind === 'topic' ? null : resource ? (
                   <p className="empty-line">{t('futureResource')}</p>
                 ) : null}
                 {resource &&
                 (resource.kind === 'queue' ||
                   resource.kind === 'stream' ||
+                  resource.kind === 'routes' ||
                   resource.kind === 'topic') ? (
                   <>
                     {' '}

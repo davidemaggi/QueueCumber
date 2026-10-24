@@ -221,6 +221,40 @@ export class RabbitMQ implements Provider {
         supported: false,
       }))
   }
+  // One (exchange, key) route per selected key and source exchange. Only direct
+  // and topic exchanges route by key; fanout/headers would mirror unrelated
+  // traffic and the default exchange cannot be bound, so those are unsupported.
+  async routeSnapshot(keys: readonly string[]): Promise<Binding[]> {
+    const wanted = new Set(keys),
+      seen = new Set<string>(),
+      routes: Binding[] = []
+    for (const b of await this.routingBindings()) {
+      const identity = JSON.stringify([b.source, b.routing_key])
+      if (!wanted.has(b.routing_key) || seen.has(identity)) continue
+      seen.add(identity)
+      routes.push(b)
+    }
+    const sources = [...new Set(routes.map((b) => b.source))].filter(Boolean)
+    if (sources.length > 100) throw Error('Too many source exchanges')
+    const types = new Map<string, string>([['', 'default']])
+    for (const source of sources) {
+      const e = await this.request(
+        `exchanges/${encodeURIComponent(this.vhost)}/${encodeURIComponent(source)}`,
+      )
+      types.set(source, e.type)
+    }
+    return routes.map((b) => {
+      const type = types.get(b.source) ?? 'unknown'
+      return {
+        source: b.source,
+        destination: '',
+        routing_key: b.routing_key,
+        arguments: {},
+        type,
+        supported: ['direct', 'topic'].includes(type),
+      }
+    })
+  }
   async bindings(queue: string): Promise<Binding[]> {
     const bindings = await this.request(
       `queues/${encodeURIComponent(this.vhost)}/${encodeURIComponent(queue)}/bindings`,

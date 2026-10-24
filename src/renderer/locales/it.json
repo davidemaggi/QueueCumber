@@ -269,5 +269,9 @@
   "eggClose": "Chiudi",
   "eggBustedTitle": "Trenta vite extra sbloccate!",
   "eggBustedBody": "Peccato che nessuna svuoti una coda arretrata. I tuoi messaggi ti aspettano e qualcuno sembra pure giudicarti. Smettila di fare lo scemo e torna al lavoro.",
-  "eggApology": "Scusa, torno a lavorare"
+  "eggApology": "Scusa, torno a lavorare",
+  "routes": "routing key",
+  "routesHint": "Collega una coda temporanea a ogni exchange direct o topic che instrada queste chiavi. Solo traffico nuovo; le code dell'applicazione non vengono toccate. Le rotte fanout, headers e del default exchange ignorano la chiave e vengono saltate.",
+  "routesBound": "Rotte sugli exchange",
+  "checkedAtStart": "Verificata all'avvio"
 }

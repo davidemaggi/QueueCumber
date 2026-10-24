@@ -4,6 +4,7 @@ import { promisify } from 'node:util'
 import { mkdtemp, mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import amqplib from 'amqplib'
 test('uses separate connection fields and captures seeded demo stream data', async () => {
   await promisify(execFile)(
     process.execPath,
@@ -102,13 +103,33 @@ test('uses separate connection fields and captures seeded demo stream data', asy
       '300',
     )
     await page.getByLabel('Resource type').selectOption('routingKeys')
-    await page.getByPlaceholder('Search broker resources').fill('orders.*')
+    await page.getByPlaceholder('Search broker resources').fill('')
+    const keys = page.getByRole('group', { name: 'Routing keys' })
     await expect(
-      page
-        .locator('.routing-key-group summary')
-        .filter({ hasText: 'orders.*' }),
-    ).toBeVisible()
+      keys.getByRole('checkbox', { name: 'demo.orders', exact: true }),
+    ).toHaveCount(0)
+    await keys.getByRole('checkbox', { name: 'orders.*', exact: true }).check()
+    await keys.getByRole('checkbox', { name: '#', exact: true }).check()
+    await expect(page.locator('.capture-title h1')).toHaveText('#, orders.*')
     await page.screenshot({ path: join(qa, 'routing-keys-light.png') })
+    await page
+      .getByRole('button', { name: 'Start capture', exact: true })
+      .click()
+    await expect(
+      page.getByRole('button', { name: 'Stop capture', exact: true }),
+    ).toBeVisible()
+    const amqp = await amqplib.connect(
+        'amqp://cucumber:local-test-only@127.0.0.1:25672/%2F',
+      ),
+      channel = await amqp.createConfirmChannel()
+    channel.publish('demo.routes', 'orders.created', Buffer.from('{"k":1}'))
+    await channel.waitForConfirms()
+    await amqp.close()
+    await expect(page.locator('.message-row').first()).toBeVisible()
+    await page.screenshot({ path: join(qa, 'routing-keys-capture-light.png') })
+    await page
+      .getByRole('button', { name: 'Stop capture', exact: true })
+      .click()
     await page.getByLabel('Resource type').selectOption('queue')
     await page.getByPlaceholder('Search broker resources').fill('demo.orders')
     await page

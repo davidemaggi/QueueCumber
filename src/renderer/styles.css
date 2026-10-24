@@ -1309,20 +1309,21 @@ pre {
   grid-template-columns: minmax(0, 1fr) 120px;
   gap: 12px;
 }
-.routing-key-group {
-  padding: 8px 14px;
+.routing-key-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  font-size: 12px;
+  cursor: pointer;
 }
-.routing-key-group summary {
-  overflow-wrap: anywhere;
+.routing-key-row:hover,
+.routing-key-row.selected {
+  background: var(--raised);
 }
-.routing-key-group button {
-  width: 100%;
-  text-align: left;
-  margin-top: 8px;
-}
-.routing-key-group button span {
-  overflow-wrap: anywhere;
+.routing-key-row span {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .manual-route {
   display: flex;

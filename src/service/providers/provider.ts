@@ -1,7 +1,7 @@
 export type ResourceRef = {
   name: string
   vhost: string
-  kind: 'queue' | 'stream' | 'exchange' | 'topic'
+  kind: 'queue' | 'stream' | 'exchange' | 'topic' | 'routes'
   type?: string
   partitions?: number
   messages?: number

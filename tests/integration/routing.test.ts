@@ -225,3 +225,72 @@ it('reuses capture history and selected/manual routes across stops and process r
     await rm(dir, { recursive: true, force: true })
   }
 })
+it('captures selected routing keys from direct and topic exchanges only', async () => {
+  const connection = await amqp.connect(profile.protocolUrl),
+    channel = await connection.createChannel()
+  const base = 'qc-test-' + randomUUID(),
+    created = base + '.created',
+    cancelled = base + '.cancelled',
+    dir = await mkdtemp(join(tmpdir(), 'qc-keys-'))
+  const store = new CaptureStorage(dir, randomBytes(32), DEFAULT_SETTINGS),
+    sessions = new SessionManager(store, () => DEFAULT_SETTINGS)
+  const exchanges = {
+      direct: base + '.d',
+      topic: base + '.t',
+      fanout: base + '.f',
+    },
+    queues = [base + '.a', base + '.b', base + '.c', base + '.x']
+  try {
+    for (const [type, name] of Object.entries(exchanges))
+      await channel.assertExchange(name, type, { durable: false })
+    for (const q of queues) await channel.assertQueue(q, { durable: false })
+    await channel.bindQueue(queues[0], exchanges.direct, created)
+    await channel.bindQueue(queues[1], exchanges.topic, created)
+    await channel.bindQueue(queues[2], exchanges.fanout, created)
+    await channel.bindQueue(queues[3], exchanges.direct, cancelled)
+    await expect(
+      sessions.startCapture(
+        profile,
+        { name: '', vhost: '/', kind: 'routes' },
+        { allowPartial: true, routingKeys: [base + '.missing'] },
+      ),
+    ).rejects.toThrow()
+    const session = await sessions.startCapture(
+      profile,
+      { name: 'ignored', vhost: '/', kind: 'routes' },
+      { allowPartial: true, routingKeys: [created] },
+    )
+    expect(session.state).toBe('capturing')
+    expect(session.resource.name).toBe(created)
+    expect(
+      session.bindings.map((b) => `${b.type}:${b.supported}`).sort(),
+    ).toEqual(['direct:true', 'fanout:false', 'topic:true'])
+    channel.publish(exchanges.direct, created, Buffer.from('one'))
+    channel.publish(exchanges.topic, created, Buffer.from('two'))
+    channel.publish(exchanges.direct, cancelled, Buffer.from('other-key'))
+    channel.publish(exchanges.fanout, created, Buffer.from('fanout'))
+    await expect.poll(() => sessions.list().at(-1)!.captured).toBe(2)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(sessions.list().at(-1)!.captured).toBe(2)
+    expect(
+      store
+        .readPage(session.id, null, 10)
+        .records.map((r) => store.get(r.id).payload.toString())
+        .sort(),
+    ).toEqual(['one', 'two'])
+    for (const q of queues) {
+      const info = await channel.checkQueue(q)
+      expect(info.messageCount).toBe(1)
+      expect(info.consumerCount).toBe(0)
+    }
+    await sessions.stopCapture(session.id)
+  } finally {
+    await sessions.close()
+    store.close()
+    for (const q of queues) await channel.deleteQueue(q)
+    for (const name of Object.values(exchanges))
+      await channel.deleteExchange(name)
+    await connection.close()
+    await rm(dir, { recursive: true, force: true })
+  }
+})

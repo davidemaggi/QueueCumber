@@ -51,3 +51,30 @@ it('bounds privileged concurrency and redacts secret-bearing failures', async ()
     'Operation failed. Check connection, permissions, storage and input.',
   )
 })
+
+it('accepts bounded routing-key captures and rejects oversized selections', async () => {
+  const frame = {},
+    webContents = { mainFrame: frame },
+    event = { sender: webContents, senderFrame: frame }
+  const starts: unknown[] = []
+  registerOperations({ webContents } as any, {
+    startCapture: (...args: unknown[]) => {
+      starts.push(args)
+    },
+  })
+  const handler = handlers.get('qc:startCapture')!,
+    routes = { name: 'order.created', vhost: '/', kind: 'routes' }
+  await handler(event, 'conn', routes, {
+    allowPartial: true,
+    routingKeys: ['order.created', ''],
+  })
+  for (const routingKeys of [
+    [],
+    Array.from({ length: 65 }, (_, i) => 'key-' + i),
+    ['x'.repeat(256)],
+  ])
+    await expect(
+      handler(event, 'conn', routes, { allowPartial: true, routingKeys }),
+    ).rejects.toThrow()
+  expect(starts).toHaveLength(1)
+})

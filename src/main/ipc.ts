@@ -13,7 +13,7 @@ const resource = z
   .object({
     name: z.string().max(255),
     vhost: z.string().max(255),
-    kind: z.enum(['queue', 'exchange', 'stream', 'topic']),
+    kind: z.enum(['queue', 'exchange', 'stream', 'topic', 'routes']),
     type: z.string().max(64).optional(),
     messages: z.number().optional(),
     partitions: z.number().int().min(0).max(10000).optional(),
@@ -72,6 +72,7 @@ export const operationSchemas = {
           )
           .max(64)
           .optional(),
+        routingKeys: z.array(z.string().max(255)).min(1).max(64).optional(),
         kafkaPartitions: kafkaSelectionSchema.optional(),
         limits: limits.optional(),
         streamStart: z
