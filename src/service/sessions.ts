@@ -1,4 +1,8 @@
-import { bindingKey } from '../shared/routes'
+import {
+  bindingKey,
+  routesResourceName,
+  sameRoutingKeys,
+} from '../shared/routes'
 import { KafkaCapture } from './kafka-capture'
 import {
   kafkaSelectionSchema,
@@ -38,6 +42,7 @@ export type CaptureOptions = {
   captureId?: string
   bindingKeys?: string[]
   manualRoutes?: { source: string; routingKey: string }[]
+  routingKeys?: string[]
   kafkaPartitions?: KafkaSelection
   allowPartial: boolean
   streamStart?: 'first' | 'next' | number
@@ -115,8 +120,19 @@ export class SessionManager {
         throw Error('Choose a Kafka topic')
       kafkaSelectionSchema.parse(options.kafkaPartitions)
     }
-    if (!isKafka && !['queue', 'stream'].includes(resource.kind))
-      throw Error('Choose a queue or stream')
+    if (!isKafka && !['queue', 'stream', 'routes'].includes(resource.kind))
+      throw Error('Choose a queue, stream or routing keys')
+    if (resource.kind === 'routes') {
+      const keys = options.routingKeys ?? []
+      if (
+        !keys.length ||
+        keys.length > 64 ||
+        new Set(keys).size !== keys.length
+      )
+        throw Error('Choose between 1 and 64 distinct routing keys')
+      resource = { ...resource, name: routesResourceName(keys) }
+    } else if (options.routingKeys)
+      throw Error('Routing keys require a routing-key capture')
     if (
       resource.kind === 'stream' &&
       !(
@@ -135,7 +151,9 @@ export class SessionManager {
           s.summary.connectionId === profile.id &&
           s.summary.resource.name === resource.name &&
           s.summary.resource.vhost === resource.vhost &&
-          s.summary.resource.kind === resource.kind,
+          s.summary.resource.kind === resource.kind &&
+          (resource.kind !== 'routes' ||
+            sameRoutingKeys(s.options.routingKeys, options.routingKeys)),
       )
     const previous = options.captureId
       ? matching.find((s) => s.summary.id === options.captureId)
@@ -289,20 +307,34 @@ export class SessionManager {
     if (!s.profile) throw Error('Restored sessions require a new capture')
     if (s.profile.provider === 'kafka') throw Error('Wrong capture driver')
     const broker = new RabbitMQ(s.profile)
-    const isStream = s.summary.resource.kind === 'stream'
-    const definition = await broker.request(
-      `queues/${encodeURIComponent(broker.vhost)}/${encodeURIComponent(s.summary.resource.name)}`,
-    )
+    const isStream = s.summary.resource.kind === 'stream',
+      isRoutes = s.summary.resource.kind === 'routes'
+    const definition = isRoutes
+      ? undefined
+      : await broker.request(
+          `queues/${encodeURIComponent(broker.vhost)}/${encodeURIComponent(s.summary.resource.name)}`,
+        )
     if (
       s.summary.resource.vhost !== broker.vhost ||
-      isStream !== (definition.type === 'stream')
+      (!isRoutes && isStream !== (definition.type === 'stream'))
     )
       throw Object.assign(Error('Resource type changed'), {
         code: 'UNSUPPORTED_ROUTE',
       })
     let snapshot = isStream
       ? []
-      : await broker.bindings(s.summary.resource.name)
+      : isRoutes
+        ? await broker.routeSnapshot(s.options.routingKeys ?? [])
+        : await broker.bindings(s.summary.resource.name)
+    if (
+      isRoutes &&
+      s.options.routingKeys!.some(
+        (key) => !snapshot.some((b) => b.supported && b.routing_key === key),
+      )
+    )
+      throw Object.assign(Error('Selected routing key has no exchange route'), {
+        code: 'UNSUPPORTED_ROUTE',
+      })
     if (!isStream) {
       if (s.options.bindingKeys) {
         if (

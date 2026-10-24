@@ -16,4 +16,4 @@ nsis:
   artifactName: QueueCumber-${version}-${arch}-setup.${ext}
 linux:
   icon: resources/icon.png
-  target: [AppImage, deb, tar.gz]
+  target: [AppImage, deb, rpm, tar.gz]

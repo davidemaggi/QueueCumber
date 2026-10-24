@@ -269,5 +269,9 @@
   "eggClose": "Close",
   "eggBustedTitle": "Thirty extra lives unlocked!",
   "eggBustedBody": "Sadly, none of them clear a queue backlog. Your messages are waiting, and a few of them look like they're judging you. Quit fooling around and get back to work.",
-  "eggApology": "Sorry, back to work"
+  "eggApology": "Sorry, back to work",
+  "routes": "routing keys",
+  "routesHint": "Binds one temporary queue to every direct or topic exchange that routes these keys. New traffic only; application queues are not touched. Fanout, headers and default-exchange routes ignore the key and are skipped.",
+  "routesBound": "Exchange routes",
+  "checkedAtStart": "Checked at start"
 }

@@ -114,6 +114,13 @@ Release 1.0.2 targets `8367103`. Unsigned run 40017079451 and signing run 400179
 
 Release 1.0.3 targets `e81acc1`. Unsigned run 40083719672 and signing run 40084084334 succeeded; merged-main Checks run 40083719998 passes on Windows, macOS and Linux. All nine downloaded package checksums match; the downloaded macOS bundle passed integrity and version checks. The public latest-release API and tag target are verified.
 
+## 1.0.4 — routing-key capture and RPM (in release; no character name)
+
+- [x] Show routing keys as one flat distinct list. Default-exchange bindings are hidden because they are implicit per-queue names that an observation queue cannot bind.
+- [x] Select up to 64 keys and capture them through one temporary observation queue bound to each direct/topic exchange that routes them; fanout, headers and default-exchange routes are listed as unsupported. Verified against a real broker: only matching direct/topic traffic is captured and application queues keep their messages with no consumer.
+- [x] Add an unsigned x86_64 RPM to the Linux release job. A locally built RPM installed with dnf on Fedora and started under Xvfb (amd64 emulation on macOS).
+- [ ] Merge through a reviewed PR, verify downloaded hashes including the RPM, and publish with the maintainer’s 2026-10-24 authorization.
+
 ## After 1.0 — candidates, not commitments
 
 Additional providers and payload decoders follow real requests. Extension points do not imply an executable plugin marketplace. Broker mutation features require a separate product decision.
