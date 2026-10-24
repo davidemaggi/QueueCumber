@@ -72,6 +72,9 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Install RPM tooling
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rpm
       - name: Package unsigned distribution
         env:
           # The source is a validated main merge, not an unmerged PR head.
@@ -92,6 +95,7 @@ jobs:
             release/*unsigned.dmg
             release/*unsigned.AppImage
             release/*unsigned.deb
+            release/*unsigned.rpm
             release/*unsigned.tar.gz
   draft:
     needs: [validate, packages]
