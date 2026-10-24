@@ -106,6 +106,12 @@ Release 1.0.1 targets 7b8ff2f. Optional signing run 39956622696 attempt 6 passed
 
 Release 1.0.2 targets `8367103`. Unsigned run 40017079451 and signing run 40017961329 succeeded. All 99 unit tests pass on each platform; merged-main Checks run 40017079283 also passes 33 integration/eight Linux desktop tests and four desktop smoke tests on each of Windows and macOS. Signed Windows assets have valid timestamped app/installer signatures, verified publisher and matching ZIP application content. All nine downloaded package checksums match; the downloaded macOS application passed local session-only smoke checks. The public latest-release API, tag target and anonymous signed-manifest download are verified.
 
+## 1.0.3 — hidden extra (in release; no character name)
+
+- [x] Add a localized, keyboard-operable hidden extra behind the sidebar version, with bounded animation that respects reduced motion and no broker or storage access.
+- [x] Verify the EN/IT interaction with unit tests and an Electron run in light/dark themes at the 860×600 minimum window.
+- [ ] Merge through a reviewed PR, build via GitHub Actions, verify downloaded package hashes and publish with the maintainer’s 2026-10-24 authorization.
+
 ## After 1.0 — candidates, not commitments
 
 Additional providers and payload decoders follow real requests. Extension points do not imply an executable plugin marketplace. Broker mutation features require a separate product decision.
