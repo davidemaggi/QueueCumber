@@ -255,5 +255,19 @@
   "deleteConnection": "Elimina connessione",
   "deleteConnectionConfirm": "Rimuovere questa connessione salvata e le sue credenziali? Le acquisizioni attive verranno fermate. La cronologia verrà conservata. Le risorse del broker non verranno modificate.",
   "confirmDeleteConnection": "Rimuovi connessione salvata",
-  "connectionRemoved": "Questa connessione è stata rimossa. Le acquisizioni salvate restano consultabili ed esportabili."
+  "connectionRemoved": "Questa connessione è stata rimossa. Le acquisizioni salvate restano consultabili ed esportabili.",
+  "eggTitle": "Giocatore 1, inserisci il codice",
+  "eggHint": "Sai qual è. Tastiera o controller, scegli tu.",
+  "eggPad": "Controller",
+  "padUp": "Su",
+  "padDown": "Giù",
+  "padLeft": "Sinistra",
+  "padRight": "Destra",
+  "padB": "Pulsante B",
+  "padA": "Pulsante A",
+  "eggProgress": "{done} di {total} comandi",
+  "eggClose": "Chiudi",
+  "eggBustedTitle": "Trenta vite extra sbloccate!",
+  "eggBustedBody": "Peccato che nessuna svuoti una coda arretrata. I tuoi messaggi ti aspettano e qualcuno sembra pure giudicarti. Smettila di fare lo scemo e torna al lavoro.",
+  "eggApology": "Scusa, torno a lavorare"
 }

@@ -255,5 +255,19 @@
   "deleteConnection": "Delete connection",
   "deleteConnectionConfirm": "Remove this saved connection and its credentials? Active captures will stop. Capture history will be kept. Broker resources will not be changed.",
   "confirmDeleteConnection": "Remove saved connection",
-  "connectionRemoved": "This connection was removed. Saved captures remain available for inspection and export."
+  "connectionRemoved": "This connection was removed. Saved captures remain available for inspection and export.",
+  "eggTitle": "Player 1, enter the code",
+  "eggHint": "You know the one. Keyboard or controller, your call.",
+  "eggPad": "Controller",
+  "padUp": "Up",
+  "padDown": "Down",
+  "padLeft": "Left",
+  "padRight": "Right",
+  "padB": "B button",
+  "padA": "A button",
+  "eggProgress": "{done} of {total} inputs",
+  "eggClose": "Close",
+  "eggBustedTitle": "Thirty extra lives unlocked!",
+  "eggBustedBody": "Sadly, none of them clear a queue backlog. Your messages are waiting, and a few of them look like they're judging you. Quit fooling around and get back to work.",
+  "eggApology": "Sorry, back to work"
 }

@@ -309,6 +309,214 @@ small,
 .sidebar-bottom p {
   margin-bottom: 15px;
 }
+.version-button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  color: inherit;
+  font-size: 12px;
+  cursor: default;
+  user-select: none;
+}
+.version-button:hover {
+  background: transparent;
+}
+.egg-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(10 12 10 / 0.55);
+}
+.egg-confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.egg-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(460px, 100%);
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.3);
+  text-align: center;
+}
+.egg-dialog:focus {
+  outline: none;
+}
+.egg-dialog h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.egg-dialog.busted p {
+  max-width: 36ch;
+  line-height: 1.5;
+}
+.egg-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-height: 26px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+/* A plastic object, so it keeps its own colors in both themes. */
+.egg-pad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 380px;
+  max-width: 100%;
+  height: 150px;
+  padding: 16px 18px;
+  margin-top: 6px;
+  background: #2a2a2a;
+  border: 10px solid #c8c8c3;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 2px #1a1a1a,
+    0 3px 0 #9a9a94;
+}
+.egg-pad button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: #f3f1ea;
+}
+.egg-pad button:focus-visible {
+  outline: 2px solid #9cc87b;
+  outline-offset: 2px;
+}
+.egg-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  grid-template-rows: repeat(3, 28px);
+  flex-shrink: 0;
+}
+.egg-dir,
+.egg-dir-hub,
+.egg-dir:hover {
+  background: #111;
+}
+.egg-dir {
+  border-radius: 3px;
+}
+.egg-dir.up {
+  grid-area: 1 / 2;
+}
+.egg-dir.left {
+  grid-area: 2 / 1;
+}
+.egg-dir-hub {
+  grid-area: 2 / 2;
+}
+.egg-dir.right {
+  grid-area: 2 / 3;
+}
+.egg-dir.down {
+  grid-area: 3 / 2;
+}
+.egg-dir.pressed,
+.egg-round.pressed {
+  translate: 0 2px;
+  filter: brightness(1.6);
+}
+.egg-middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.egg-brand {
+  color: #c4202b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.egg-pills {
+  display: flex;
+  gap: 10px;
+  color: #c4202b;
+  font-size: 8px;
+  font-weight: 600;
+}
+.egg-pills span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.egg-pills i {
+  width: 30px;
+  height: 9px;
+  border-radius: 5px;
+  background: #111;
+  box-shadow: 0 0 0 3px #6f6f6a;
+}
+.egg-face {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 8px;
+  background: #c8c8c3;
+  border-radius: 6px;
+}
+.egg-round,
+.egg-round:hover {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #c4202b;
+  box-shadow: 0 3px 0 #7d141b;
+}
+.egg-round span {
+  position: absolute;
+  bottom: -19px;
+  left: 0;
+  right: 0;
+  color: #c4202b;
+  font-size: 11px;
+  font-weight: 600;
+}
+.egg-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.egg-progress ol {
+  display: flex;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.egg-progress li {
+  width: 16px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+}
+.egg-progress li.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
 .workspace {
   display: flex;
   flex-direction: column;
@@ -915,6 +1123,12 @@ pre {
   .connection-form,
   .welcome-content {
     animation: arrive 0.2s ease-out;
+  }
+  .egg-dir,
+  .egg-round {
+    transition:
+      translate 0.08s,
+      filter 0.08s;
   }
   @keyframes arrive {
     from {
