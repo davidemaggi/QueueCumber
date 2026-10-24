@@ -9,6 +9,8 @@ English and Italian labels are included. Configuration and dump schemas are unch
 
 Built from merged main through GitHub Actions. Unsigned Windows x64, macOS arm64 and Linux x64 packages carry explicit unsigned names and `SHA256SUMS.txt`; macOS uses ad-hoc integrity signing without Developer ID or notarization. Verified Windows signed installer/ZIP variants, when present, come with `SHA256SUMS-signed-windows-x64.txt`.
 
-The maintainer authorized the 1.0.3 release on 2026-10-24.
+Built from merged-main commit `e81acc17ee8261735b307cf67c5fb60764c4774a`. Unsigned run 40083719672 and Windows signing run 40084084334 succeeded; merged-main Checks run 40083719998 passed on Windows, macOS and Linux. All nine downloaded package hashes matched their manifests before publication, and the downloaded macOS bundle passed integrity and version checks.
+
+The maintainer authorized the 1.0.3 release and publication on 2026-10-24. Detailed clean-machine installation/upgrade/uninstaller acceptance remains separate from automated checks.
 
 [Full changelog](https://github.com/davidemaggi/QueueCumber/compare/v1.0.2...v1.0.3)

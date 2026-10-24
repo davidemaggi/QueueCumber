@@ -1,6 +1,6 @@
 # Roadmap
 
-**[1.0.2](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.2) was published on 2026-10-23**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages built through GitHub Actions. All nine downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
+**[1.0.3](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.3) was published on 2026-10-24**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages built through GitHub Actions. All nine downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
 
 ## Foundation — complete
 
@@ -106,11 +106,13 @@ Release 1.0.1 targets 7b8ff2f. Optional signing run 39956622696 attempt 6 passed
 
 Release 1.0.2 targets `8367103`. Unsigned run 40017079451 and signing run 40017961329 succeeded. All 99 unit tests pass on each platform; merged-main Checks run 40017079283 also passes 33 integration/eight Linux desktop tests and four desktop smoke tests on each of Windows and macOS. Signed Windows assets have valid timestamped app/installer signatures, verified publisher and matching ZIP application content. All nine downloaded package checksums match; the downloaded macOS application passed local session-only smoke checks. The public latest-release API, tag target and anonymous signed-manifest download are verified.
 
-## 1.0.3 — hidden extra (in release; no character name)
+## 1.0.3 — hidden extra (published; no character name)
 
 - [x] Add a localized, keyboard-operable hidden extra behind the sidebar version, with bounded animation that respects reduced motion and no broker or storage access.
 - [x] Verify the EN/IT interaction with unit tests and an Electron run in light/dark themes at the 860×600 minimum window.
-- [ ] Merge through a reviewed PR, build via GitHub Actions, verify downloaded package hashes and publish with the maintainer’s 2026-10-24 authorization.
+- [x] Merge through PR #11, build via GitHub Actions, verify all nine downloaded package hashes and publish with the maintainer’s 2026-10-24 authorization.
+
+Release 1.0.3 targets `e81acc1`. Unsigned run 40083719672 and signing run 40084084334 succeeded; merged-main Checks run 40083719998 passes on Windows, macOS and Linux. All nine downloaded package checksums match; the downloaded macOS bundle passed integrity and version checks. The public latest-release API and tag target are verified.
 
 ## After 1.0 — candidates, not commitments
 
