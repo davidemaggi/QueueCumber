@@ -7,8 +7,11 @@ import {
   waitFor,
   cleanup,
   act,
+  configure,
 } from '@testing-library/react'
 import type { ComponentType } from 'react'
+// The full App renders slowly on loaded runners; 1s async waits flaked there.
+configure({ asyncUtilTimeout: 5000 })
 import type {
   DesktopApi,
   State,

@@ -51,6 +51,14 @@ Availability is a snapshot, not a reservation. The existing hosted watchdog allo
 
 Use a dedicated, preferably ephemeral runner restricted to trusted release work. Clean checkout precedes each run; keep keys outside the workspace and never run arbitrary PR code on this machine. Inventory authorization does not grant signing-key access. Real signing/upload passed for 1.0.1. The remaining unavailable-runner/watchdog acceptance cases are tracked in ROADMAP.md.
 
+## winget and Chocolatey
+
+Publishing a stable release (never a pre-release) starts `.github/workflows/publish-packages.yml`. It continues only when the release carries `QueueCumber-<version>-win-x64-signed-setup.exe` and `SHA256SUMS-signed-windows-x64.txt`, which the signing workflow attaches after verification; without them it skips with a notice, because both registries install the signed installer. It then calls `.github/workflows/package-managers.yml` with submit on.
+
+Both Windows jobs re-check the installer against the signed checksum manifest and its Authenticode signature (valid, timestamped, publisher `CODESIGN_CERT_SUBJECT`), install it silently (`/S`, per user under HKCU), confirm the app version and that it starts, and uninstall it. winget then writes manifests with the registry's product code, display name and publisher, runs `winget validate` and `winget install --manifest`, and submits with `wingetcreate submit` (secret `WINGET_TOKEN`, classic token with `public_repo`; the PR comes from the token owner's winget-pkgs fork). Chocolatey packs, installs, checks and uninstalls, then runs `choco push` (secret `CHOCOLATEY_API_KEY`). A missing secret skips that submission with a notice.
+
+Metadata lives in `packaging/package-managers.json`; release notes come from `docs/RELEASE_NOTES_<version>.md`, so write that file before the release. To retry a tag or test without submitting, run **Package managers** manually with submit off. Submitted packages still need registry review; record approval only when the registry shows it.
+
 ## Version names and publication
 
 Tags and filenames stay numeric SemVer. Major/minor releases with patch zero use `releaseName`: Star Wars characters with A for major 1, B for major 2, through Z. **1.0.0 is Ackbar**; patch releases such as 1.0.1 omit the field. Automated validation enforces the letter/Ackbar/absence rules; character authenticity remains reviewable content.

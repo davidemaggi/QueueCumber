@@ -1,0 +1,59 @@
+name: Publish to package managers
+
+# Signed Windows assets are attached to the release draft by release-signed.yml and become public
+# only when the maintainer publishes that draft. This is the step that follows: stable releases
+# that carry the verified signed installer go to winget and Chocolatey. No signed installer on the
+# release means no package-manager submission. Pre-releases are never published there.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  signed:
+    name: Signed installer on the release
+    if: github.event.release.prerelease == false && github.event.release.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+      tag: ${{ steps.check.outputs.tag }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::notice::$TAG is not a stable release tag: package managers skipped"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version="${TAG#v}"
+          asset=$(jq -r '.windowsInstaller.asset' packaging/package-managers.json)
+          asset="${asset//\{version\}/$version}"
+          checksums=$(jq -r '.windowsInstaller.checksums' packaging/package-managers.json)
+          names=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          if ! grep -qxF "$asset" <<<"$names" || ! grep -qxF "$checksums" <<<"$names"; then
+            echo "::notice::$TAG has no verified signed Windows installer: package managers skipped"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  package-managers:
+    name: Package managers
+    needs: signed
+    if: needs.signed.outputs.ready == 'true'
+    uses: ./.github/workflows/package-managers.yml
+    with:
+      tag: ${{ needs.signed.outputs.tag }}
+      submit: true
+    secrets: inherit

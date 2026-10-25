@@ -60,8 +60,8 @@ Record each test's OS/version/architecture, app commit/artifact hash, broker/pro
 - [x] Resolve failed gates or explicitly adjust/document supported scope before publishing. Maintainer acceptance and publication authorization were confirmed on 2026-10-23; no exact OS-version/cloud certification was added. The maintainer explicitly permits unsigned 1.0.0; lack of optional signed variants is not a blocking gate. Review the draft manually; publishing is a separate maintainer action.
 - [x] Publish the approved GitHub Release, then verify public download links/checksums from a fresh client (anonymous manifest and release API checks passed).
 - [ ] Prepare Homebrew cask using the actual published DMG URL/hash/version and verified architecture. Test install/uninstall/audit before submitting.
-- [ ] Prepare WinGet manifest using actual signed installer URL/hash, installer type/scope and publisher; validate/install before submission.
-- [ ] Prepare Chocolatey package using actual published installer URL/hash and silent arguments verified against the built NSIS installer. Test install/upgrade/uninstall before submitting.
+- [x] Prepare WinGet manifest using actual signed installer URL/hash, installer type/scope and publisher; validate/install before submission. Automated in `package-managers.yml`; dry run against v1.0.4.
+- [ ] Prepare Chocolatey package using actual published installer URL/hash and silent arguments verified against the built NSIS installer. Install/uninstall are automated in `package-managers.yml` (dry run against v1.0.4); upgrade remains untested.
 - [ ] Add package-manager instructions to README only after acceptance by that registry. No fabricated URLs, hashes or install commands.
 
 Passing these gates is the maintainer's release decision. The maintainer made that decision explicitly for 1.0.0; future releases require their own acceptance decision, rather than inference from a code commit.

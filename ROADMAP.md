@@ -66,7 +66,9 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [ ] Validate unsigned 1.0.0 downloads on clean machines, including expected OS warnings.
 - [x] Unsigned 1.0.0 packaging, explicit asset names, checksum generation and prepared Ackbar release notes.
 - [ ] Optional signed artifacts and platform signing/notarization acceptance when those channels are enabled.
-- [ ] Homebrew, WinGet and Chocolatey submission/verification, subject to registry requirements.
+- [x] Automate winget (`DavideMaggi.QueueCumber`) and Chocolatey (`queuecumber`) submission for stable releases with a verified signed installer; dry run against v1.0.4 installed, validated and uninstalled on a Windows runner without submitting.
+- [ ] First real winget and Chocolatey submission with the next stable release, after the `WINGET_TOKEN` and `CHOCOLATEY_API_KEY` secrets are added; then registry review and approval. Submitted is not approved.
+- [ ] Homebrew submission/verification, subject to registry requirements.
 - [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
 - [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
 
@@ -122,6 +124,14 @@ Release 1.0.3 targets `e81acc1`. Unsigned run 40083719672 and signing run 400840
 - [x] Merge through PR #13, verify all ten downloaded hashes including the RPM, and publish with the maintainer’s 2026-10-24 authorization.
 
 Release 1.0.4 targets `95211cc`. Unsigned run 40114239762 needed a Windows packaging rerun after a slow-runner storage test timeout; signing run 40115085073 needed a rerun after a timing-flaky App selection test (reproduced on 1.0.3 under CPU load; wait hardening is queued on development). Merged-main Checks run 40114239559 passes on all three platforms. All ten downloaded package checksums match; the downloaded macOS bundle passed integrity/version checks and the CI-built RPM installed with dnf on Fedora and started under Xvfb (amd64 emulation).
+
+## 1.0.5 — Linux icon and package managers (in release; no character name)
+
+- [x] Install a 16–512 px hicolor icon set and align `desktopName`, Wayland app_id/WM_CLASS and the `.desktop` StartupWMClass; verified in a Fedora container (maintainer reported the generic icon on Fedora KDE with 1.0.4).
+- [x] Submit stable signed releases to winget and Chocolatey automatically; dry run against v1.0.4 passed on a Windows runner.
+- [x] Give App selection tests enough time on loaded runners.
+- [ ] Merge through a reviewed PR, verify downloaded hashes, publish with the maintainer’s 2026-10-25 authorization, and follow the first winget/Chocolatey submission.
+- [ ] Confirm the icon in a real Fedora KDE session.
 
 ## After 1.0 — candidates, not commitments
 

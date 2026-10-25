@@ -12,6 +12,11 @@ for size in 16 24 32 48 64 128 256 512 1024; do
   rsvg-convert -w "$size" -h "$size" resources/branding/icon.svg -o "$icon_tmp/$size.png"
 done
 cp "$icon_tmp/1024.png" resources/icon.png
+# Linux icon themes look up fixed hicolor sizes; a lone 1024 px PNG is often ignored.
+mkdir -p resources/linux
+for size in 16 24 32 48 64 128 256 512; do
+  cp "$icon_tmp/$size.png" "resources/linux/${size}x${size}.png"
+done
 for size in 16 32 128 256 512; do
   cp "$icon_tmp/$size.png" "$icon_tmp/App.iconset/icon_${size}x${size}.png"
   double=$((size * 2))
