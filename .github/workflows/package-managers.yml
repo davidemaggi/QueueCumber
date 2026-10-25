@@ -113,7 +113,8 @@ jobs:
           # The installed app is this version and starts. QueueCumber has no command-line interface.
           $appExe = Join-Path $location "$($meta.name).exe"
           $fileVersion = (Get-Item $appExe).VersionInfo.ProductVersion
-          if ($fileVersion -ne $version) { throw "$appExe is version $fileVersion, expected $version" }
+          # Windows file versions have four parts: 1.0.4.0
+          if ($fileVersion -notin @($version, "$version.0")) { throw "$appExe is version $fileVersion, expected $version" }
           $profileDir = Join-Path $env:RUNNER_TEMP 'qc-profile'
           $running = Start-Process $appExe -ArgumentList "--user-data-dir=`"$profileDir`"" -PassThru
           Start-Sleep 15
@@ -238,7 +239,8 @@ jobs:
           if ($app.UninstallString -notmatch '^"([^"]+)"') { throw "Unexpected UninstallString: $($app.UninstallString)" }
           $appExe = Join-Path (Split-Path $Matches[1]) "$name.exe"
           $fileVersion = (Get-Item $appExe).VersionInfo.ProductVersion
-          if ($fileVersion -ne $version) { throw "$appExe is version $fileVersion, expected $version" }
+          # Windows file versions have four parts: 1.0.4.0
+          if ($fileVersion -notin @($version, "$version.0")) { throw "$appExe is version $fileVersion, expected $version" }
           $profileDir = Join-Path $env:RUNNER_TEMP 'qc-profile'
           $running = Start-Process $appExe -ArgumentList "--user-data-dir=`"$profileDir`"" -PassThru
           Start-Sleep 15
