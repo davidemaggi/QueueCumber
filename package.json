@@ -2,6 +2,7 @@
   "name": "queuecumber",
   "version": "1.0.4",
   "description": "A local desktop inspector for messaging systems.",
+  "desktopName": "queuecumber.desktop",
   "private": true,
   "license": "MIT",
   "author": {

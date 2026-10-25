@@ -15,5 +15,7 @@ win:
 nsis:
   artifactName: QueueCumber-${version}-${arch}-setup.${ext}
 linux:
-  icon: resources/icon.png
+  # Sized PNGs for hicolor; desktopName keeps Wayland app_id/WM_CLASS matched to the .desktop entry.
+  icon: resources/linux
+  syncDesktopName: true
   target: [AppImage, deb, rpm, tar.gz]
