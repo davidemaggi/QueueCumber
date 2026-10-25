@@ -1,0 +1,265 @@
+name: Package managers
+
+# Publishes a stable release's signed Windows installer to winget and Chocolatey.
+# publish-packages.yml calls it when a release with verified signed assets is published; run it by
+# hand to retry a tag, or to try it without submitting anything (submit off). Each job installs the
+# real package on a Windows runner before it submits it.
+# Metadata: packaging/package-managers.json; files: scripts/package-managers.mjs.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+      submit:
+        type: boolean
+        default: false
+    secrets:
+      WINGET_TOKEN:
+        required: false
+      CHOCOLATEY_API_KEY:
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag, e.g. v1.0.4
+        required: true
+      submit:
+        description: Submit to winget and Chocolatey (off = build and test only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-managers-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ inputs.tag }}
+  SUBMIT: ${{ inputs.submit == true && 'true' || 'false' }}
+  GH_TOKEN: ${{ github.token }}
+  CODESIGN_CERT_SUBJECT: ${{ vars.CODESIGN_CERT_SUBJECT }}
+
+jobs:
+  winget:
+    name: winget
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+
+      - name: Download and verify the signed installer
+        id: installer
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:TAG -notmatch '^v\d+\.\d+\.\d+$') { throw "Only stable release tags are published: $env:TAG" }
+          $version = $env:TAG.TrimStart('v')
+          $meta = Get-Content packaging/package-managers.json -Raw | ConvertFrom-Json
+          $asset = $meta.windowsInstaller.asset.Replace('{version}', $version)
+          gh release download $env:TAG -R $env:GITHUB_REPOSITORY -p $asset -p $meta.windowsInstaller.checksums -D installer
+          if ($LASTEXITCODE) { throw "gh release download failed ($LASTEXITCODE)" }
+          $exe = Join-Path $PWD "installer\$asset"
+          # Same bytes the signing job verified and listed in its checksum manifest
+          $listed = Get-Content (Join-Path $PWD "installer\$($meta.windowsInstaller.checksums)") |
+            Where-Object { $_ -match "^([0-9a-f]{64})\s+\*?$([regex]::Escape($asset))$" } |
+            ForEach-Object { $Matches[1] }
+          $actual = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+          if (-not $listed -or $listed -ne $actual) { throw "$asset doesn't match $($meta.windowsInstaller.checksums)" }
+          $signature = Get-AuthenticodeSignature $exe
+          if ($signature.Status -ne 'Valid') { throw "Authenticode signature is $($signature.Status)" }
+          if (-not $signature.TimeStamperCertificate) { throw 'The signature has no timestamp' }
+          $cn = $signature.SignerCertificate.GetNameInfo([Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+          if ($env:CODESIGN_CERT_SUBJECT -and $cn -ne $env:CODESIGN_CERT_SUBJECT) { throw "Signed by '$cn', expected '$env:CODESIGN_CERT_SUBJECT'" }
+          Write-Host "Signed by $cn, SHA-256 $actual"
+          "exe=$exe" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install the signed installer and read what it registers
+        id: probe
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.installer.outputs.version }}'
+          $meta = Get-Content packaging/package-managers.json -Raw | ConvertFrom-Json
+          $process = Start-Process '${{ steps.installer.outputs.exe }}' -ArgumentList $meta.windowsInstaller.silentArgs -Wait -PassThru
+          if ($process.ExitCode) { throw "The installer exited with $($process.ExitCode)" }
+
+          $uninstallRoot = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+          $key = Get-ChildItem $uninstallRoot |
+            Where-Object { (Get-ItemProperty $_.PSPath).DisplayName -like "$($meta.name)*" } |
+            Select-Object -First 1
+          if (-not $key) { throw "The installer registered nothing in $uninstallRoot" }
+          $app = Get-ItemProperty $key.PSPath
+          $productCode = $key.PSChildName
+          Write-Host "Product code: $productCode"
+          Write-Host "DisplayName: $($app.DisplayName) · DisplayVersion: $($app.DisplayVersion) · Publisher: $($app.Publisher)"
+          if ($app.DisplayVersion -ne $version) { throw "Registered version $($app.DisplayVersion), expected $version" }
+          if ($app.UninstallString -notmatch '^"([^"]+)"\s*(.*)$') { throw "Unexpected UninstallString: $($app.UninstallString)" }
+          $uninstaller = $Matches[1]
+          $uninstallArgs = $Matches[2]
+          # electron-builder writes no InstallLocation; the uninstaller sits in the app's folder
+          $location = if ($app.InstallLocation) { $app.InstallLocation } else { Split-Path $uninstaller }
+          Write-Host "Installed in: $location"
+
+          # The installed app is this version and starts. QueueCumber has no command-line interface.
+          $appExe = Join-Path $location "$($meta.name).exe"
+          $fileVersion = (Get-Item $appExe).VersionInfo.ProductVersion
+          if ($fileVersion -ne $version) { throw "$appExe is version $fileVersion, expected $version" }
+          $profileDir = Join-Path $env:RUNNER_TEMP 'qc-profile'
+          $running = Start-Process $appExe -ArgumentList "--user-data-dir=`"$profileDir`"" -PassThru
+          Start-Sleep 15
+          if ($running.HasExited) { throw "$($meta.name) exited at start with $($running.ExitCode)" }
+          Write-Host "$($meta.name) $fileVersion started"
+          Get-Process $meta.name -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep 2
+
+          "product-code=$productCode" >> $env:GITHUB_OUTPUT
+          "display-name=$($app.DisplayName)" >> $env:GITHUB_OUTPUT
+          "publisher=$($app.Publisher)" >> $env:GITHUB_OUTPUT
+
+          # Uninstall: winget's own test below starts from a clean machine
+          $process = Start-Process $uninstaller -ArgumentList "$uninstallArgs $($meta.windowsInstaller.silentArgs)" -Wait -PassThru
+          if ($process.ExitCode) { throw "The uninstaller exited with $($process.ExitCode)" }
+          for ($i = 0; $i -lt 60 -and (Test-Path $key.PSPath); $i++) { Start-Sleep 1 }
+          if (Test-Path $key.PSPath) { throw 'The uninstaller left its registry entry behind' }
+
+      - name: Write the manifests
+        id: manifests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $released = (gh release view $env:TAG -R $env:GITHUB_REPOSITORY --json publishedAt | ConvertFrom-Json).publishedAt
+          if ($LASTEXITCODE) { throw "gh release view failed ($LASTEXITCODE)" }
+          $json = node scripts/package-managers.mjs --version $env:TAG `
+            --installer '${{ steps.installer.outputs.exe }}' `
+            --product-code '${{ steps.probe.outputs.product-code }}' `
+            --display-name '${{ steps.probe.outputs.display-name }}' `
+            --publisher '${{ steps.probe.outputs.publisher }}' `
+            --date ([datetime]$released).ToUniversalTime().ToString('yyyy-MM-dd') --out out
+          if ($LASTEXITCODE) { throw "package-managers.mjs failed ($LASTEXITCODE)" }
+          $out = $json | Out-String | ConvertFrom-Json
+          Get-ChildItem $out.winget | ForEach-Object { Write-Host "── $($_.Name)"; Get-Content $_.FullName }
+          "dir=$($out.winget)" >> $env:GITHUB_OUTPUT
+
+      - name: Validate and install from the manifests with winget
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Install-PackageProvider -Name NuGet -Force | Out-Null
+            Install-Module Microsoft.WinGet.Client -Force -Repository PSGallery -Scope CurrentUser
+            Repair-WinGetPackageManager -Latest -Force
+          }
+          winget --version
+          winget settings --enable LocalManifestFiles
+          if ($LASTEXITCODE) { throw "winget settings failed ($LASTEXITCODE)" }
+          $dir = '${{ steps.manifests.outputs.dir }}'
+          winget validate --manifest $dir
+          if ($LASTEXITCODE) { throw "winget validate failed ($LASTEXITCODE)" }
+          winget install --manifest $dir --accept-package-agreements --accept-source-agreements --disable-interactivity --silent
+          if ($LASTEXITCODE) { throw "winget install failed ($LASTEXITCODE)" }
+          if (-not (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\${{ steps.probe.outputs.product-code }}')) {
+            throw 'winget installed it, but not under the product code in the manifest'
+          }
+
+      - name: Submit to winget-pkgs
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:SUBMIT -ne 'true') { Write-Host 'Dry run: nothing submitted'; exit 0 }
+          if (-not $env:WINGET_TOKEN) { Write-Host "::notice::WINGET_TOKEN isn't set: winget skipped"; exit 0 }
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          # The PR comes from the token owner's fork of microsoft/winget-pkgs, on a branch of its own
+          .\wingetcreate.exe submit --token $env:WINGET_TOKEN '${{ steps.manifests.outputs.dir }}'
+          if ($LASTEXITCODE) { throw "wingetcreate submit failed ($LASTEXITCODE)" }
+
+  chocolatey:
+    name: Chocolatey
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+
+      - name: Build the package
+        id: pack
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:TAG -notmatch '^v\d+\.\d+\.\d+$') { throw "Only stable release tags are published: $env:TAG" }
+          $version = $env:TAG.TrimStart('v')
+          $meta = Get-Content packaging/package-managers.json -Raw | ConvertFrom-Json
+          $asset = $meta.windowsInstaller.asset.Replace('{version}', $version)
+          gh release download $env:TAG -R $env:GITHUB_REPOSITORY -p $asset -D installer
+          if ($LASTEXITCODE) { throw "gh release download failed ($LASTEXITCODE)" }
+          $signature = Get-AuthenticodeSignature "installer\$asset"
+          if ($signature.Status -ne 'Valid') { throw "Authenticode signature is $($signature.Status)" }
+          $json = node scripts/package-managers.mjs --version $env:TAG --installer "installer\$asset" --out out
+          if ($LASTEXITCODE) { throw "package-managers.mjs failed ($LASTEXITCODE)" }
+          $out = $json | Out-String | ConvertFrom-Json
+          Push-Location $out.chocolatey
+          Get-Content "$($meta.chocolatey.id).nuspec"
+          choco pack --no-progress
+          if ($LASTEXITCODE) { throw "choco pack failed ($LASTEXITCODE)" }
+          Pop-Location
+          "dir=$($out.chocolatey)" >> $env:GITHUB_OUTPUT
+          "id=$($meta.chocolatey.id)" >> $env:GITHUB_OUTPUT
+          "name=$($meta.name)" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install, check and uninstall with choco
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $id = '${{ steps.pack.outputs.id }}'
+          $name = '${{ steps.pack.outputs.name }}'
+          $version = '${{ steps.pack.outputs.version }}'
+          choco install $id --source '${{ steps.pack.outputs.dir }}' --version $version -y --no-progress
+          if ($LASTEXITCODE) { throw "choco install failed ($LASTEXITCODE)" }
+          $key = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' |
+            Where-Object { (Get-ItemProperty $_.PSPath).DisplayName -like "$name*" } |
+            Select-Object -First 1
+          if (-not $key) { throw "choco install didn't install $name" }
+          $app = Get-ItemProperty $key.PSPath
+          # electron-builder writes no InstallLocation; the uninstaller sits in the app's folder
+          if ($app.UninstallString -notmatch '^"([^"]+)"') { throw "Unexpected UninstallString: $($app.UninstallString)" }
+          $appExe = Join-Path (Split-Path $Matches[1]) "$name.exe"
+          $fileVersion = (Get-Item $appExe).VersionInfo.ProductVersion
+          if ($fileVersion -ne $version) { throw "$appExe is version $fileVersion, expected $version" }
+          $profileDir = Join-Path $env:RUNNER_TEMP 'qc-profile'
+          $running = Start-Process $appExe -ArgumentList "--user-data-dir=`"$profileDir`"" -PassThru
+          Start-Sleep 15
+          if ($running.HasExited) { throw "$name exited at start with $($running.ExitCode)" }
+          Write-Host "$name $fileVersion started"
+          Get-Process $name -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep 2
+
+          choco uninstall $id -y --no-progress
+          if ($LASTEXITCODE) { throw "choco uninstall failed ($LASTEXITCODE)" }
+          for ($i = 0; $i -lt 60 -and (Test-Path $key.PSPath); $i++) { Start-Sleep 1 }
+          if (Test-Path $key.PSPath) { throw 'choco uninstall left the app installed' }
+          if (Test-Path $appExe) { throw "choco uninstall left $appExe behind" }
+
+      - name: Push to the Chocolatey community repository
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:SUBMIT -ne 'true') { Write-Host 'Dry run: nothing pushed'; exit 0 }
+          if (-not $env:CHOCOLATEY_API_KEY) { Write-Host "::notice::CHOCOLATEY_API_KEY isn't set: Chocolatey skipped"; exit 0 }
+          $nupkg = Get-ChildItem '${{ steps.pack.outputs.dir }}\*.nupkg' | Select-Object -First 1
+          choco push $nupkg.FullName --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
+          if ($LASTEXITCODE) { throw "choco push failed ($LASTEXITCODE)" }

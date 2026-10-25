@@ -1,0 +1,53 @@
+{
+  "name": "QueueCumber",
+  "publisher": "Davide Maggi",
+  "author": "Davide Maggi",
+  "publisherUrl": "https://github.com/davidemaggi",
+  "projectUrl": "https://github.com/davidemaggi/QueueCumber",
+  "supportUrl": "https://github.com/davidemaggi/QueueCumber/issues",
+  "docsUrl": "https://github.com/davidemaggi/QueueCumber/blob/main/docs/USER_GUIDE.md",
+  "license": "MIT",
+  "licenseUrl": "https://github.com/davidemaggi/QueueCumber/blob/main/LICENSE",
+  "copyright": "Copyright (c) 2026 Davide Maggi",
+  "icon": "resources/linux/256x256.png",
+  "tags": [
+    "rabbitmq",
+    "kafka",
+    "amqp",
+    "message-broker",
+    "message-queue",
+    "messaging",
+    "routing-keys",
+    "debugging",
+    "inspector",
+    "developer-tools",
+    "devops",
+    "desktop",
+    "electron"
+  ],
+  "windowsInstaller": {
+    "asset": "QueueCumber-{version}-win-x64-signed-setup.exe",
+    "checksums": "SHA256SUMS-signed-windows-x64.txt",
+    "silentArgs": "/S",
+    "minimumOSVersion": "10.0.0.0",
+    "commands": []
+  },
+  "winget": {
+    "id": "DavideMaggi.QueueCumber",
+    "moniker": "queuecumber"
+  },
+  "chocolatey": {
+    "id": "queuecumber",
+    "owners": "davidemaggi"
+  },
+  "locales": {
+    "en-US": {
+      "shortDescription": "See what's flowing through RabbitMQ and Kafka without borrowing an application's consumer.",
+      "description": "QueueCumber is a local desktop inspector for RabbitMQ and Kafka. It observes traffic through its own temporary queues and never consumes or acknowledges from application queues.\n\n- Save RabbitMQ and Kafka connections, test them and browse queues, streams, topics and routing keys\n- Mirror selected bindings or routing keys into a temporary observation queue, or read a stream or Kafka partition from any position\n- Structured headers, pretty JSON and the original bytes, newest or oldest first\n- Bounded memory, encrypted disk history, retention and rate limits; captures keep running in the tray\n- Export messages as JSONL, a folder or ZIP; move connections with password-encrypted files\n- English or Italian, light or dark, keyboard friendly"
+    },
+    "it-IT": {
+      "shortDescription": "Guarda cosa passa in RabbitMQ e Kafka senza rubare il consumer a un'applicazione.",
+      "description": "QueueCumber è un ispettore desktop locale per RabbitMQ e Kafka. Osserva il traffico tramite code temporanee proprie e non consuma né conferma mai messaggi dalle code delle applicazioni.\n\n- Salva connessioni RabbitMQ e Kafka, provale e sfoglia code, stream, topic e routing key\n- Replica binding o routing key scelti in una coda di osservazione temporanea, oppure leggi uno stream o una partizione Kafka da qualsiasi posizione\n- Header strutturati, JSON formattato e byte originali, dal più recente o dal più vecchio\n- Memoria limitata, storico cifrato su disco, retention e limiti di velocità; le catture continuano dalla tray\n- Esporta i messaggi come JSONL, cartella o ZIP; sposta le connessioni con file cifrati da password\n- Inglese o italiano, chiaro o scuro, comodo da tastiera"
+    }
+  }
+}
