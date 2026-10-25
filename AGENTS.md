@@ -16,6 +16,14 @@ Architecture was approved on 2026-10-22. The MVP implementation plan at `docs/su
 - Follow ROADMAP's SemVer/schema and Star Wars release-name policy (1.0.0 Ackbar; A for major 1, B for major 2; patch releases unnamed). Never invent releases, screenshots, benchmarks, install commands or compatibility claims.
 - Prefer small working vertical slices and focused modules. Put provider-specific behavior behind explicit capabilities rather than scattered UI conditions.
 
+## Package managers
+
+- Stable releases go to **winget** (`DavideMaggi.QueueCumber`) and **Chocolatey** (`queuecumber`). `publish-packages.yml` runs when the maintainer publishes a release: only stable tags carrying the verified signed installer and `SHA256SUMS-signed-windows-x64.txt` continue to the reusable `package-managers.yml`. No signed installer means no submission; pre-releases are never submitted.
+- Names, publisher, URLs, descriptions (en-US, it-IT), tags and the 256 px icon live in `packaging/package-managers.json`. `scripts/package-managers.mjs` (built-in modules only) writes the winget manifests (schema 1.10.0, no Icons) and the Chocolatey package; release notes come from `docs/RELEASE_NOTES_<version>.md` up to its Downloads section. Change wording there, not in the workflow.
+- Each job checks the installer's hash and Authenticode signature, installs it for real on a Windows runner, checks the app version and that it starts, then uninstalls: winget reads the product code, display name and publisher from HKCU, validates and installs from the manifests; Chocolatey packs, installs, checks and uninstalls.
+- winget submits with `wingetcreate submit` from the token owner's fork of microsoft/winget-pkgs, on its own branch. Secrets: `WINGET_TOKEN` (classic token, `public_repo`) and `CHOCOLATEY_API_KEY`; without one, that step is skipped with a notice. Submitted is not approved: new packages wait for registry review.
+- To retry a tag or try without submitting, run **Package managers** by hand (tag, submit off). Never open winget-pkgs PRs or push Chocolatey packages manually.
+
 ## Interface work
 
 - For new screens, use `.agents/skills/design-taste-frontend/SKILL.md` and its app-screen reference. QueueCumber is an operational desktop tool: prioritize scanning, useful density and precise states.

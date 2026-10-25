@@ -45,7 +45,16 @@ Download a package from [GitHub Releases](https://github.com/davidemaggi/QueueCu
 
 Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
 
-Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Homebrew, WinGet and Chocolatey are planned; there are no registry install commands yet. Updates are manual for now.
+Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Homebrew is planned. Updates are manual for now.
+
+### winget and Chocolatey
+
+From the next stable release, the signed Windows installer is submitted automatically to winget and Chocolatey. New packages go through a review that can take a few days, so these commands work only once the registries have approved QueueCumber. Until then, use the downloads above.
+
+```powershell
+winget install DavideMaggi.QueueCumber
+choco install queuecumber
+```
 
 ### Windows signatures
 
@@ -205,7 +214,7 @@ All distribution builds run through GitHub Actions after a PR merges into `main`
 
 Broker edge cases, reproducible bugs and useful ideas are welcome. Open an [issue](https://github.com/davidemaggi/QueueCumber/issues) with sanitized examples, branch off `development`, and keep the relevant checks green. Leave real credentials and private messages out of reports.
 
-Homebrew, WinGet and Chocolatey distribution and remaining platform acceptance are tracked in the [roadmap](ROADMAP.md). Product decisions live in [PRODUCT.md](PRODUCT.md), architecture in the [project plan](docs/PROJECT_PLAN.md), and AI workflow conventions in [AGENTS.md](AGENTS.md).
+Homebrew, the winget/Chocolatey review status and remaining platform acceptance are tracked in the [roadmap](ROADMAP.md). Product decisions live in [PRODUCT.md](PRODUCT.md), architecture in the [project plan](docs/PROJECT_PLAN.md), and AI workflow conventions in [AGENTS.md](AGENTS.md).
 
 ## Versions
 

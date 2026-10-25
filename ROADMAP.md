@@ -66,7 +66,9 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [ ] Validate unsigned 1.0.0 downloads on clean machines, including expected OS warnings.
 - [x] Unsigned 1.0.0 packaging, explicit asset names, checksum generation and prepared Ackbar release notes.
 - [ ] Optional signed artifacts and platform signing/notarization acceptance when those channels are enabled.
-- [ ] Homebrew, WinGet and Chocolatey submission/verification, subject to registry requirements.
+- [x] Automate winget (`DavideMaggi.QueueCumber`) and Chocolatey (`queuecumber`) submission for stable releases with a verified signed installer; dry run against v1.0.4 installed, validated and uninstalled on a Windows runner without submitting.
+- [ ] First real winget and Chocolatey submission with the next stable release, after the `WINGET_TOKEN` and `CHOCOLATEY_API_KEY` secrets are added; then registry review and approval. Submitted is not approved.
+- [ ] Homebrew submission/verification, subject to registry requirements.
 - [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
 - [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
 

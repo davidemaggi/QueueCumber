@@ -8,7 +8,7 @@ Download a package for your OS/architecture from [GitHub Releases](https://githu
 - macOS: the current unsigned channel uses ad-hoc signing without Developer ID/notarization. Review the unsigned release status and OS warnings before choosing to run it. Open the DMG and drag QueueCumber to Applications, or extract the ZIP and move the app there. Do not treat an ad-hoc signature as publisher verification or disable Gatekeeper system-wide.
 - Linux: use the DEB through your package manager, make the AppImage executable and open it, or extract the whole tar.gz and run its executable. AppImage/FUSE support depends on the distribution. Retain Chromium's sandbox; do not use `--no-sandbox` as a workaround. Linux tray/keyring availability depends on the desktop.
 
-Homebrew, WinGet and Chocolatey will follow verified release assets and registry acceptance. No automatic updater or automatic package-manager enrollment is implemented; install updates deliberately.
+From the next stable release, the signed Windows installer is submitted to winget (`DavideMaggi.QueueCumber`) and Chocolatey (`queuecumber`). New packages wait for registry review, so `winget install DavideMaggi.QueueCumber` and `choco install queuecumber` work only after approval. Homebrew is planned. There is no automatic updater; install updates deliberately.
 
 ## First connection
 
