@@ -1,6 +1,6 @@
 # Roadmap
 
-**[1.0.4](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.4) was published on 2026-10-24**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages (now including RPM) built through GitHub Actions. All ten downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
+**[1.0.5](https://github.com/davidemaggi/QueueCumber/releases/tag/v1.0.5) was published on 2026-10-25**, with verified Windows signed installer/ZIP downloads and unsigned Windows/macOS/Linux packages (now including RPM) built through GitHub Actions. All ten downloaded checksums match. Detailed clean-machine/platform/cloud checks remain recorded separately; publication does not imply additional certification.
 
 ## Foundation — complete
 
@@ -67,7 +67,8 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [x] Unsigned 1.0.0 packaging, explicit asset names, checksum generation and prepared Ackbar release notes.
 - [ ] Optional signed artifacts and platform signing/notarization acceptance when those channels are enabled.
 - [x] Automate winget (`DavideMaggi.QueueCumber`) and Chocolatey (`queuecumber`) submission for stable releases with a verified signed installer; dry run against v1.0.4 installed, validated and uninstalled on a Windows runner without submitting.
-- [ ] First real winget and Chocolatey submission with the next stable release, after the `WINGET_TOKEN` and `CHOCOLATEY_API_KEY` secrets are added; then registry review and approval. Submitted is not approved.
+- [x] First real winget and Chocolatey submission with 1.0.5 (winget-pkgs PR #461371; Chocolatey in moderation).
+- [ ] Registry review and approval for winget and Chocolatey. Submitted is not approved.
 - [ ] Homebrew submission/verification, subject to registry requirements.
 - [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
 - [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
@@ -125,12 +126,16 @@ Release 1.0.3 targets `e81acc1`. Unsigned run 40083719672 and signing run 400840
 
 Release 1.0.4 targets `95211cc`. Unsigned run 40114239762 needed a Windows packaging rerun after a slow-runner storage test timeout; signing run 40115085073 needed a rerun after a timing-flaky App selection test (reproduced on 1.0.3 under CPU load; wait hardening is queued on development). Merged-main Checks run 40114239559 passes on all three platforms. All ten downloaded package checksums match; the downloaded macOS bundle passed integrity/version checks and the CI-built RPM installed with dnf on Fedora and started under Xvfb (amd64 emulation).
 
-## 1.0.5 — Linux icon and package managers (in release; no character name)
+## 1.0.5 — Linux icon and package managers (published; no character name)
 
 - [x] Install a 16–512 px hicolor icon set and align `desktopName`, Wayland app_id/WM_CLASS and the `.desktop` StartupWMClass; verified in a Fedora container (maintainer reported the generic icon on Fedora KDE with 1.0.4).
 - [x] Submit stable signed releases to winget and Chocolatey automatically; dry run against v1.0.4 passed on a Windows runner.
 - [x] Give App selection tests enough time on loaded runners.
-- [ ] Merge through a reviewed PR, verify downloaded hashes, publish with the maintainer’s 2026-10-25 authorization, and follow the first winget/Chocolatey submission.
+- [x] Merge through PR #15, verify all ten downloaded hashes, publish with the maintainer’s 2026-10-25 authorization.
+- [x] First automatic submission (run 40190254312): winget [PR #461371](https://github.com/microsoft/winget-pkgs/pull/461371) opened from davidemaggi/winget-pkgs; Chocolatey `queuecumber` 1.0.5 pushed into moderation. Both secrets appear only as `***` in the logs.
+- [ ] winget-pkgs merge and Chocolatey approval (submitted is not approved).
+
+Release 1.0.5 targets `c92582f`. Unsigned run 40188055674 succeeded first time; signing run 40188491321 needed a rerun after two unit tests exceeded 15 s on the busy signing machine. All ten downloaded package checksums match; the downloaded macOS bundle passed integrity/version checks and the CI-built RPM installed eight icon sizes on Fedora with `StartupWMClass` matching the window class.
 - [ ] Confirm the icon in a real Fedora KDE session.
 
 ## After 1.0 — candidates, not commitments

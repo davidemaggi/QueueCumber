@@ -16,7 +16,7 @@ See what's flowing through RabbitMQ and Kafka, without juggling terminals or bor
 
 ---
 
-> 🥒 **QueueCumber 1.0.4 is out.** [Grab a download](https://github.com/davidemaggi/QueueCumber/releases/latest), [read what changed](docs/RELEASE_NOTES_1.0.4.md), or [tell me what breaks](https://github.com/davidemaggi/QueueCumber/issues). Signed Windows installer and ZIP downloads are available.
+> 🥒 **QueueCumber 1.0.5 is out.** [Grab a download](https://github.com/davidemaggi/QueueCumber/releases/latest), [read what changed](docs/RELEASE_NOTES_1.0.5.md), or [tell me what breaks](https://github.com/davidemaggi/QueueCumber/issues). Signed Windows installer and ZIP downloads are available.
 
 ## Why
 
@@ -35,21 +35,21 @@ QueueCumber gives you a desktop window into that traffic:
 
 Download a package from [GitHub Releases](https://github.com/davidemaggi/QueueCumber/releases/latest). **You don't need Node.js, pnpm or Docker to run the packaged app.**
 
-| System | Recommended 1.0.4 download | How to install |
+| System | Recommended 1.0.5 download | How to install |
 | --- | --- | --- |
-| Windows x64 | [Signed installer](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-win-x64-signed-setup.exe) | Run the installer, then open QueueCumber. |
-| macOS, Apple silicon | [DMG](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-mac-arm64-unsigned.dmg) | Open the DMG and drag QueueCumber into Applications. |
-| Debian / Ubuntu, x64 | [DEB](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-linux-amd64-unsigned.deb) | Install with your package manager; see below. |
-| Fedora / RHEL / openSUSE, x64 | [RPM](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-linux-x86_64-unsigned.rpm) | Install with your package manager; see below. |
-| Other Linux desktops, x64 | [AppImage](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-linux-x86_64-unsigned.AppImage) | Make it executable, then run it; see below. |
+| Windows x64 | [Signed installer](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-win-x64-signed-setup.exe) | Run the installer, then open QueueCumber. |
+| macOS, Apple silicon | [DMG](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-mac-arm64-unsigned.dmg) | Open the DMG and drag QueueCumber into Applications. |
+| Debian / Ubuntu, x64 | [DEB](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-linux-amd64-unsigned.deb) | Install with your package manager; see below. |
+| Fedora / RHEL / openSUSE, x64 | [RPM](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-linux-x86_64-unsigned.rpm) | Install with your package manager; see below. |
+| Other Linux desktops, x64 | [AppImage](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-linux-x86_64-unsigned.AppImage) | Make it executable, then run it; see below. |
 
-Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.4/QueueCumber-1.0.4-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
+Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
 
 Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Homebrew is planned. Updates are manual for now.
 
 ### winget and Chocolatey
 
-From the next stable release, the signed Windows installer is submitted automatically to winget and Chocolatey. New packages go through a review that can take a few days, so these commands work only once the registries have approved QueueCumber. Until then, use the downloads above.
+Stable releases submit the signed Windows installer to winget and Chocolatey automatically. 1.0.5 is the first submission: a [winget-pkgs pull request](https://github.com/microsoft/winget-pkgs/pull/461371) and a Chocolatey package in moderation. New packages go through a review that can take a few days, so these commands work only once each registry has approved QueueCumber. Until then, use the downloads above.
 
 ```powershell
 winget install DavideMaggi.QueueCumber
@@ -73,27 +73,27 @@ Run these commands from the directory containing your download.
 Debian / Ubuntu:
 
 ```sh
-sudo apt install ./QueueCumber-1.0.4-linux-amd64-unsigned.deb
+sudo apt install ./QueueCumber-1.0.5-linux-amd64-unsigned.deb
 ```
 
 Fedora / RHEL (use `sudo zypper install` on openSUSE):
 
 ```sh
-sudo dnf install ./QueueCumber-1.0.4-linux-x86_64-unsigned.rpm
+sudo dnf install ./QueueCumber-1.0.5-linux-x86_64-unsigned.rpm
 ```
 
 AppImage:
 
 ```sh
-chmod +x QueueCumber-1.0.4-linux-x86_64-unsigned.AppImage
-./QueueCumber-1.0.4-linux-x86_64-unsigned.AppImage
+chmod +x QueueCumber-1.0.5-linux-x86_64-unsigned.AppImage
+./QueueCumber-1.0.5-linux-x86_64-unsigned.AppImage
 ```
 
 AppImage needs a compatible desktop and FUSE support. If that isn't available, use the DEB, RPM or tar.gz:
 
 ```sh
-tar -xzf QueueCumber-1.0.4-linux-x64-unsigned.tar.gz
-./QueueCumber-1.0.4-linux-x64-unsigned/queuecumber
+tar -xzf QueueCumber-1.0.5-linux-x64-unsigned.tar.gz
+./QueueCumber-1.0.5-linux-x64-unsigned/queuecumber
 ```
 
 Runtime libraries, tray support, keyrings and Chromium sandbox requirements depend on your distribution. See the [field guide](docs/USER_GUIDE.md) for troubleshooting; keep the sandbox enabled.
@@ -105,14 +105,14 @@ Each release includes two SHA-256 manifests: **`SHA256SUMS-signed-windows-x64.tx
 On Windows, hash the downloaded file and compare the value with its exact filename in the signed manifest:
 
 ```powershell
-Get-FileHash .\QueueCumber-1.0.4-win-x64-signed-setup.exe -Algorithm SHA256
+Get-FileHash .\QueueCumber-1.0.5-win-x64-signed-setup.exe -Algorithm SHA256
 Get-Content .\SHA256SUMS-signed-windows-x64.txt
 ```
 
 On macOS, compare the DMG's hash with its line in `SHA256SUMS.txt`:
 
 ```sh
-shasum -a 256 QueueCumber-1.0.4-mac-arm64-unsigned.dmg
+shasum -a 256 QueueCumber-1.0.5-mac-arm64-unsigned.dmg
 cat SHA256SUMS.txt
 ```
 
@@ -218,7 +218,7 @@ Homebrew, the winget/Chocolatey review status and remaining platform acceptance 
 
 ## Versions
 
-[SemVer](https://semver.org/), with Star Wars character names for major/minor releases: major 1 uses A, major 2 uses B, and so on. **1.0.0 is Ackbar.** Patch releases such as 1.0.4 don't get a character name.
+[SemVer](https://semver.org/), with Star Wars character names for major/minor releases: major 1 uses A, major 2 uses B, and so on. **1.0.0 is Ackbar.** Patch releases such as 1.0.5 don't get a character name.
 
 ## License
 
