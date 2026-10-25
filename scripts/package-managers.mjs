@@ -15,6 +15,9 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
+import { URL } from 'node:url'
+import console from 'node:console'
+import process from 'node:process'
 
 const { values: args } = parseArgs({
   options: {

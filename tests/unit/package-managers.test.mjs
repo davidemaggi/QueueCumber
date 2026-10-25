@@ -5,6 +5,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import process from 'node:process'
+import { Buffer } from 'node:buffer'
 import meta from '../../packaging/package-managers.json'
 
 const run = (...args) =>
