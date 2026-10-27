@@ -1,9 +1,10 @@
 name: Publish to package managers
 
 # Signed Windows assets are attached to the release draft by release-signed.yml and become public
-# only when the maintainer publishes that draft. This is the step that follows: stable releases
-# that carry the verified signed installer go to winget and Chocolatey. No signed installer on the
-# release means no package-manager submission. Pre-releases are never published there.
+# only when the maintainer publishes that draft. This is the step that follows: every stable
+# release goes to Homebrew, the AUR and Cloudsmith (apt, dnf) from its unsigned macOS and Linux
+# files, and to winget and Chocolatey only when it carries the verified signed installer. No signed
+# installer means no Windows package-manager submission. Pre-releases are never published there.
 on:
   release:
     types: [published]
@@ -13,13 +14,14 @@ permissions:
 
 jobs:
   signed:
-    name: Signed installer on the release
+    name: Channels for the release
     if: github.event.release.prerelease == false && github.event.release.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       ready: ${{ steps.check.outputs.ready }}
       tag: ${{ steps.check.outputs.tag }}
+      channels: ${{ steps.check.outputs.channels }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -40,13 +42,15 @@ jobs:
           asset="${asset//\{version\}/$version}"
           checksums=$(jq -r '.windowsInstaller.checksums' packaging/package-managers.json)
           names=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
-          if ! grep -qxF "$asset" <<<"$names" || ! grep -qxF "$checksums" <<<"$names"; then
-            echo "::notice::$TAG has no verified signed Windows installer: package managers skipped"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          channels=homebrew,aur,cloudsmith
+          if grep -qxF "$asset" <<<"$names" && grep -qxF "$checksums" <<<"$names"; then
+            channels="winget,chocolatey,$channels"
+          else
+            echo "::notice::$TAG has no verified signed Windows installer: winget and Chocolatey skipped"
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "channels=$channels" >> "$GITHUB_OUTPUT"
 
   package-managers:
     name: Package managers
@@ -56,4 +60,5 @@ jobs:
     with:
       tag: ${{ needs.signed.outputs.tag }}
       submit: true
+      channels: ${{ needs.signed.outputs.channels }}
     secrets: inherit

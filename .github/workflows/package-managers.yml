@@ -1,10 +1,12 @@
 name: Package managers
 
-# Publishes a stable release's signed Windows installer to winget and Chocolatey.
-# publish-packages.yml calls it when a release with verified signed assets is published; run it by
-# hand to retry a tag, or to try it without submitting anything (submit off). Each job installs the
-# real package on a Windows runner before it submits it.
-# Metadata: packaging/package-managers.json; files: scripts/package-managers.mjs.
+# Publishes a stable release's files to package managers, without rebuilding anything: winget and
+# Chocolatey (the signed Windows installer), Homebrew (a cask in the shared tap, from the macOS
+# zip), AUR (queuecumber-bin, from the .deb) and Cloudsmith (apt and dnf repository, the .deb and
+# .rpm). publish-packages.yml calls it when a stable release is published; run it by hand to retry
+# a tag, to publish an existing release on some channels only, or to try it without publishing
+# anything (submit off). Every job installs the real package before it publishes it.
+# Metadata: packaging/package-managers.json; files: scripts/package-managers*.mjs.
 on:
   workflow_call:
     inputs:
@@ -14,20 +16,32 @@ on:
       submit:
         type: boolean
         default: false
+      channels:
+        type: string
+        default: winget,chocolatey,homebrew,aur,cloudsmith
     secrets:
       WINGET_TOKEN:
         required: false
       CHOCOLATEY_API_KEY:
         required: false
+      HOMEBREW_TAP_TOKEN:
+        required: false
+      AUR_SSH_PRIVATE_KEY:
+        required: false
+      CLOUDSMITH_API_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       tag:
-        description: Published release tag, e.g. v1.0.4
+        description: Published release tag, e.g. v1.0.5
         required: true
       submit:
-        description: Submit to winget and Chocolatey (off = build and test only)
+        description: Publish (off = build and test only)
         type: boolean
         default: false
+      channels:
+        description: Comma-separated channels
+        default: winget,chocolatey,homebrew,aur,cloudsmith
 
 permissions:
   contents: read
@@ -45,6 +59,7 @@ env:
 jobs:
   winget:
     name: winget
+    if: contains(format(',{0},', inputs.channels), ',winget,')
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -184,6 +199,7 @@ jobs:
 
   chocolatey:
     name: Chocolatey
+    if: contains(format(',{0},', inputs.channels), ',chocolatey,')
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -265,3 +281,326 @@ jobs:
           $nupkg = Get-ChildItem '${{ steps.pack.outputs.dir }}\*.nupkg' | Select-Object -First 1
           choco push $nupkg.FullName --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
           if ($LASTEXITCODE) { throw "choco push failed ($LASTEXITCODE)" }
+
+  homebrew:
+    name: Homebrew (${{ matrix.arch }})
+    if: contains(format(',{0},', inputs.channels), ',homebrew,')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm
+          - runner: macos-15-intel
+            arch: intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+
+      - name: Write the cask
+        id: cask
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Only stable release tags are published: $TAG"; exit 1; }
+          meta=packaging/package-managers.json
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "$(jq -r .checksums $meta)" -D release
+          out=$(node scripts/package-managers-unix.mjs --version "$TAG" --sums "release/$(jq -r .checksums $meta)" --out out)
+          name=$(jq -r .homebrew.cask $meta)
+          cat "out/homebrew/Casks/$name.rb"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "file=out/homebrew/Casks/$name.rb" >> "$GITHUB_OUTPUT"
+          # Older releases have no file for some Macs: the cask refuses them, nothing to install here
+          if jq -e --arg arch "$ARCH" '.homebrewArches | index($arch)' <<<"$out" >/dev/null; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$TAG has no macOS file for $ARCH: the cask leaves it out"
+          fi
+
+      - name: Audit, install, check and uninstall with brew
+        if: steps.cask.outputs.supported == 'true'
+        env:
+          # brew audit --online asks GitHub's API; anonymously, shared runners hit the rate limit
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+          CASK: ${{ steps.cask.outputs.name }}
+          CASK_FILE: ${{ steps.cask.outputs.file }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          app="/Applications/$(jq -r .homebrew.app packaging/package-managers.json)"
+          brew tap-new --no-git ci/local
+          # Homebrew 7 loads casks only from trusted taps
+          if brew help trust >/dev/null 2>&1; then brew trust ci/local; fi
+          tapdir="$(brew --repository)/Library/Taps/ci/homebrew-local"
+          mkdir -p "$tapdir/Casks"
+          cp "$CASK_FILE" "$tapdir/Casks/"
+          brew style --cask "ci/local/$CASK"
+          brew audit --cask --online "ci/local/$CASK"
+          brew install --cask "ci/local/$CASK"
+
+          test -d "$app" || { echo "::error::$app isn't there"; exit 1; }
+          if xattr -p com.apple.quarantine "$app" >/dev/null 2>&1; then
+            echo "::error::The app is still quarantined"; exit 1
+          fi
+          said=$(defaults read "$app/Contents/Info.plist" CFBundleShortVersionString)
+          [ "$said" = "$version" ] || { echo "::error::$app is version $said, expected $version"; exit 1; }
+          exe="$app/Contents/MacOS/$(defaults read "$app/Contents/Info.plist" CFBundleExecutable)"
+          echo "$(lipo -archs "$exe") on $(uname -m)"
+          # QueueCumber has no command-line interface: check that the app starts instead
+          "$exe" &
+          pid=$!
+          sleep 15
+          kill -0 "$pid" || { echo "::error::The app exited at start"; exit 1; }
+          kill "$pid"; wait "$pid" || true
+          echo "$CASK $said installed, unquarantined and started"
+
+          # --zap also checks the zap paths: the first start created the app's data folder
+          ls -d ~/Library/Application\ Support/QueueCumber
+          brew uninstall --cask --zap "ci/local/$CASK"
+          test ! -e "$app" || { echo "::error::brew uninstall left $app behind"; exit 1; }
+          test ! -e ~/Library/Application\ Support/QueueCumber || { echo "::error::zap left the app's data behind"; exit 1; }
+
+  homebrew-publish:
+    name: Homebrew (publish)
+    # One cask serves every Mac: publish it only once it installed on each of them
+    needs: homebrew
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+
+      - name: Publish to the tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "$SUBMIT" != true ]; then echo 'Dry run: nothing published'; exit 0; fi
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then echo "::notice::HOMEBREW_TAP_TOKEN isn't set: Homebrew skipped"; exit 0; fi
+          meta=packaging/package-managers.json
+          # The same cask the jobs above tested: same release hashes, same generator
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "$(jq -r .checksums $meta)" -D release
+          node scripts/package-managers-unix.mjs --version "$TAG" --sums "release/$(jq -r .checksums $meta)" --out out >/dev/null
+          cask=$(jq -r .homebrew.cask $meta)
+          tap=$(jq -r .homebrew.tap $meta)
+          git clone "https://x-access-token:$HOMEBREW_TAP_TOKEN@github.com/$tap.git" tap
+          mkdir -p tap/Casks
+          cp "out/homebrew/Casks/$cask.rb" tap/Casks/
+          cd tap
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "Casks/$cask.rb"
+          if git diff --cached --quiet; then echo "$cask ${TAG#v} is already in the tap"; exit 0; fi
+          git commit -m "$cask ${TAG#v}"
+          # Other projects publish to the same tap: on a race, rebase on theirs and try again
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD; then exit 0; fi
+            git pull --rebase origin "$(git rev-parse --abbrev-ref HEAD)"
+            sleep $((attempt * 3))
+          done
+          echo '::error::Could not push to the tap'; exit 1
+
+  aur:
+    name: AUR
+    if: contains(format(',{0},', inputs.channels), ',aur,')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+
+      - name: Write the PKGBUILD
+        id: pkg
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Only stable release tags are published: $TAG"; exit 1; }
+          meta=packaging/package-managers.json
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "$(jq -r .checksums $meta)" -D release
+          node scripts/package-managers-unix.mjs --version "$TAG" --sums "release/$(jq -r .checksums $meta)" --out out
+          name=$(jq -r .aur.package $meta)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "dir=out/aur/$name" >> "$GITHUB_OUTPUT"
+
+      - name: .SRCINFO, then build, install and check in Arch Linux
+        env:
+          PKG_DIR: ${{ steps.pkg.outputs.dir }}
+          PKG_NAME: ${{ steps.pkg.outputs.name }}
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD/$PKG_DIR:/pkg" -v "$PWD/scripts:/scripts:ro" \
+            -e VERSION="${TAG#v}" -e PKG_NAME -e INSTALL_DIR="$(jq -r .aur.installDir packaging/package-managers.json)" \
+            archlinux:latest bash -c '
+            set -euo pipefail
+            pacman -Syu --noconfirm --needed base-devel >/dev/null
+            useradd -m builder
+            echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder
+            cp -r /pkg /home/builder/pkg && chown -R builder /home/builder/pkg && cd /home/builder/pkg
+            sudo -u builder makepkg --printsrcinfo > .SRCINFO
+            sudo -u builder makepkg -si --noconfirm
+            [ "$(stat -c %a "$INSTALL_DIR/chrome-sandbox")" = 4755 ] || { echo "chrome-sandbox is not setuid"; exit 1; }
+            bash /scripts/check-linux-install.sh "$VERSION" pacman "$PKG_NAME" start
+            cp .SRCINFO /pkg/.SRCINFO
+          '
+          cat "$PKG_DIR/PKGBUILD" "$PKG_DIR/.SRCINFO"
+
+      - name: Push to the AUR
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          PKG_DIR: ${{ steps.pkg.outputs.dir }}
+          PKG_NAME: ${{ steps.pkg.outputs.name }}
+        run: |
+          set -euo pipefail
+          if [ "$SUBMIT" != true ]; then echo 'Dry run: nothing pushed'; exit 0; fi
+          if [ "$(jq -r '.aur.enabled' packaging/package-managers.json)" != true ]; then
+            echo "::notice::AUR is turned off in packaging/package-managers.json: built and tested, not pushed"; exit 0
+          fi
+          if [ -z "$AUR_SSH_PRIVATE_KEY" ]; then echo "::notice::AUR_SSH_PRIVATE_KEY isn't set: AUR skipped"; exit 0; fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur && chmod 600 ~/.ssh/aur
+          ssh-keyscan -t ed25519,rsa aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND='ssh -i ~/.ssh/aur -o IdentitiesOnly=yes'
+          # A package that doesn't exist yet clones as an empty repository; the first push creates it
+          git clone "ssh://aur@aur.archlinux.org/$PKG_NAME.git" aur-repo
+          cp "$PKG_DIR/PKGBUILD" "$PKG_DIR/.SRCINFO" aur-repo/
+          cd aur-repo
+          git config user.name 'Davide Maggi'
+          git config user.email 'davidemaggi@users.noreply.github.com'
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then echo "$PKG_NAME ${TAG#v} is already on the AUR"; exit 0; fi
+          git commit -m "Update to ${TAG#v}"
+          git push origin HEAD:master
+
+  cloudsmith:
+    name: Cloudsmith (${{ matrix.deb }})
+    if: contains(format(',{0},', inputs.channels), ',cloudsmith,')
+    # Each architecture on its own hardware: installs, the app's start and the repository check
+    # all run natively. ubuntu:24.04 and fedora:latest are multi-arch images.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            deb: amd64
+            rpm: x86_64
+          - runner: ubuntu-24.04-arm
+            deb: arm64
+            rpm: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+
+      - name: Download and check the .deb and .rpm files
+        id: files
+        env:
+          DEB_ARCH: ${{ matrix.deb }}
+          RPM_ARCH: ${{ matrix.rpm }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Only stable release tags are published: $TAG"; exit 1; }
+          version="${TAG#v}"
+          meta=packaging/package-managers.json
+          sums=$(jq -r .checksums $meta)
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D release -p "$sums"
+          deb=$(jq -r .cloudsmith.deb $meta | sed "s/{version}/$version/; s/{arch}/$DEB_ARCH/")
+          rpm=$(jq -r .cloudsmith.rpm $meta | sed "s/{version}/$version/; s/{arch}/$RPM_ARCH/")
+          # Older releases have no files for some architectures: nothing to publish for them
+          if ! grep -qE " \*?$deb\$" "release/$sums" || ! grep -qE " \*?$rpm\$" "release/$sums"; then
+            echo "::notice::$TAG has no $DEB_ARCH .deb and $RPM_ARCH .rpm: skipped"
+            exit 0
+          fi
+          mkdir -p packages
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D packages -p "$deb" -p "$rpm"
+          # The same bytes the release workflow listed
+          (cd packages && sha256sum -c --ignore-missing "../release/$sums")
+          node scripts/package-managers-unix.mjs --version "$TAG" --sums "release/$sums" --out out
+          {
+            echo "present=true"
+            echo "deb=$deb"
+            echo "rpm=$rpm"
+            echo "repo=$(jq -r '"\(.cloudsmith.owner)/\(.cloudsmith.repository)"' $meta)"
+            echo "deb-package=$(jq -r .cloudsmith.debPackage $meta)"
+            echo "rpm-package=$(jq -r .cloudsmith.rpmPackage $meta)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install the files themselves on Ubuntu and Fedora
+        if: steps.files.outputs.present == 'true'
+        env:
+          DEB: ${{ steps.files.outputs.deb }}
+          RPM: ${{ steps.files.outputs.rpm }}
+          DEB_PACKAGE: ${{ steps.files.outputs.deb-package }}
+          RPM_PACKAGE: ${{ steps.files.outputs.rpm-package }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          docker run --rm -v "$PWD/packages:/p:ro" -v "$PWD/scripts:/scripts:ro" ubuntu:24.04 bash -c "
+            set -euo pipefail
+            apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq /p/$DEB >/dev/null
+            bash /scripts/check-linux-install.sh $version deb $DEB_PACKAGE start"
+          docker run --rm -v "$PWD/packages:/p:ro" -v "$PWD/scripts:/scripts:ro" fedora:latest bash -c "
+            set -euo pipefail
+            # Cisco's openh264 repository isn't needed and its mirrors are flaky; one retry for the rest
+            dnf_install() { dnf install -y -q --disablerepo=fedora-cisco-openh264 \"\$@\" >/dev/null; }
+            dnf_install /p/$RPM || { sleep 15; dnf_install /p/$RPM; }
+            bash /scripts/check-linux-install.sh $version rpm $RPM_PACKAGE start"
+
+      - name: Upload to Cloudsmith
+        id: upload
+        if: steps.files.outputs.present == 'true'
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          REPO: ${{ steps.files.outputs.repo }}
+        run: |
+          set -euo pipefail
+          if [ "$SUBMIT" != true ]; then echo 'Dry run: nothing uploaded'; exit 0; fi
+          if [ -z "$CLOUDSMITH_API_KEY" ]; then echo "::notice::CLOUDSMITH_API_KEY isn't set: Cloudsmith skipped"; exit 0; fi
+          pip install --quiet cloudsmith-cli
+          # any-distro/any-version: one package for every Debian/Ubuntu and Fedora/RHEL release
+          for f in packages/*.deb; do cloudsmith push deb "$REPO/any-distro/any-version" "$f" --republish; done
+          for f in packages/*.rpm; do cloudsmith push rpm "$REPO/any-distro/any-version" "$f" --republish; done
+          echo "uploaded=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install from the repository with apt and dnf
+        if: steps.upload.outputs.uploaded == 'true'
+        env:
+          REPO: ${{ steps.files.outputs.repo }}
+          DEB_PACKAGE: ${{ steps.files.outputs.deb-package }}
+          RPM_PACKAGE: ${{ steps.files.outputs.rpm-package }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          # The README's commands. The index can lag a fresh upload by a little: retry with a pause.
+          docker run --rm -v "$PWD/scripts:/scripts:ro" ubuntu:24.04 bash -c "
+            set -euo pipefail
+            apt-get update -qq && apt-get install -y -qq curl >/dev/null
+            curl -1sLf https://dl.cloudsmith.io/public/$REPO/setup.deb.sh | bash
+            apt_install() { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq $DEB_PACKAGE=$version >/dev/null; }
+            apt_install || { sleep 30; apt_install; } || { sleep 60; apt_install; }
+            bash /scripts/check-linux-install.sh $version deb $DEB_PACKAGE"
+          # Our own .repo file: Cloudsmith's setup.rpm.sh sets an sslcacert that Fedora 43+ lacks
+          docker run --rm -v "$PWD/out/cloudsmith:/repo:ro" -v "$PWD/scripts:/scripts:ro" fedora:latest bash -c "
+            set -euo pipefail
+            cp /repo/$RPM_PACKAGE.repo /etc/yum.repos.d/
+            dnf_install() { dnf install -y -q --refresh --disablerepo=fedora-cisco-openh264 $RPM_PACKAGE-$version >/dev/null; }
+            dnf_install || { sleep 30; dnf_install; } || { sleep 60; dnf_install; }
+            bash /scripts/check-linux-install.sh $version rpm $RPM_PACKAGE"

@@ -24,6 +24,8 @@ Record each test's OS/version/architecture, app commit/artifact hash, broker/pro
 - [x] Verify every downloaded asset against SHA256SUMS.txt (all seven final packages passed). Confirm the release includes expected installer/archive variants and no test broker secrets or local maintainer files.
 - [ ] Windows x64: install NSIS and extract ZIP on a clean supported system. Record unsigned status for the unsigned build; when signed variants exist, verify app, installed uninstaller and installer Authenticode status/publisher; capture in the packaged utility process. Test upgrade, uninstall and retained-user-data policy.
 - [ ] macOS arm64: record the unsigned/ad-hoc build and expected Gatekeeper behavior; verify Developer ID/notarization only if a future trusted macOS-signed channel is implemented on a clean supported Mac, including launch while offline. Test Applications installation, packaged capture, upgrade and uninstall/data policy.
+- [ ] macOS x64 (from the release after 1.0.5): the same checks on an Intel Mac. The release workflow builds it on GitHub's `macos-15-intel` runner.
+- [ ] Linux arm64 (from the release after 1.0.5): DEB, RPM, AppImage and tar.gz on an arm64 desktop. The release workflow builds it on `ubuntu-24.04-arm`.
 - [ ] Linux x64: test DEB, AppImage and tar.gz on the supported distributions/desktops you intend to list. Check runtime libraries, sandbox, FUSE where needed, upgrade/uninstall and paths. Do not disable Chromium sandboxing to pass.
 - [ ] Record exact supported OS versions and architectures in release notes. Do not advertise untested architectures/platform versions.
 

@@ -49,5 +49,62 @@
       "shortDescription": "Guarda cosa passa in RabbitMQ e Kafka senza rubare il consumer a un'applicazione.",
       "description": "QueueCumber è un ispettore desktop locale per RabbitMQ e Kafka. Osserva il traffico tramite code temporanee proprie e non consuma né conferma mai messaggi dalle code delle applicazioni.\n\n- Salva connessioni RabbitMQ e Kafka, provale e sfoglia code, stream, topic e routing key\n- Replica binding o routing key scelti in una coda di osservazione temporanea, oppure leggi uno stream o una partizione Kafka da qualsiasi posizione\n- Header strutturati, JSON formattato e byte originali, dal più recente o dal più vecchio\n- Memoria limitata, storico cifrato su disco, retention e limiti di velocità; le catture continuano dalla tray\n- Esporta i messaggi come JSONL, cartella o ZIP; sposta le connessioni con file cifrati da password\n- Inglese o italiano, chiaro o scuro, comodo da tastiera"
     }
+  },
+  "checksums": "SHA256SUMS.txt",
+  "homebrew": {
+    "tap": "davidemaggi/homebrew-tap",
+    "cask": "queuecumber",
+    "desc": "Inspect RabbitMQ and Kafka traffic without touching application queues",
+    "asset": "QueueCumber-{version}-mac-{arch}-unsigned.zip",
+    "arches": {
+      "arm": "arm64",
+      "intel": "x64"
+    },
+    "app": "QueueCumber.app",
+    "binaries": [],
+    "minimumMacOS": "ventura",
+    "removeQuarantine": true,
+    "zap": [
+      "~/Library/Application Support/QueueCumber",
+      "~/Library/Preferences/dev.queuecumber.desktop.plist",
+      "~/Library/Saved Application State/dev.queuecumber.desktop.savedState"
+    ]
+  },
+  "aur": {
+    "enabled": false,
+    "package": "queuecumber-bin",
+    "provides": "queuecumber",
+    "maintainer": "Davide Maggi <https://github.com/davidemaggi>",
+    "asset": "QueueCumber-{version}-linux-{arch}-unsigned.deb",
+    "arches": {
+      "x86_64": "amd64",
+      "aarch64": "arm64"
+    },
+    "installDir": "/opt/QueueCumber",
+    "links": {
+      "/usr/bin/queuecumber": "/opt/QueueCumber/queuecumber"
+    },
+    "depends": [
+      "gtk3",
+      "nss",
+      "alsa-lib",
+      "libxss",
+      "libxtst",
+      "at-spi2-core",
+      "libnotify",
+      "libsecret",
+      "mesa",
+      "xdg-utils",
+      "util-linux-libs"
+    ]
+  },
+  "cloudsmith": {
+    "owner": "davidemaggi",
+    "repository": "dm-queuecumber",
+    "gpgKey": "https://dl.cloudsmith.io/public/davidemaggi/dm-queuecumber/gpg.17D63A30A1A73F03.key",
+    "debPackage": "queuecumber",
+    "rpmPackage": "queuecumber",
+    "deb": "QueueCumber-{version}-linux-{arch}-unsigned.deb",
+    "rpm": "QueueCumber-{version}-linux-{arch}-unsigned.rpm"
   }
 }
