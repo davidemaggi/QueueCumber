@@ -69,11 +69,11 @@ Implemented locally with explicit broker-specific semantics. Real hosted account
 - [x] Automate winget (`DavideMaggi.QueueCumber`) and Chocolatey (`queuecumber`) submission for stable releases with a verified signed installer; dry run against v1.0.4 installed, validated and uninstalled on a Windows runner without submitting.
 - [x] First real winget and Chocolatey submission with 1.0.5 (winget-pkgs PR #461371; Chocolatey in moderation).
 - [ ] Registry review and approval for winget and Chocolatey. Submitted is not approved.
-- [ ] Homebrew submission/verification, subject to registry requirements.
+- [ ] Homebrew, apt/dnf (Cloudsmith) and AUR: see [Unix package managers](#unix-package-managers--existing-release-files-no-new-version).
 - [x] Installation, permissions, capture limitations, retention and troubleshooting docs.
 - [x] Documented stable configuration/dump policy, legacy database adoption and unknown-version refusal.
 
-The maintainer confirmed manual installation checks and authorized publication on 2026-10-23. The [acceptance record](docs/ACCEPTANCE.md) separates that confirmation and observed build/download results from detailed OS, cloud, keystore and long-session checks that were not independently recorded. Package-manager submissions follow verified release assets and registry acceptance; no package-manager channel is published yet.
+The maintainer confirmed manual installation checks and authorized publication on 2026-10-23. The [acceptance record](docs/ACCEPTANCE.md) separates that confirmation and observed build/download results from detailed OS, cloud, keystore and long-session checks that were not independently recorded. Package-manager submissions follow verified release assets and registry acceptance.
 
 Version 1.0 remains for inspection. Owned observation resources are permitted; application publishing, purge, deletion and editing remain outside scope.
 
@@ -137,6 +137,15 @@ Release 1.0.4 targets `95211cc`. Unsigned run 40114239762 needed a Windows packa
 
 Release 1.0.5 targets `c92582f`. Unsigned run 40188055674 succeeded first time; signing run 40188491321 needed a rerun after two unit tests exceeded 15 s on the busy signing machine. All ten downloaded package checksums match; the downloaded macOS bundle passed integrity/version checks and the CI-built RPM installed eight icon sizes on Fedora with `StartupWMClass` matching the window class.
 - [ ] Confirm the icon in a real Fedora KDE session.
+
+## Unix package managers — existing release files, no new version
+
+- [x] Publish stable releases to Homebrew (cask `queuecumber` in `davidemaggi/homebrew-tap`), Cloudsmith apt/dnf (`davidemaggi/dm-queuecumber`) and the AUR (`queuecumber-bin`) from files already on the release; `publish-packages.yml` sends every stable tag to these channels and adds winget/Chocolatey only with the signed installer.
+- [ ] Dry run against v1.0.5 on GitHub runners: Homebrew style/audit/install/zap, Arch `makepkg -si`, Ubuntu and Fedora installs, nothing published.
+- [ ] Publish 1.0.5 to Homebrew and Cloudsmith, then install from the tap and from the repository with apt (`ubuntu:24.04`) and dnf (`fedora:latest`) using the README's commands.
+- [ ] AUR publication: `aur.enabled` stays false until AUR account registrations reopen and `AUR_SSH_PRIVATE_KEY` is set.
+- [ ] Declare ALSA in the .deb and .rpm dependencies in a future release: 1.0.5's packages link `libasound.so.2` without depending on it (every desktop has it; minimal containers don't).
+- [ ] Intel macOS and Linux arm64 channels need release builds for those architectures first.
 
 ## After 1.0 — candidates, not commitments
 
