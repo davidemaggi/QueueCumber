@@ -141,7 +141,7 @@ Release 1.0.5 targets `c92582f`. Unsigned run 40188055674 succeeded first time; 
 ## Unix package managers — existing release files, no new version
 
 - [x] Publish stable releases to Homebrew (cask `queuecumber` in `davidemaggi/homebrew-tap`), Cloudsmith apt/dnf (`davidemaggi/dm-queuecumber`) and the AUR (`queuecumber-bin`) from files already on the release; `publish-packages.yml` sends every stable tag to these channels and adds winget/Chocolatey only with the signed installer.
-- [ ] Dry run against v1.0.5 on GitHub runners: Homebrew style/audit/install/zap, Arch `makepkg -si`, Ubuntu and Fedora installs, nothing published.
+- [x] Dry run against v1.0.5 on GitHub runners (run 40578320023): Homebrew style, online audit, install, unquarantined, version, start and `uninstall --zap`; Arch `makepkg -si`; the .deb on Ubuntu 24.04 and the .rpm on Fedora, every library resolved and the app started under Xvfb. Nothing published.
 - [ ] Publish 1.0.5 to Homebrew and Cloudsmith, then install from the tap and from the repository with apt (`ubuntu:24.04`) and dnf (`fedora:latest`) using the README's commands.
 - [ ] AUR publication: `aur.enabled` stays false until AUR account registrations reopen and `AUR_SSH_PRIVATE_KEY` is set.
 - [ ] Declare ALSA in the .deb and .rpm dependencies in a future release: 1.0.5's packages link `libasound.so.2` without depending on it (every desktop has it; minimal containers don't).
