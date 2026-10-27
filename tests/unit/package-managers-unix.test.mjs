@@ -60,6 +60,8 @@ it('writes a Homebrew cask, a PKGBUILD and a dnf .repo file from SHA256SUMS', ()
     )
     expect(result.status, result.stderr).toBe(0)
     const out = JSON.parse(result.stdout)
+    expect(out.homebrewArches).toEqual(['arm'])
+    expect(out.aurArches).toEqual(['x86_64'])
 
     const cask = readFileSync(out.homebrew, 'utf8')
     expect(cask).toMatch(/^cask "queuecumber" do\n {2}version "1\.0\.5"\n/)
@@ -111,6 +113,42 @@ it('writes a Homebrew cask, a PKGBUILD and a dnf .repo file from SHA256SUMS', ()
   })
 })
 
+it('adds the Intel and arm64 Linux files when the release has them', () => {
+  const intelSha = 'd'.repeat(64),
+    armDebSha = 'e'.repeat(64)
+  const both = `${sums}${intelSha}  QueueCumber-1.0.5-mac-x64-unsigned.zip\n${armDebSha}  QueueCumber-1.0.5-linux-arm64-unsigned.deb\n`
+  withSums(both, (dir) => {
+    const result = run(
+      '--version',
+      '1.0.5',
+      '--sums',
+      join(dir, 'SHA256SUMS.txt'),
+      '--out',
+      dir,
+    )
+    expect(result.status, result.stderr).toBe(0)
+    const out = JSON.parse(result.stdout)
+    expect(out.homebrewArches).toEqual(['arm', 'intel'])
+    expect(out.aurArches).toEqual(['x86_64', 'aarch64'])
+
+    const cask = readFileSync(out.homebrew, 'utf8')
+    expect(cask).toContain('  arch arm: "arm64", intel: "x64"\n')
+    // brew style aligns the values of a multi-line hash
+    expect(cask).toContain(
+      `  sha256 arm:   "${macSha}",\n         intel: "${intelSha}"\n`,
+    )
+    expect(cask).toContain('QueueCumber-#{version}-mac-#{arch}-unsigned.zip"')
+    expect(cask).not.toContain('depends_on arch:')
+
+    const pkgbuild = readFileSync(join(out.aur, 'PKGBUILD'), 'utf8')
+    expect(pkgbuild).toContain("arch=('x86_64' 'aarch64')")
+    expect(pkgbuild).toContain(`sha256sums_aarch64=('${armDebSha}')`)
+    expect(pkgbuild).toContain(
+      'QueueCumber-${pkgver}-linux-arm64-unsigned.deb")',
+    )
+  })
+})
+
 it('refuses missing hashes, pre-releases and missing inputs', () => {
   withSums(sums.replace(/^.*mac-arm64.*$/m, ''), (dir) => {
     const result = run(
@@ -122,7 +160,9 @@ it('refuses missing hashes, pre-releases and missing inputs', () => {
       dir,
     )
     expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('QueueCumber-1.0.5-mac-arm64-unsigned.zip')
+    expect(result.stderr).toContain(
+      'no Homebrew file like QueueCumber-1.0.5-mac-*-unsigned.zip',
+    )
   })
   expect(run('--version', '1.0.5').status).not.toBe(0)
   expect(
