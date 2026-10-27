@@ -145,7 +145,8 @@ Release 1.0.5 targets `c92582f`. Unsigned run 40188055674 succeeded first time; 
 - [ ] Publish 1.0.5 to Homebrew and Cloudsmith, then install from the tap and from the repository with apt (`ubuntu:24.04`) and dnf (`fedora:latest`) using the README's commands.
 - [ ] AUR publication: `aur.enabled` stays false until AUR account registrations reopen and `AUR_SSH_PRIVATE_KEY` is set.
 - [ ] Declare ALSA in the .deb and .rpm dependencies in a future release: 1.0.5's packages link `libasound.so.2` without depending on it (every desktop has it; minimal containers don't).
-- [ ] Intel macOS and Linux arm64 channels need release builds for those architectures first.
+- [x] Release builds for macOS x64 (`macos-15-intel`) and Linux arm64 (`ubuntu-24.04-arm`), and package-manager jobs that take whichever architectures a release has. Branch build 40580826833 built both on native runners with the unit tests passing; the arm64 .deb and .rpm installed and started on Ubuntu 24.04 and Fedora, and the x64 app (macOS 13.0 minimum) started on an Intel Mac. Package-manager dry run 40581958366 on v1.0.5 passed, skipping the architectures 1.0.5 doesn't have.
+- [ ] First release with macOS x64 and Linux arm64 files: download checks, Homebrew on Intel, Cloudsmith arm64 and manual acceptance on real hardware.
 
 ## After 1.0 — candidates, not commitments
 
