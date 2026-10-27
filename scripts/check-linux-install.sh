@@ -21,6 +21,13 @@ case "$kind" in
 esac
 [ "$installed" = "$version" ] || fail "$package is version $installed, expected $version"
 
+# Every desktop has ALSA, but electron-builder's .deb and .rpm don't declare it (up to 1.0.5 at
+# least): add it here, so ldd below still catches any other library the package forgot
+case "$kind" in
+  deb) dpkg -s libasound2t64 >/dev/null 2>&1 || DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libasound2t64 >/dev/null ;;
+  rpm) rpm -q alsa-lib >/dev/null || dnf install -y -q --disablerepo=fedora-cisco-openh264 alsa-lib >/dev/null ;;
+esac
+
 app=$(readlink -f /usr/bin/queuecumber) || fail '/usr/bin/queuecumber is missing'
 [ -x "$app" ] || fail "$app isn't executable"
 missing=$(ldd "$app" | grep 'not found' || true)
