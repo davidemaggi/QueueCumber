@@ -30,9 +30,6 @@ on:
         required: false
       CLOUDSMITH_API_KEY:
         required: false
-  # TEMPORARY dry run: revert this commit
-  push:
-    branches: [feature/unix-package-managers]
   workflow_dispatch:
     inputs:
       tag:
@@ -50,11 +47,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: package-managers-${{ inputs.tag || 'v1.0.5' }}
+  group: package-managers-${{ inputs.tag }}
   cancel-in-progress: false
 
 env:
-  TAG: ${{ inputs.tag || 'v1.0.5' }}
+  TAG: ${{ inputs.tag }}
   SUBMIT: ${{ inputs.submit == true && 'true' || 'false' }}
   GH_TOKEN: ${{ github.token }}
   CODESIGN_CERT_SUBJECT: ${{ vars.CODESIGN_CERT_SUBJECT }}
@@ -62,7 +59,7 @@ env:
 jobs:
   winget:
     name: winget
-    if: contains(format(',{0},', inputs.channels || 'homebrew,aur,cloudsmith'), ',winget,')
+    if: contains(format(',{0},', inputs.channels), ',winget,')
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -202,7 +199,7 @@ jobs:
 
   chocolatey:
     name: Chocolatey
-    if: contains(format(',{0},', inputs.channels || 'homebrew,aur,cloudsmith'), ',chocolatey,')
+    if: contains(format(',{0},', inputs.channels), ',chocolatey,')
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -287,7 +284,7 @@ jobs:
 
   homebrew:
     name: Homebrew
-    if: contains(format(',{0},', inputs.channels || 'homebrew,aur,cloudsmith'), ',homebrew,')
+    if: contains(format(',{0},', inputs.channels), ',homebrew,')
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -380,7 +377,7 @@ jobs:
 
   aur:
     name: AUR
-    if: contains(format(',{0},', inputs.channels || 'homebrew,aur,cloudsmith'), ',aur,')
+    if: contains(format(',{0},', inputs.channels), ',aur,')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -454,7 +451,7 @@ jobs:
 
   cloudsmith:
     name: Cloudsmith (apt, dnf)
-    if: contains(format(',{0},', inputs.channels || 'homebrew,aur,cloudsmith'), ',cloudsmith,')
+    if: contains(format(',{0},', inputs.channels), ',cloudsmith,')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
