@@ -52,9 +52,16 @@ jobs:
           - os: macos-latest
             platform: mac
             arch: arm64
+          # Native Intel runner, so the tests and the bundle check run on the hardware it targets
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
           - os: ubuntu-latest
             platform: linux
             arch: x64
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
     runs-on: ${{ matrix.os }}
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -83,7 +90,8 @@ jobs:
         run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --config electron-builder.unsigned.mjs --publish never
       - name: Verify macOS ad-hoc bundle integrity
         if: matrix.platform == 'mac'
-        run: codesign --verify --deep --strict release/mac-arm64/QueueCumber.app
+        # electron-builder writes release/mac-arm64 for arm64 and release/mac for x64
+        run: codesign --verify --deep --strict release/mac*/QueueCumber.app
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: packages-${{ matrix.platform }}-${{ matrix.arch }}-unsigned
@@ -133,4 +141,4 @@ jobs:
           fi
           flags=()
           if [[ "$PRERELEASE" == true ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Unsigned Windows x64, macOS arm64 and Linux x64 downloads. macOS uses ad-hoc signing only, without Developer ID or notarization. From 1.0.1, verified Windows signed variants may be added by the separate optional self-hosted workflow. Their absence means no signed variant was provided. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*
+          gh release create "$RELEASE_TAG" --target "$EXPECTED_COMMIT" --draft --generate-notes --title "$RELEASE_TITLE" --notes "Unsigned Windows x64, macOS arm64 and x64, and Linux x64 and arm64 downloads. macOS uses ad-hoc signing only, without Developer ID or notarization. From 1.0.1, verified Windows signed variants may be added by the separate optional self-hosted workflow. Their absence means no signed variant was provided. Review installation checks before publishing this draft." "${flags[@]}" release-assets/*

@@ -57,7 +57,8 @@
     "desc": "Inspect RabbitMQ and Kafka traffic without touching application queues",
     "asset": "QueueCumber-{version}-mac-{arch}-unsigned.zip",
     "arches": {
-      "arm": "arm64"
+      "arm": "arm64",
+      "intel": "x64"
     },
     "app": "QueueCumber.app",
     "binaries": [],
@@ -76,7 +77,8 @@
     "maintainer": "Davide Maggi <https://github.com/davidemaggi>",
     "asset": "QueueCumber-{version}-linux-{arch}-unsigned.deb",
     "arches": {
-      "x86_64": "amd64"
+      "x86_64": "amd64",
+      "aarch64": "arm64"
     },
     "installDir": "/opt/QueueCumber",
     "links": {
@@ -103,8 +105,6 @@
     "debPackage": "queuecumber",
     "rpmPackage": "queuecumber",
     "deb": "QueueCumber-{version}-linux-{arch}-unsigned.deb",
-    "debArches": ["amd64"],
-    "rpm": "QueueCumber-{version}-linux-{arch}-unsigned.rpm",
-    "rpmArches": ["x86_64"]
+    "rpm": "QueueCumber-{version}-linux-{arch}-unsigned.rpm"
   }
 }

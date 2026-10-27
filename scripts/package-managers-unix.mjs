@@ -54,12 +54,21 @@ const sums = new Map(
     .map(([, hash, file]) => [file, hash.toLowerCase()]),
 )
 const sumOf = (file) => sums.get(file) ?? fail(`${file} isn't in ${args.sums}`)
+/** The [key, arch] pairs whose file this release has: older releases lack some architectures */
+const released = (arches, template, channel) => {
+  const found = Object.entries(arches).filter(([, arch]) =>
+    sums.has(assetFor(template, arch)),
+  )
+  if (!found.length)
+    fail(`${args.sums} has no ${channel} file like ${assetFor(template, '*')}`)
+  return found
+}
 
 // ── Homebrew cask ─────────────────────────────────────────────────────────────────────────────
 const brew = meta.homebrew
 const brewDir = join(args.out, 'homebrew', 'Casks')
 mkdirSync(brewDir, { recursive: true })
-const brewArch = Object.entries(brew.arches) // e.g. [['arm', 'arm64'], ['intel', 'x64']]
+const brewArch = released(brew.arches, brew.asset, 'Homebrew') // e.g. [['arm', 'arm64'], ['intel', 'x64']]
 let archLines, shaLine, urlFile, onlyArch
 if (brewArch.length === 1) {
   // One architecture only: no arch stanza, and brew refuses the other one up front
@@ -130,7 +139,7 @@ writeFileSync(join(brewDir, `${brew.cask}.rb`), cask.join('\n'))
 const aur = meta.aur
 const aurDir = join(args.out, 'aur', aur.package)
 mkdirSync(aurDir, { recursive: true })
-const aurArch = Object.entries(aur.arches) // e.g. [['x86_64', 'amd64']]
+const aurArch = released(aur.arches, aur.asset, 'AUR') // e.g. [['x86_64', 'amd64'], ['aarch64', 'arm64']]
 const quote = (s) => `'${s.replace(/'/g, `'"'"'`)}'`
 const sourceName = (arch) => `${aur.provides}-\${pkgver}-${arch}.deb`
 const pkgbuild = [
@@ -201,7 +210,9 @@ console.log(
     {
       version,
       homebrew: join(brewDir, `${brew.cask}.rb`),
+      homebrewArches: brewArch.map(([key]) => key),
       aur: aurDir,
+      aurArches: aurArch.map(([arch]) => arch),
       dnfRepo: join(csDir, repoFile),
     },
     null,
