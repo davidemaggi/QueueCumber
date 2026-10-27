@@ -1,0 +1,82 @@
+name: TEMPORARY new-architecture build check
+# TEMPORARY: proves the macOS x64 and Linux arm64 release legs build, install and start. Revert.
+on:
+  push:
+    branches: [feature/more-architectures]
+permissions:
+  contents: read
+jobs:
+  packages:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.18.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Install RPM tooling
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rpm
+      - name: Package unsigned distribution
+        env:
+          CSC_FOR_PULL_REQUEST: ${{ matrix.platform == 'mac' && 'true' || 'false' }}
+        run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --config electron-builder.unsigned.mjs --publish never
+      - name: Verify macOS ad-hoc bundle integrity
+        if: matrix.platform == 'mac'
+        run: codesign --verify --deep --strict release/mac*/QueueCumber.app
+      - name: List and hash the files
+        run: |
+          set -euo pipefail
+          ls -l release/ | grep unsigned
+          mkdir assets && cp release/*unsigned* assets/ && node scripts/make-checksums.mjs assets && cat assets/SHA256SUMS.txt
+          v=$(node -p 'require("./package.json").version')
+          # The metadata's file patterns must find what this leg built
+          node scripts/package-managers-unix.mjs --version "$v" --sums assets/SHA256SUMS.txt --out /tmp/pm 2>&1 || true
+      - name: Start the built app (macOS Intel)
+        if: matrix.platform == 'mac'
+        run: |
+          set -euo pipefail
+          app=$(ls -d release/mac*/QueueCumber.app)
+          exe="$app/Contents/MacOS/QueueCumber"
+          echo "$(lipo -archs "$exe") on $(uname -m); min macOS $(defaults read "$PWD/$app/Contents/Info.plist" LSMinimumSystemVersion)"
+          "$exe" & pid=$!
+          sleep 15
+          kill -0 "$pid" || { echo "::error::exited at start"; exit 1; }
+          kill "$pid"; wait "$pid" || true
+          echo started
+      - name: Install and start the .deb and .rpm (Linux arm64)
+        if: matrix.platform == 'linux'
+        run: |
+          set -euo pipefail
+          v=$(node -p 'require("./package.json").version')
+          uname -m
+          docker run --rm -v "$PWD/assets:/p:ro" -v "$PWD/scripts:/scripts:ro" ubuntu:24.04 bash -c "
+            set -euo pipefail
+            dpkg-deb -f /p/*.deb Package Architecture
+            apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq /p/*.deb >/dev/null
+            bash /scripts/check-linux-install.sh $v deb queuecumber start"
+          docker run --rm -v "$PWD/assets:/p:ro" -v "$PWD/scripts:/scripts:ro" fedora:latest bash -c "
+            set -euo pipefail
+            rpm -qp --qf '%{NAME} %{ARCH}\n' /p/*.rpm
+            dnf_install() { dnf install -y -q --disablerepo=fedora-cisco-openh264 \"\$@\" >/dev/null; }
+            dnf_install /p/*.rpm || { sleep 15; dnf_install /p/*.rpm; }
+            bash /scripts/check-linux-install.sh $v rpm queuecumber start"
