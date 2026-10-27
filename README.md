@@ -45,14 +45,14 @@ Download a package from [GitHub Releases](https://github.com/davidemaggi/QueueCu
 
 Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
 
-Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Downloads don't update themselves; the package managers below do, along with the rest of your system.
+Unsigned Windows packages are available separately. 1.0.5 has no packages for Intel Macs, Windows ARM or Linux ARM; release builds for Intel Macs and Linux arm64 are set up from the next release. Downloads don't update themselves; the package managers below do, along with the rest of your system.
 
 ### Homebrew, apt and dnf
 
-Every stable release goes to Homebrew and to an apt/dnf repository. They install the same files you'd download above, so the same limits apply: Apple silicon and x64 Linux only.
+Every stable release goes to Homebrew and to an apt/dnf repository. They install the same files you'd download above, so the same limits apply: for 1.0.5, Apple silicon and x64 Linux only. Releases that include Intel Mac and Linux arm64 files publish those too.
 
 ```sh
-# macOS, Apple silicon (Homebrew)
+# macOS (Homebrew)
 brew install --cask davidemaggi/tap/queuecumber
 
 # Debian, Ubuntu (apt)
