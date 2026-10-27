@@ -45,7 +45,41 @@ Download a package from [GitHub Releases](https://github.com/davidemaggi/QueueCu
 
 Prefer an archive? Releases also include a [signed Windows ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-win-x64-signed.zip), [macOS ZIP](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-mac-arm64-unsigned.zip) and [Linux tar.gz](https://github.com/davidemaggi/QueueCumber/releases/download/v1.0.5/QueueCumber-1.0.5-linux-x64-unsigned.tar.gz). Extract the whole archive and keep its supporting files together. On Windows, launch `QueueCumber.exe`; on macOS, move `QueueCumber.app` into Applications.
 
-Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Homebrew is planned. Updates are manual for now.
+Unsigned Windows packages are available separately. Intel Macs, Windows ARM and Linux ARM don't have release packages yet. Downloads don't update themselves; the package managers below do, along with the rest of your system.
+
+### Homebrew, apt and dnf
+
+Every stable release goes to Homebrew and to an apt/dnf repository. They install the same files you'd download above, so the same limits apply: Apple silicon and x64 Linux only.
+
+```sh
+# macOS, Apple silicon (Homebrew)
+brew install --cask davidemaggi/tap/queuecumber
+
+# Debian, Ubuntu (apt)
+curl -1sLf https://dl.cloudsmith.io/public/davidemaggi/dm-queuecumber/setup.deb.sh | sudo -E bash
+sudo apt install queuecumber
+```
+
+Fedora, RHEL (dnf): add the repository, then install.
+
+```sh
+sudo tee /etc/yum.repos.d/queuecumber.repo >/dev/null <<'END'
+[davidemaggi-dm-queuecumber]
+name=QueueCumber
+baseurl=https://dl.cloudsmith.io/public/davidemaggi/dm-queuecumber/rpm/any-distro/any-version/$basearch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://dl.cloudsmith.io/public/davidemaggi/dm-queuecumber/gpg.17D63A30A1A73F03.key
+END
+sudo dnf install queuecumber
+```
+
+That's the repository Cloudsmith's own `setup.rpm.sh` would add, minus a certificate path that Fedora 43 and later no longer ship (with it, dnf can't read the repository). dnf asks you to accept the repository's signing key on first use.
+
+The Homebrew cask removes macOS's quarantine flag after installing, because the app isn't notarized (see [Opening the app on macOS](#opening-the-app-on-macos)). It installs exactly the macOS ZIP from the release, checked against the hash in `SHA256SUMS.txt`, so [checking your download](#check-your-download) covers it too.
+
+[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat)](https://cloudsmith.com) The apt and dnf repository is graciously hosted by [Cloudsmith](https://cloudsmith.com), free for open-source projects.
 
 ### winget and Chocolatey
 
@@ -214,7 +248,7 @@ All distribution builds run through GitHub Actions after a PR merges into `main`
 
 Broker edge cases, reproducible bugs and useful ideas are welcome. Open an [issue](https://github.com/davidemaggi/QueueCumber/issues) with sanitized examples, branch off `development`, and keep the relevant checks green. Leave real credentials and private messages out of reports.
 
-Homebrew, the winget/Chocolatey review status and remaining platform acceptance are tracked in the [roadmap](ROADMAP.md). Product decisions live in [PRODUCT.md](PRODUCT.md), architecture in the [project plan](docs/PROJECT_PLAN.md), and AI workflow conventions in [AGENTS.md](AGENTS.md).
+The winget/Chocolatey review status, the AUR package and remaining platform acceptance are tracked in the [roadmap](ROADMAP.md). Product decisions live in [PRODUCT.md](PRODUCT.md), architecture in the [project plan](docs/PROJECT_PLAN.md), and AI workflow conventions in [AGENTS.md](AGENTS.md).
 
 ## Versions
 
